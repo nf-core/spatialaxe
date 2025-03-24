@@ -76,6 +76,7 @@ We thank the following people for their extensive assistance in the development 
 - Tobias Krause
 - Krešimir Beštak (kbestak)
 - Matthias Hörtenhuber (mashehu)
+- Olga Brovkina (brovolia)
 
 ## Contributions and Support
 
