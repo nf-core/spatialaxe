@@ -6,37 +6,22 @@ process POINTS2REGIONS_CLUSTER {
     input:
     tuple val(meta), path(transcripts)
     val(smoothing)
-    val (num_clusters)
+    val(num_clusters)
 
     output:
-    tuple val(meta), path("clustered_s${smoothing}.csv"), emit: clusters
+    tuple val(meta), path("clustered_s${smoothing}.csv"), emit: clustered
+    tuple val(meta), path("cluster_plot_s${smoothing}.png"), emit: clustered_plot
+    path "versions.yml"
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-
-     """
-    python modules/local/points2regions/templates/points2regions_cluster.py \\
-        --transcripts ${transcripts} \\
-        --smoothing ${smoothing} \\
-        --num_clusters ${num_clusters}
+    template 'points2regions_cluster.py'
     """
-}
-
-process POINTS2REGIONS_PLOT {
-    tag "$meta.id"
-    label 'points_visual'
-    input:
-    tuple val(meta), path(clusters)
-    val smoothing
-
-    output:
-    path "cluster_plot.png"
-    path "versions.yml"
-
-    script:
-    """
-    python modules/local/points2regions/templates/points2regions_plot.py
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        ficture_preprocess: v.1.0.0
+    END_VERSIONS
     """
 }

@@ -4,12 +4,4 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - python=3.10
-  - matplotlib
-  - pandas
-  - pip
-  - pip:
-      - points2regions
-
-container:
-  - community.wave.seqera.io/library/pip_points2regions:9f5bb888586554a6
+  - conda-forge::p7zip=16.02

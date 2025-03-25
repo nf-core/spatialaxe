@@ -1,24 +1,20 @@
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/meta-schema.json
 name: "points2regions"
-## TODO nf-core: Add a description of the module and list keywords
-description: write your description here
+description: Fast and efficient region discovery across multiple scales
 keywords:
-  - sort
-  - example
-  - genomics
+  - probabilistic segmentation
+  - clustering
+  - spatialomics
 tools:
   - "points2regions":
-      ## TODO nf-core: Add a description and other details for the software below
-      description: ""
-      homepage: ""
-      documentation: ""
-      tool_dev_url: ""
-      doi: ""
-      licence: 
-      identifier: 
+      description: "Tool for identifying regions with similar mRNA compositions. Xenium platform is currently supported."
+      homepage: "https://github.com/wahlby-lab/Points2Regions/tree/main"
+      documentation: "https://github.com/wahlby-lab/Points2Regions/blob/main/README.md"
+      tool_dev_url: "https://github.com/wahlby-lab/Points2Regions"
+      doi: ["10.1002/cyto.a.24884"]
+      licence: "MIT"
 
-## TODO nf-core: Add a description of all of the variables used as input
 input:
   # Only when we have meta
   - - meta:
@@ -26,37 +22,34 @@ input:
         description: |
           Groovy Map containing sample information
           e.g. `[ id:'sample1', single_end:false ]`
-  
-  ## TODO nf-core: Delete / customise this example input
-    - bam:
+    - transcripts:
         type: file
-        description: Sorted BAM/CRAM/SAM file
-        pattern: "*.{bam,cram,sam}"
-        ontologies:
-          - edam: "http://edamontology.org/format_25722"
-          - edam: "http://edamontology.org/format_2573"
-          - edam: "http://edamontology.org/format_3462"
-          
-
-## TODO nf-core: Add a description of all of the variables used as output
-output:
-  - bam:
-  #Only when we have meta
-    - meta:
-        type: map
         description: |
-          Groovy Map containing sample information
-          e.g. `[ id:'sample1', single_end:false ]`
-  ## TODO nf-core: Delete / customise this example output
-    - "*.bam":
+          File containing the transcript position
+        pattern: "transcripts.csv.gz"
+
+output:
+  - - meta:
+        type: object(Meta yaml)
+        description: |
+          Groovy Map containing run information
+          e.g. `[ id:'run_id']`
+    - clustered:
         type: file
-        description: Sorted BAM/CRAM/SAM file
-        pattern: "*.{bam,cram,sam}"
-        ontologies:
-          - edam: "http://edamontology.org/format_25722"
-          - edam: "http://edamontology.org/format_2573"
-          - edam: "http://edamontology.org/format_3462"
-          
+        description: |
+          CSV file with Points2Regions-assigned cluster labels.
+          The file is named `clustered_s<SMOOTHING>.csv` and includes columns:
+          - X, Y: transcript coordinates
+          - gene: gene name
+          - clusters: assigned cluster number
+        pattern: "clustered_s*.csv"
+    - cluster_plot:
+        type: file
+        description: |
+          PNG plot visualizing spatial clusters.
+          The filename is dynamically generated as `cluster_plot_s<SMOOTHING>.png`,
+          and displays spatial scatter plots of transcript positions colored by cluster ID.
+        pattern: "cluster_plot_s*.png"
   - versions:
     - "versions.yml":
         type: file

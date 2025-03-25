@@ -1,0 +1,31 @@
+ERROR ~ Error executing process > 'POINTS2REGIONS_CLUSTER (test)'
+
+Caused by:
+  Missing output file(s) `clustered_s20.csv` expected by process `POINTS2REGIONS_CLUSTER (test)`
+
+
+Command executed:
+
+  cat <<-END_VERSIONS > versions.yml
+  "POINTS2REGIONS_CLUSTER":
+      ficture_preprocess: v.1.0.0
+  END_VERSIONS
+
+Command exit status:
+  0
+
+Command output:
+  (empty)
+
+Command error:
+  WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+
+Work dir:
+  /Users/obrovkina/Documents/Projects/spatialxe/.nf-test/tests/9b856baf5b74f66fed52051240a30667/work/d8/128d4b427dc53ec692fd772d9fec52
+
+Container:
+  community.wave.seqera.io/library/pip_points2regions:9f5bb888586554a6
+
+Tip: you can try to figure out what's wrong by changing to the process work dir and showing the script file named `.command.sh`
+
+ -- Check '/Users/obrovkina/Documents/Projects/spatialxe/.nf-test/tests/9b856baf5b74f66fed52051240a30667/meta/nextflow.log' file for details

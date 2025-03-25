@@ -1,0 +1,126 @@
+Mar-25 18:17:57.928 [main] DEBUG nextflow.cli.Launcher - $> nextflow -quiet -log /Users/obrovkina/Documents/Projects/spatialxe/.nf-test/tests/9b856baf5b74f66fed52051240a30667/meta/nextflow.log run /Users/obrovkina/Documents/Projects/spatialxe/.nf-test-9b856baf5b74f66fed52051240a30667.nf -c /Users/obrovkina/Documents/Projects/spatialxe/nextflow.config -params-file /Users/obrovkina/Documents/Projects/spatialxe/.nf-test/tests/9b856baf5b74f66fed52051240a30667/meta/params.json -ansi-log false -profile docker -with-trace /Users/obrovkina/Documents/Projects/spatialxe/.nf-test/tests/9b856baf5b74f66fed52051240a30667/meta/trace.csv -w /Users/obrovkina/Documents/Projects/spatialxe/.nf-test/tests/9b856baf5b74f66fed52051240a30667/work
+Mar-25 18:17:57.958 [main] INFO  nextflow.cli.CmdRun - N E X T F L O W  ~  version 24.10.5
+Mar-25 18:17:57.969 [main] DEBUG nextflow.plugin.PluginsFacade - Setting up plugin manager > mode=prod; embedded=false; plugins-dir=/Users/obrovkina/.nextflow/plugins; core-plugins: nf-amazon@2.9.2,nf-azure@1.10.2,nf-cloudcache@0.4.2,nf-codecommit@0.2.2,nf-console@1.1.4,nf-google@1.15.4,nf-tower@1.9.3,nf-wave@1.7.4
+Mar-25 18:17:57.986 [main] INFO  o.pf4j.DefaultPluginStatusProvider - Enabled plugins: []
+Mar-25 18:17:57.986 [main] INFO  o.pf4j.DefaultPluginStatusProvider - Disabled plugins: []
+Mar-25 18:17:57.988 [main] INFO  org.pf4j.DefaultPluginManager - PF4J version 3.12.0 in 'deployment' mode
+Mar-25 18:17:57.994 [main] INFO  org.pf4j.AbstractPluginManager - No plugins
+Mar-25 18:17:58.005 [main] DEBUG nextflow.config.ConfigBuilder - Found config base: /Users/obrovkina/Documents/Projects/spatialxe/nextflow.config
+Mar-25 18:17:58.007 [main] DEBUG nextflow.config.ConfigBuilder - User config file: /Users/obrovkina/Documents/Projects/spatialxe/nextflow.config
+Mar-25 18:17:58.008 [main] DEBUG nextflow.config.ConfigBuilder - Parsing config file: /Users/obrovkina/Documents/Projects/spatialxe/nextflow.config
+Mar-25 18:17:58.008 [main] DEBUG nextflow.config.ConfigBuilder - Parsing config file: /Users/obrovkina/Documents/Projects/spatialxe/nextflow.config
+Mar-25 18:17:58.021 [main] DEBUG n.secret.LocalSecretsProvider - Secrets store: /Users/obrovkina/.nextflow/secrets/store.json
+Mar-25 18:17:58.022 [main] DEBUG nextflow.secret.SecretsLoader - Discovered secrets providers: [nextflow.secret.LocalSecretsProvider@253c1256] - activable => nextflow.secret.LocalSecretsProvider@253c1256
+Mar-25 18:17:58.031 [main] DEBUG nextflow.config.ConfigBuilder - Applying config profile: `docker`
+Mar-25 18:17:58.880 [main] DEBUG nextflow.config.ConfigBuilder - Applying config profile: `docker`
+Mar-25 18:17:59.084 [main] DEBUG nextflow.config.ConfigBuilder - Available config profiles: [bih, cfc_dev, uzl_omics, ifb_core, embl_hd, denbi_qbic, alice, mjolnir_globe, uppmax, giga, incliva, ilifu, ki_luria, uge, icr_alma, rosalind_uge, lugh, mccleary, unibe_ibu, vai, czbiohub_aws, jax, roslin, ccga_med, tes, scw, unc_longleaf, tigem, tubingen_apg, google, apollo, ipop_up, vsc_calcua, pdc_kth, googlels, ceci_nic5, humantechnopole, stjude, daisybio, eddie, medair, biowulf, apptainer, bi, bigpurple, adcra, cedars, pawsey_setonix, vsc_kul_uhasselt, pawsey_nimbus, ucl_myriad, utd_ganymede, charliecloud, seattlechildrens, icr_davros, ceres, arm, munin, rosalind, hasta, cfc, uzh, shu_bmrc, ebi_codon_slurm, ebc, ccga_dx, crick, ku_sund_danhead, marvin, shifter, biohpc_gen, mana, mamba, york_viking, unc_lccc, wehi, awsbatch, wustl_htcf, arcc, ceci_dragon2, imperial, maestro, software_license, cannon, genotoul, nci_gadi, abims, janelia, nu_genomics, googlebatch, oist, sahmri, kaust, mpcdf, leicester, vsc_ugent, create, sage, cambridge, jex, podman, ebi_codon, cheaha, xanadu, nyu_hpc, test, marjorie, computerome, ucd_sonic, seg_globe, sanger, dkfz, bluebear, pasteur, einstein, ethz_euler, m3c, test_full, imb, ucl_cscluster, tuos_stanage, azurebatch, hki, seadragon, crukmi, csiro_petrichor, qmul_apocrita, wave, docker, engaging, gis, hypatia, psmn, eva, unity, cropdiversityhpc, nygc, fgcz, conda, crg, singularity, mpcdf_viper, pe2, self_hosted_runner, tufts, uw_hyak_pedslabs, debug, genouest, cbe, unsw_katana, gitpod, phoenix, seawulf, uod_hpc, fub_curta, uct_hpc, aws_tower, binac, fsu_draco]
+Mar-25 18:17:59.100 [main] DEBUG nextflow.cli.CmdRun - Applied DSL=2 from script declaration
+Mar-25 18:17:59.109 [main] INFO  nextflow.cli.CmdRun - Launching `/Users/obrovkina/Documents/Projects/spatialxe/.nf-test-9b856baf5b74f66fed52051240a30667.nf` [shrivelled_shaw] DSL2 - revision: 7072840f61
+Mar-25 18:17:59.109 [main] DEBUG nextflow.plugin.PluginsFacade - Plugins declared=[nf-schema@2.3.0]
+Mar-25 18:17:59.110 [main] DEBUG nextflow.plugin.PluginsFacade - Plugins default=[]
+Mar-25 18:17:59.110 [main] DEBUG nextflow.plugin.PluginsFacade - Plugins resolved requirement=[nf-schema@2.3.0]
+Mar-25 18:17:59.110 [main] DEBUG nextflow.plugin.PluginUpdater - Installing plugin nf-schema version: 2.3.0
+Mar-25 18:17:59.114 [main] INFO  org.pf4j.AbstractPluginManager - Plugin 'nf-schema@2.3.0' resolved
+Mar-25 18:17:59.114 [main] INFO  org.pf4j.AbstractPluginManager - Start plugin 'nf-schema@2.3.0'
+Mar-25 18:17:59.117 [main] DEBUG nextflow.plugin.BasePlugin - Plugin started nf-schema@2.3.0
+Mar-25 18:17:59.140 [main] DEBUG nextflow.Session - Session UUID: 4a378e5e-fed9-46b0-b811-2dcfdbaf0a82
+Mar-25 18:17:59.141 [main] DEBUG nextflow.Session - Run name: shrivelled_shaw
+Mar-25 18:17:59.141 [main] DEBUG nextflow.Session - Executor pool size: 11
+Mar-25 18:17:59.144 [main] DEBUG nextflow.file.FilePorter - File porter settings maxRetries=3; maxTransfers=50; pollTimeout=null
+Mar-25 18:17:59.146 [main] DEBUG nextflow.util.ThreadPoolBuilder - Creating thread pool 'FileTransfer' minSize=10; maxSize=33; workQueue=LinkedBlockingQueue[-1]; allowCoreThreadTimeout=false
+Mar-25 18:17:59.305 [main] DEBUG nextflow.cli.CmdRun - 
+  Version: 24.10.5 build 5935
+  Created: 04-03-2025 17:55 UTC (18:55 CEST)
+  System: Mac OS X 14.1
+  Runtime: Groovy 4.0.23 on OpenJDK 64-Bit Server VM 21+35
+  Encoding: UTF-8 (UTF-8)
+  Process: 44855@IKMBs-MacBook-Pro.local [127.0.0.1]
+  CPUs: 11 - Mem: 36 GB (62.6 MB) - Swap: 1 GB (938.9 MB)
+Mar-25 18:17:59.314 [main] DEBUG nextflow.Session - Work-dir: /Users/obrovkina/Documents/Projects/spatialxe/.nf-test/tests/9b856baf5b74f66fed52051240a30667/work [Mac OS X]
+Mar-25 18:17:59.314 [main] DEBUG nextflow.Session - Script base path does not exist or is not a directory: /Users/obrovkina/Documents/Projects/spatialxe/bin
+Mar-25 18:17:59.322 [main] DEBUG nextflow.executor.ExecutorFactory - Extension executors providers=[]
+Mar-25 18:17:59.326 [main] DEBUG nextflow.Session - Observer factory: DefaultObserverFactory
+Mar-25 18:17:59.334 [main] DEBUG nextflow.Session - Observer factory: ValidationObserverFactory
+Mar-25 18:17:59.361 [main] DEBUG nextflow.cache.CacheFactory - Using Nextflow cache factory: nextflow.cache.DefaultCacheFactory
+Mar-25 18:17:59.365 [main] DEBUG nextflow.util.CustomThreadPool - Creating default thread pool > poolSize: 12; maxThreads: 1000
+Mar-25 18:17:59.397 [main] DEBUG nextflow.Session - Session start
+Mar-25 18:17:59.398 [main] DEBUG nextflow.trace.TraceFileObserver - Workflow started -- trace file: /Users/obrovkina/Documents/Projects/spatialxe/.nf-test/tests/9b856baf5b74f66fed52051240a30667/meta/trace.csv
+Mar-25 18:17:59.507 [main] DEBUG nextflow.script.ScriptRunner - > Launching execution
+Mar-25 18:17:59.665 [main] DEBUG nextflow.script.ProcessConfig - Config settings `withLabel:process_single` matches labels `process_single` for process with name UNZIP
+Mar-25 18:17:59.676 [main] DEBUG nextflow.executor.ExecutorFactory - << taskConfig executor: null
+Mar-25 18:17:59.677 [main] DEBUG nextflow.executor.ExecutorFactory - >> processorType: 'local'
+Mar-25 18:17:59.679 [main] DEBUG nextflow.executor.Executor - [warm up] executor > local
+Mar-25 18:17:59.681 [main] DEBUG n.processor.LocalPollingMonitor - Creating local task monitor for executor 'local' > cpus=11; memory=36 GB; capacity=11; pollInterval=100ms; dumpInterval=5m
+Mar-25 18:17:59.681 [main] DEBUG n.processor.TaskPollingMonitor - >>> barrier register (monitor: local)
+Mar-25 18:17:59.717 [main] DEBUG nextflow.executor.ExecutorFactory - << taskConfig executor: null
+Mar-25 18:17:59.718 [main] DEBUG nextflow.executor.ExecutorFactory - >> processorType: 'local'
+Mar-25 18:17:59.727 [main] DEBUG nextflow.Session - Config process names validation disabled as requested
+Mar-25 18:17:59.727 [main] DEBUG nextflow.Session - Igniting dataflow network (3)
+Mar-25 18:17:59.727 [main] DEBUG nextflow.processor.TaskProcessor - Starting process > UNZIP
+Mar-25 18:17:59.728 [main] DEBUG nextflow.processor.TaskProcessor - Starting process > POINTS2REGIONS_CLUSTER
+Mar-25 18:17:59.728 [main] DEBUG nextflow.script.ScriptRunner - Parsed script files:
+  Script_8b4b8d21490fbe79: /Users/obrovkina/Documents/Projects/spatialxe/.nf-test-9b856baf5b74f66fed52051240a30667.nf
+  Script_2522f348ed934d86: /Users/obrovkina/Documents/Projects/spatialxe/modules/local/points2regions/tests/../main.nf
+  Script_8b560cf26a0f6f39: /Users/obrovkina/Documents/Projects/spatialxe/modules/nf-core/unzip/main.nf
+Mar-25 18:17:59.728 [main] DEBUG nextflow.script.ScriptRunner - > Awaiting termination 
+Mar-25 18:17:59.728 [main] DEBUG nextflow.Session - Session await
+Mar-25 18:17:59.813 [FileTransfer-1] DEBUG nextflow.file.FilePorter - Copying foreign file https://raw.githubusercontent.com/nf-core/test-datasets/spatialxe/Xenium_Prime_Mouse_Ileum_tiny_outs.zip to work dir: /Users/obrovkina/Documents/Projects/spatialxe/.nf-test/tests/9b856baf5b74f66fed52051240a30667/work/stage-4a378e5e-fed9-46b0-b811-2dcfdbaf0a82/86/59f872d28a00d8a57ea62dbc4c8ed0/Xenium_Prime_Mouse_Ileum_tiny_outs.zip
+Mar-25 18:18:01.818 [Actor Thread 11] INFO  nextflow.file.FilePorter - Staging foreign file: https://raw.githubusercontent.com/nf-core/test-datasets/spatialxe/Xenium_Prime_Mouse_Ileum_tiny_outs.zip
+Mar-25 18:18:06.202 [Task submitter] DEBUG n.executor.local.LocalTaskHandler - Launch cmd line: /bin/bash -ue .command.run
+Mar-25 18:18:06.204 [Task submitter] INFO  nextflow.Session - [10/35c695] Submitted process > UNZIP (Xenium_Prime_Mouse_Ileum_tiny_outs.zip)
+Mar-25 18:18:10.107 [Task monitor] DEBUG n.processor.TaskPollingMonitor - Task completed > TaskHandler[id: 1; name: UNZIP (Xenium_Prime_Mouse_Ileum_tiny_outs.zip); status: COMPLETED; exit: 0; error: -; workDir: /Users/obrovkina/Documents/Projects/spatialxe/.nf-test/tests/9b856baf5b74f66fed52051240a30667/work/10/35c695018a0ff6f10a50d77448fe17]
+Mar-25 18:18:10.107 [Task monitor] DEBUG nextflow.util.ThreadPoolBuilder - Creating thread pool 'TaskFinalizer' minSize=10; maxSize=33; workQueue=LinkedBlockingQueue[-1]; allowCoreThreadTimeout=false
+Mar-25 18:18:10.120 [TaskFinalizer-1] WARN  nextflow.processor.PublishDir - Process `UNZIP` publishDir path contains a variable with a null value
+Mar-25 18:18:10.121 [Actor Thread 11] DEBUG nextflow.util.HashBuilder - Unable to get file attributes file: /Users/obrovkina/Documents/Projects/spatialxe/.nf-test/tests/9b856baf5b74f66fed52051240a30667/work/10/35c695018a0ff6f10a50d77448fe17/Xenium_Prime_Mouse_Ileum_tiny_outs/transcripts.csv -- Cause: java.nio.file.NoSuchFileException: /Users/obrovkina/Documents/Projects/spatialxe/.nf-test/tests/9b856baf5b74f66fed52051240a30667/work/10/35c695018a0ff6f10a50d77448fe17/Xenium_Prime_Mouse_Ileum_tiny_outs/transcripts.csv
+Mar-25 18:18:10.127 [TaskFinalizer-1] DEBUG nextflow.util.ThreadPoolBuilder - Creating thread pool 'PublishDir' minSize=10; maxSize=33; workQueue=LinkedBlockingQueue[-1]; allowCoreThreadTimeout=false
+Mar-25 18:18:10.135 [Task submitter] DEBUG n.executor.local.LocalTaskHandler - Launch cmd line: /bin/bash -ue .command.run
+Mar-25 18:18:10.135 [Task submitter] INFO  nextflow.Session - [d8/128d4b] Submitted process > POINTS2REGIONS_CLUSTER (test)
+Mar-25 18:18:11.157 [Task monitor] DEBUG n.processor.TaskPollingMonitor - Task completed > TaskHandler[id: 2; name: POINTS2REGIONS_CLUSTER (test); status: COMPLETED; exit: 0; error: -; workDir: /Users/obrovkina/Documents/Projects/spatialxe/.nf-test/tests/9b856baf5b74f66fed52051240a30667/work/d8/128d4b427dc53ec692fd772d9fec52]
+Mar-25 18:18:11.159 [TaskFinalizer-2] DEBUG nextflow.processor.TaskProcessor - Process `POINTS2REGIONS_CLUSTER (test)` is unable to find [UnixPath]: `/Users/obrovkina/Documents/Projects/spatialxe/.nf-test/tests/9b856baf5b74f66fed52051240a30667/work/d8/128d4b427dc53ec692fd772d9fec52/clustered_s20.csv` (pattern: `clustered_s20.csv`)
+Mar-25 18:18:11.163 [TaskFinalizer-2] DEBUG nextflow.processor.TaskProcessor - Handling unexpected condition for
+  task: name=POINTS2REGIONS_CLUSTER (test); work-dir=/Users/obrovkina/Documents/Projects/spatialxe/.nf-test/tests/9b856baf5b74f66fed52051240a30667/work/d8/128d4b427dc53ec692fd772d9fec52
+  error [nextflow.exception.MissingFileException]: Missing output file(s) `clustered_s20.csv` expected by process `POINTS2REGIONS_CLUSTER (test)`
+Mar-25 18:18:11.189 [TaskFinalizer-2] ERROR nextflow.processor.TaskProcessor - Error executing process > 'POINTS2REGIONS_CLUSTER (test)'
+
+Caused by:
+  Missing output file(s) `clustered_s20.csv` expected by process `POINTS2REGIONS_CLUSTER (test)`
+
+
+Command executed:
+
+  cat <<-END_VERSIONS > versions.yml
+  "POINTS2REGIONS_CLUSTER":
+      ficture_preprocess: v.1.0.0
+  END_VERSIONS
+
+Command exit status:
+  0
+
+Command output:
+  (empty)
+
+Command error:
+  WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+
+Work dir:
+  /Users/obrovkina/Documents/Projects/spatialxe/.nf-test/tests/9b856baf5b74f66fed52051240a30667/work/d8/128d4b427dc53ec692fd772d9fec52
+
+Container:
+  community.wave.seqera.io/library/pip_points2regions:9f5bb888586554a6
+
+Tip: you can try to figure out what's wrong by changing to the process work dir and showing the script file named `.command.sh`
+Mar-25 18:18:11.190 [main] DEBUG nextflow.Session - Session await > all processes finished
+Mar-25 18:18:11.191 [TaskFinalizer-2] INFO  nextflow.Session - Execution cancelled -- Finishing pending tasks before exit
+Mar-25 18:18:11.195 [Task monitor] DEBUG n.processor.TaskPollingMonitor - <<< barrier arrives (monitor: local) - terminating tasks monitor poll loop
+Mar-25 18:18:11.195 [main] DEBUG nextflow.Session - Session await > all barriers passed
+Mar-25 18:18:11.196 [main] DEBUG nextflow.util.ThreadPoolManager - Thread pool 'TaskFinalizer' shutdown completed (hard=false)
+Mar-25 18:18:11.196 [main] DEBUG nextflow.util.ThreadPoolManager - Thread pool 'PublishDir' shutdown completed (hard=false)
+Mar-25 18:18:11.201 [main] DEBUG n.trace.WorkflowStatsObserver - Workflow completed > WorkflowStats[succeededCount=1; failedCount=1; ignoredCount=0; cachedCount=0; pendingCount=0; submittedCount=0; runningCount=0; retriesCount=0; abortedCount=0; succeedDuration=3s; failedDuration=72ms; cachedDuration=0ms;loadCpus=0; loadMemory=0; peakRunning=1; peakCpus=1; peakMemory=6 GB; ]
+Mar-25 18:18:11.201 [main] DEBUG nextflow.trace.TraceFileObserver - Workflow completed -- saving trace file
+Mar-25 18:18:11.201 [main] DEBUG nextflow.trace.ReportObserver - Workflow completed -- rendering execution report
+Mar-25 18:18:11.749 [main] DEBUG nextflow.trace.TimelineObserver - Workflow completed -- rendering execution timeline
+Mar-25 18:18:11.815 [main] DEBUG nextflow.cache.CacheDB - Closing CacheDB done
+Mar-25 18:18:11.821 [main] INFO  org.pf4j.AbstractPluginManager - Stop plugin 'nf-schema@2.3.0'
+Mar-25 18:18:11.821 [main] DEBUG nextflow.plugin.BasePlugin - Plugin stopped nf-schema
+Mar-25 18:18:11.821 [main] DEBUG nextflow.util.ThreadPoolManager - Thread pool 'FileTransfer' shutdown completed (hard=false)
+Mar-25 18:18:11.821 [main] DEBUG nextflow.script.ScriptRunner - > Execution complete -- Goodbye
