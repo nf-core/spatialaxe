@@ -3,5 +3,15 @@
 channels:
   - conda-forge
   - bioconda
+  - defaults
+
 dependencies:
-  - "YOUR-TOOL-HERE"
+  - python=3.10
+  - tifffile
+  - matplotlib
+  - pip
+  - pip:
+      - scportrait
+
+container:
+  - community.wave.seqera.io/library/pip_scportrait:e0651f1fbb601e73

@@ -21,7 +21,7 @@ process POINTS2REGIONS_CLUSTER {
     """
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        ficture_preprocess: v.1.0.0
+        points2regions_cluster: v.1.0.0
     END_VERSIONS
     """
 }
