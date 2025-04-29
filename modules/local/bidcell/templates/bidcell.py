@@ -156,8 +156,8 @@ if len(extra_genes) > 0 or no_elongated:
     # If the no_elongated flag is set, we need to add a row called "placeholder" to the three files with all zeros
     if no_elongated:
         # add a row of zeros to the ref
-        # df_ref.loc["placeholder"] = 0
-        # df_ref.loc["placeholder", ct_columns] = [314159,"placeholder","atlas"]
+        df_ref.loc["placeholder"] = 0
+        df_ref.loc["placeholder", ct_columns] = [314159,"placeholder","atlas"]
 
         # add a row of zeros to the pos markers
         df_pos_markers.loc["placeholder"] = 0
