@@ -1,6 +1,6 @@
 process BIDCELL {
     tag "${meta.id}"
-    label 'process_medium'
+    label 'process_high'
 
     conda "${moduleDir}/environment.yml"
     // container build details
@@ -9,7 +9,7 @@ process BIDCELL {
     container 'docker.io/dongzehe/bidcell:latest'
 
     input:
-    tuple val(meta),  path(transcripts), path(dapi), path(ref), path(pos_markers), path(neg_markers)
+    tuple val(meta),  path(fp_transcripts), path(fp_dapi), path(fp_ref), path(fp_pos_markers), path(fp_neg_markers)
 
     output:
     tuple val(meta), path("${prefix}")                    , emit: outdir
