@@ -6,14 +6,10 @@ process XENIUMRANGER_RESEGMENT {
 
     input:
     tuple val(meta), path(xenium_bundle)
-    val(expansion_distance)
-    val(dapi_filter)
-    val(boundary_stain)
-    val(interior_stain)
 
     output:
-    tuple val(meta), path("**/outs/**"), emit: outs
-    path "versions.yml", emit: versions
+    tuple val(meta), path("${meta.id}/outs"), emit: bundle
+    path("versions.yml")                    , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -26,20 +22,17 @@ process XENIUMRANGER_RESEGMENT {
     def args = task.ext.args ?: ""
     def prefix = task.ext.prefix ?: "${meta.id}"
 
-    def expansion_distance = expansion_distance ? "--expansion-distance=\"${expansion_distance}\"": ""
-    def dapi_filter = dapi_filter ? "--dapi-filter=\"${dapi_filter}\"": ""
-
     // Do not use boundary stain in analysis, but keep default interior stain and DAPI
-    def boundary_stain = boundary_stain ? "--boundary-stain=disable": ""
+    def boundary_stain = "${params.boundary_stain}" ? "": "--boundary-stain=disable"
     // Do not use interior stain in analysis, but keep default boundary stain and DAPI
-    def interior_stain = interior_stain ? "--interior-stain=disable": ""
+    def interior_stain = "${params.interior_stain}" ? "": "--interior-stain=disable"
 
     """
     xeniumranger resegment \\
         --id="${prefix}" \\
         --xenium-bundle="${xenium_bundle}" \\
-        ${expansion_distance} \\
-        ${dapi_filter} \\
+        --expansion-distance=${params.expansion_distance} \\
+        --dapi-filter=${params.dapi_filter} \\
         ${boundary_stain} \\
         ${interior_stain} \\
         --localcores=${task.cpus} \\

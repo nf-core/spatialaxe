@@ -6,7 +6,6 @@ process XENIUMRANGER_IMPORT_SEGMENTATION {
 
     input:
     tuple val(meta), path(xenium_bundle)
-    val(expansion_distance)
     path(coordinate_transform)
     path(nuclei)
     path(cells)
@@ -15,8 +14,8 @@ process XENIUMRANGER_IMPORT_SEGMENTATION {
     val(units)
 
     output:
-    tuple val(meta), path("${meta.id}/outs")    , emit: bundle
-    path "versions.yml"                         , emit: versions
+    tuple val(meta), path("${meta.id}/outs"), emit: bundle
+    path("versions.yml")                    , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -30,32 +29,30 @@ process XENIUMRANGER_IMPORT_SEGMENTATION {
     def prefix = task.ext.prefix ?: "${meta.id}"
 
     // image based segmentation options
-    def expansion_distance = expansion_distance ? "--expansion-distance=\"${expansion_distance}\"": "" // expansion distance (default - 5, range - 0 - 100)
-    def coordinate_transform = coordinate_transform ? "--coordinate-transform=\"${coordinate_transform}\"": ""
-
+    def coord_transform = coordinate_transform ? "--coordinate-transform=\"${coordinate_transform}\"": ""
     def nuclei_detection = nuclei ? "--nuclei=\"${nuclei}\"": ""
-    def cells = cells ? "--cells=\"${cells}\"": ""
+    def cell_detection = cells ? "--cells=\"${cells}\"": ""
 
     // transcript based segmentation
-    def transcript_assignment = transcript_assignment ? "--transcript-assignment=\"${transcript_assignment}\"": ""
-    def viz_polygons = viz_polygons ? "--viz-polygons=\"${viz_polygons}\"":""
+    def transcript_assign = transcript_assignment ? "--transcript-assignment=\"${transcript_assignment}\"": ""
+    def polygons = viz_polygons ? "--viz-polygons=\"${viz_polygons}\"":""
 
     // shared argument
-    def units = units ? "--units=${units}" : ""
+    def space = units ? "--units=${units}" : ""
 
     """
     xeniumranger import-segmentation \\
         --id="${prefix}" \\
         --xenium-bundle="${xenium_bundle}" \\
+        --expansion-distance=${params.expansion_distance} \\
+        ${coord_transform} \\
+        ${nuclei_detection} \\
+        ${cell_detection} \\
+        ${transcript_assign} \\
+        ${polygons} \\
+        ${space} \\
         --localcores=${task.cpus} \\
         --localmem=${task.memory.toGiga()} \\
-        ${coordinate_transform} \\
-        ${nuclei_detection} \\
-        ${cells} \\
-        ${expansion_distance} \\
-        ${transcript_assignment} \\
-        ${viz_polygons} \\
-        ${units} \\
         ${args}
 
     cat <<-END_VERSIONS > versions.yml
