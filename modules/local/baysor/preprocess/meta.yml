@@ -1,0 +1,70 @@
+name: "baysor_preprocess"
+description: Filter transcript.parquet fiel based on the specified thresholds
+keywords:
+  - baysor
+  - transcripts
+  - filter_transcripts
+tools:
+  - "baysor":
+    description: "Baysor is a tool that segments cells using spatial gene expression maps. Optionally, segmentation masks can be given as additional input."
+    homepage: "https://kharchenkolab.github.io/Baysor/dev/"
+    documentation: "https://kharchenkolab.github.io/Baysor/dev/"
+    tool_dev_url: "https://github.com/kharchenkolab/Baysor"
+    doi: "https://doi.org/10.1038/s41587-021-01044-w"
+    licence: ["MIT license"]
+    identifier:
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'test' ]
+    - transcripts:
+        type: file
+        description: transcripts.parquet file from the xenium bundle
+        pattern: "*.parquet"
+
+  - min_qv:
+      type: float
+      description: minimum Q-Score to pass filtering (default - 20.0)
+  - max_x:
+      type: float
+      description: Only keep transcripts whose x-coordinate is less than specified limit
+        if no limit is specified, the default value will retain all
+        transcripts since Xenium slide is <24000 microns in x and y (default - 24000.0)
+  - min_x:
+      type: float
+      description: only keep transcripts whose x-coordinate is greater than specified limit
+        if no limit is specified, the default minimum value will be 0.0
+  - max_y:
+      type: float
+      description: only keep transcripts whose y-coordinate is less than specified limit
+        if no limit is specified, the default value will retain all
+        transcripts since Xenium slide is <24000 microns in x and y (default - 24000.0)
+  - min_y:
+      type: float
+      description: only keep transcripts whose y-coordinate is greater than specified limit
+        if no limit is specified, the default minimum value will be 0.0
+
+output:
+  - - transcripts_parquet:
+        - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test' ]
+        - "*.parquet":
+          type: file
+          description: filtered transcripts.parquet
+          pattern: "filtered_transcripts.parquet"
+
+  - - versions:
+      type: file
+      description: File containing software versions
+      pattern: "versions.yml"
+
+authors:
+  - "@khersameesh24"
+maintainers:
+  - "@khersameesh24"

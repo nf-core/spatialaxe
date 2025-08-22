@@ -1,0 +1,30 @@
+Changes in component 'nf-core/xeniumranger/relabel'
+'modules/nf-core/xeniumranger/relabel/meta.yml' is unchanged
+Changes in 'xeniumranger/relabel/main.nf':
+--- modules/nf-core/xeniumranger/relabel/main.nf
++++ modules/nf-core/xeniumranger/relabel/main.nf
+@@ -2,15 +2,15 @@
+     tag "$meta.id"
+     label 'process_high'
+ 
+-    container "nf-core/xeniumranger:3.0.1"
++    container "nf-core/xeniumranger:3.1.1"
+ 
+     input:
+     tuple val(meta), path(xenium_bundle)
+     path(gene_panel)
+ 
+     output:
+-    tuple val(meta), path("**/outs/**"), emit: outs
+-    path "versions.yml", emit: versions
++    tuple val(meta), path("${meta.id}/outs"), emit: bundle
++    path("versions.yml")                    , emit: versions
+ 
+     when:
+     task.ext.when == null || task.ext.when
+
+'modules/nf-core/xeniumranger/relabel/tests/main.nf.test.snap' is unchanged
+'modules/nf-core/xeniumranger/relabel/tests/tags.yml' is unchanged
+'modules/nf-core/xeniumranger/relabel/tests/nextflow.config' is unchanged
+'modules/nf-core/xeniumranger/relabel/tests/main.nf.test' is unchanged
+************************************************************

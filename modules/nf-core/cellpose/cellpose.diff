@@ -1,0 +1,33 @@
+Changes in component 'nf-core/cellpose'
+'modules/nf-core/cellpose/meta.yml' is unchanged
+Changes in 'cellpose/main.nf':
+--- modules/nf-core/cellpose/main.nf
++++ modules/nf-core/cellpose/main.nf
+@@ -6,11 +6,13 @@
+ 
+     input:
+     tuple val(meta), path(image)
+-    path(model)
++    val(model)
++    val(maskname)
+ 
+     output:
+     tuple val(meta), path("*masks.tif") ,   emit: mask
+     tuple val(meta), path("*flows.tif") ,   emit: flows, optional: true
++    tuple val(meta), path("*seg.npy")   ,   emit: cells, optional: true
+     path "versions.yml"                 ,   emit: versions
+ 
+     when:
+@@ -32,6 +34,7 @@
+         --save_tif \\
+         $model_command \\
+         $args
++    mv *masks.tif morphology.ome_${maskname}_masks.tif
+ 
+     cat <<-END_VERSIONS > versions.yml
+     "${task.process}":
+
+'modules/nf-core/cellpose/tests/main.nf.test' is unchanged
+'modules/nf-core/cellpose/tests/main.nf.test.snap' is unchanged
+'modules/nf-core/cellpose/tests/nextflow_wflows.config' is unchanged
+************************************************************

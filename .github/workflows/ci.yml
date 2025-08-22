@@ -82,6 +82,22 @@ jobs:
       - name: Clean up Disk space
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
 
-      - name: "Run pipeline with test data ${{ matrix.NXF_VER }} | ${{ matrix.test_name }} | ${{ matrix.profile }}"
+      - name: "Run pipeline in image mode with test data ${{ matrix.NXF_VER }} | ${{ matrix.test_name }} | ${{ matrix.profile }}"
+        continue-on-error: ${{ matrix.NXF_VER == 'latest-everything' }}
         run: |
-          nextflow run ${GITHUB_WORKSPACE} -profile ${{ matrix.test_name }},${{ matrix.profile }} --outdir ./results
+          nextflow run ${GITHUB_WORKSPACE} -profile ${{ matrix.test_name }},${{ matrix.profile }} -stub --outdir ./results --mode image
+
+      - name: "Run pipeline in coordinate mode with test data ${{ matrix.NXF_VER }} | ${{ matrix.test_name }} | ${{ matrix.profile }}"
+        continue-on-error: ${{ matrix.NXF_VER == 'latest-everything' }}
+        run: |
+          nextflow run ${GITHUB_WORKSPACE} -profile ${{ matrix.test_name }},${{ matrix.profile }} -stub --outdir ./results --mode coordinate
+
+      - name: "Run pipeline in preview mode with test data ${{ matrix.NXF_VER }} | ${{ matrix.test_name }} | ${{ matrix.profile }}"
+        continue-on-error: ${{ matrix.NXF_VER == 'latest-everything' }}
+        run: |
+          nextflow run ${GITHUB_WORKSPACE} -profile ${{ matrix.test_name }},${{ matrix.profile }} -stub --outdir ./results --mode preview
+
+      - name: "Run pipeline in segfree mode with test data ${{ matrix.NXF_VER }} | ${{ matrix.test_name }} | ${{ matrix.profile }}"
+        continue-on-error: ${{ matrix.NXF_VER == 'latest-everything' }}
+        run: |
+          nextflow run ${GITHUB_WORKSPACE} -profile ${{ matrix.test_name }},${{ matrix.profile }} -stub --outdir ./results --mode segfree

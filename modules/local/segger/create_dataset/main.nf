@@ -40,19 +40,18 @@ process SEGGER_CREATE_DATASET {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        segger: ${task.version}
+        segger: 0.1.0
     END_VERSIONS
     """
 
     stub:
-    def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
     mkdir -p ${prefix}/
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        segger: ${task.version}
+        segger: 0.1.0
     END_VERSIONS
     """
 }

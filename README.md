@@ -26,8 +26,6 @@
 <!-- TODO nf-core: Include a figure that guides the user through the major workflow steps. Many nf-core
      workflows use the "tube map" design for that. See https://nf-co.re/docs/contributing/design_guidelines#examples for examples.   -->
 
-1. Present QC for raw reads ([`MultiQC`](http://multiqc.info/))
-
 ## Usage
 
 On release, automated continuous integration tests run the pipeline on a full-sized dataset on the AWS cloud infrastructure. This ensures that the pipeline runs on AWS, has sensible resource allocation defaults set to run on real-world datasets, and permits the persistent storage of results to benchmark between pipeline releases and other analysis sources. The results obtained from the full-sized test can be viewed on the [nf-core website](https://nf-co.re/spatialxe/results).
@@ -39,23 +37,60 @@ On release, automated continuous integration tests run the pipeline on a full-si
 `samplesheet.csv`:
 
 ```csv
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
+sample,bundle,image
+test_sample,/path/to/xenium-bundle,/path/to/morphology.ome.tif
 ```
-
-Each row represents a fastq file (single-end) or a pair of fastq files (paired end).
-
--->
 
 Now, you can run the pipeline using:
 
 <!-- TODO nf-core: update the following command to include all required parameters for a minimal example -->
 
+## Run image-based segmentation mode <br>
+
+`CELLPOSE -> BAYSOR -> XR-IMPORT_SEGMENTATION -> SPATIALDATA -> QC`
+
 ```bash
 nextflow run nf-core/spatialxe \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
-   --outdir <OUTDIR>
+   --outdir <OUTDIR> \
+   --mode image
+```
+
+## Run coordinate-based segmentation mode <br>
+
+`PROSEG -> PROSEG2BAYSOR -> XR-IMPORT_SEGMENTATION -> SPATIALDATA -> QC`
+
+```bash
+nextflow run nf-core/spatialxe \
+   -profile <docker/singularity/.../institute> \
+   --input samplesheet.csv \
+   --outdir <OUTDIR> \
+   --mode coordinate
+```
+
+## Run segfree mode <br>
+
+`BAYSOR_SEGFREE`
+
+```bash
+nextflow run nf-core/spatialxe \
+   -profile <docker/singularity/.../institute> \
+   --input samplesheet.csv \
+   --outdir <OUTDIR> \
+   --mode segfree
+```
+
+## Run preview mode <br>
+
+`BAYSOR_PREVIEW`
+
+```bash
+nextflow run nf-core/spatialxe \
+   -profile <docker/singularity/.../institute> \
+   --input samplesheet.csv \
+   --outdir <OUTDIR> \
+   --mode preview
 ```
 
 > [!WARNING]
@@ -71,7 +106,7 @@ For more details about the output files and reports, please refer to the
 
 ## Credits
 
-nf-core/spatialxe was originally written by Sameesh Kher (khersameesh24) and Florian Heyl (heylf).
+nf-core/spatialxe was originally written by [Sameesh Kher](https://github.com/khersameesh24) and [Florian Heyl](https://github.com/heylf).
 
 We thank the following people for their extensive assistance in the development of this pipeline:
 

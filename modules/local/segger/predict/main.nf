@@ -41,19 +41,18 @@ process SEGGER_PREDICT {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        segger: ${task.version}
+        segger: 0.1.0
     END_VERSIONS
     """
 
     stub:
-    def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
     mkdir -p ${prefix}_benchmarks_dir/
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        segger: ${task.version}
+        segger: 0.1.0
     END_VERSIONS
     """
 }

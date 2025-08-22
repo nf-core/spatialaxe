@@ -49,16 +49,6 @@ output:
           type: file
           description: cell flow output from cellpose
           pattern: "*.{tif}"
-  - cells:
-      - meta:
-          type: map
-          description: |
-            Groovy Map containing sample information
-            [sample id]
-      - "*seg.npy":
-          type: file
-          description: A NumPy file containing the segmentation results.
-          pattern: "*.{npy}"
   - versions:
       - versions.yml:
           type: file

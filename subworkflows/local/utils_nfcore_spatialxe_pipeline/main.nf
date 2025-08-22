@@ -29,9 +29,9 @@ workflow PIPELINE_INITIALISATION {
     version           // boolean: Display version and exit
     validate_params   // boolean: Boolean whether to validate parameters against the schema at runtime
     monochrome_logs   // boolean: Do not use coloured log outputs
-    nextflow_cli_args //   array: List of positional nextflow CLI args
-    outdir            //  string: The output directory where the results will be saved
-    input             //  string: Path to input samplesheet
+    nextflow_cli_args // array: List of positional nextflow CLI args
+    outdir            // string: The output directory where the results will be saved
+    input             // string: Path to input samplesheet
 
     main:
 
@@ -67,24 +67,39 @@ workflow PIPELINE_INITIALISATION {
     // Custom validation for pipeline parameters
     //
     validateInputParameters()
+    log.info "INFO Input params validated  ✅ "
 
     //
     // Create channel from input file provided through params.input
     //
+    try {
 
-    print(params.input)
-
-    Channel
-        .fromList(samplesheetToList(params.input, "${projectDir}/assets/schema_input.json"))
+        Channel
+        .fromList(samplesheetToList(input, "${projectDir}/assets/schema_input.json"))
         .map {
             meta, bundle, image -> return [ [id: meta.id], bundle, image ]
         }
-        // .map { samplesheet ->
-        //     validateInputSamplesheet(samplesheet)
-        // }
         .set { ch_samplesheet }
 
+        log.info "INFO Samplesheet validated   ✅ "
+
+    } catch (Exception e) {
+
+        log.error "❌ Samplesheet validation failed: ${e.message}"
+        exit 1
+    }
+
+
+    //
+    // Check and validate xenium bundle
+    //
+    if ( !workflow.profile.contains('test')) {
+        validateXeniumBundle(ch_samplesheet)
+    }
+
+
     emit:
+
     samplesheet = ch_samplesheet
     versions    = ch_versions
 
@@ -135,7 +150,7 @@ workflow PIPELINE_COMPLETION {
     }
 
     workflow.onError {
-        log.error "Pipeline failed. Please refer to troubleshooting docs: https://nf-co.re/docs/usage/troubleshooting"
+        log.error "❌ Pipeline failed. Please refer to troubleshooting docs: https://nf-co.re/docs/usage/troubleshooting"
     }
 }
 
@@ -148,44 +163,114 @@ workflow PIPELINE_COMPLETION {
 // Check and validate pipeline parameters
 //
 def validateInputParameters() {
-    genomeExistsError()
-}
 
-//
-// Validate channels from input samplesheet
-//
-// def validateInputSamplesheet(input) {
-//     def metas = input[0]
-//     def bundle = input[1]
-
-//     return [ metas[0], bundle ]
-// }
-
-//
-// Get attribute from genome config file e.g. fasta
-//
-def getGenomeAttribute(attribute) {
-    if (params.genomes && params.genome && params.genomes.containsKey(params.genome)) {
-        if (params.genomes[ params.genome ].containsKey(attribute)) {
-            return params.genomes[ params.genome ][ attribute ]
+    // check if the segmentation method provided is valid for a mode
+    if ( params.mode == 'image' && params.method ) {
+        if ( !params.image_seg_methods.contains(params.method) ) {
+            log.error "❌ Error: Invalid segmentation method: ${params.method} provided for the `image` based mode. Options: ${params.image_seg_methods}"
+            exit 1
         }
     }
-    return null
+
+    if ( params.mode == 'coordinate' && params.method ) {
+        if ( !params.transcript_seg_methods.contains(params.method) ) {
+                log.error "❌ Error: Invalid segmentation method: `${params.method}` provided for the `coordinate` based mode. Options: ${params.transcript_seg_methods}"
+                exit 1
+        }
+    }
+
+    // check if --relabel_genes is true but --gene_panel is not provided
+    if ( params.relabel_genes && !params.gene_panel ) {
+        log.warn "⚠️  Relabel genes is enabled, but gene panel is not provided with the `--gene_panel`. Using `gene_panel.json` in the xenium bundle."
+    }
+
+    // check if --relabel_genes is true but --gene_panel is not provided
+    if ( params.gene_panel && !params.relabel_genes ) {
+        log.warn "⚠️  Gene panel provided, but relabel genes is disabled. Using `gene_panel.json` only to generate metadata."
+    }
+
+    // check if segmentation method is xeniumranger and nucleus_ony_segmentation is enabled
+    if ( params.method == 'xeniumranger' && !params.nucleus_segmentation_only ) {
+        log.warn "⚠️  Nucleus segmentation is disabled. Running xeniumranger resegment module to redefine xenium bundle without nucleus segmentation."
+        log.warn "⚠️  Use --nucleus_segmentation_only to enable nucleus segmentation to redefine xenium bundle with import-segmentation module."
+    }
+
+    // check if segmentation mask is provided in image mode and baysor method
+    if ( params.mode == 'image' && params.method == 'baysor' )
+        if (!params.segmentation_mask ) {
+        log.error "❌  Error: Missing segmentation mask with `--segmentation_mask` when pipeline is run in ${params.mode} and with the ${params.method}."
+    }
+
 }
 
 //
-// Exit pipeline if incorrect --genome key provided
+// Check and validate xenium bundle
 //
-def genomeExistsError() {
-    if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
-        def error_string = "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n" +
-            "  Genome '${params.genome}' not found in any config files provided to the pipeline.\n" +
-            "  Currently, the available genome keys are:\n" +
-            "  ${params.genomes.keySet().join(", ")}\n" +
-            "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-        error(error_string)
+def validateXeniumBundle(ch_samplesheet) {
+
+    // define xenium bundle directory structure
+    def xenium_bundle = [
+        "analysis.tar.gz",
+        "analysis.zarr.zip",
+        "analysis_summary.html",
+        "cell_boundaries.csv.gz",
+        "cell_boundaries.parquet",
+        "cell_feature_matrix.h5",
+        "cell_feature_matrix.tar.gz",
+        "cell_feature_matrix.zarr.zip",
+        "cells.csv.gz",
+        "cells.parquet",
+        "cells.zarr.zip",
+        "experiment.xenium",
+        "gene_panel.json",
+        "metrics_summary.csv",
+        "morphology.ome.tif",
+        "morphology_focus/",
+        "nucleus_boundaries.csv.gz",
+        "nucleus_boundaries.parquet",
+        "transcripts.parquet",
+        "transcripts.zarr.zip"
+    ]
+
+    // get bundle path
+    def ch_bundle_path = ch_samplesheet.map {
+        _meta, bundle, _image ->
+        def bundle_path = file (
+            bundle.toString().replaceFirst(/\/$/, ''),
+        )
+        return bundle_path
     }
+
+    // check if the path exists
+    if ( !ch_bundle_path.map { it.exists() } ) {
+        error "❌ Error: Xenium bundle path not found. Check if the path provided in the samplesheet exists."
+        exit 1
+    }
+
+    // if the path exists, check for the presence of xenium files
+    if ( ch_bundle_path.map { it.exists() } ) {
+
+        ch_bundle_path.map { path ->
+            def missing_files = []
+
+            def allExist = xenium_bundle.every { filename ->
+                def fullPath = file("${path}/${filename}")
+                if (!fullPath.exists()) {
+                    missing_files.add(filename)
+                    return false
+                }
+                    return true
+            }
+
+            if (!allExist) {
+                log.error "❌ Missing file(s) at bundle path provided in the samplesheet: ${missing_files}"
+                exit 1
+            }
+        }
+    }
+    log.info "INFO Xenium bundle validated ✅ \n"
 }
+
 //
 // Generate methods description for MultiQC
 //

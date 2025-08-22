@@ -40,11 +40,14 @@ process XENIUMRANGER_IMPORT_SEGMENTATION {
     // shared argument
     def space = units ? "--units=${units}" : ""
 
+    // conditional args
+    def exp_dist = nuclei ? "--expansion-distance=${params.expansion_distance}": ""
+
     """
     xeniumranger import-segmentation \\
         --id="${prefix}" \\
         --xenium-bundle="${xenium_bundle}" \\
-        --expansion-distance=${params.expansion_distance} \\
+        ${exp_dist} \\
         ${coord_transform} \\
         ${nuclei_detection} \\
         ${cell_detection} \\

@@ -1,0 +1,21 @@
+Changes in component 'nf-core/untar'
+'modules/nf-core/untar/environment.yml' is unchanged
+Changes in 'untar/main.nf':
+--- modules/nf-core/untar/main.nf
++++ modules/nf-core/untar/main.nf
+@@ -53,6 +53,10 @@
+     prefix = task.ext.prefix ?: (meta.id ? "${meta.id}" : archive.toString().replaceFirst(/\.[^\.]+(.gz)?$/, ""))
+     """
+     mkdir ${prefix}
++    touch ${prefix}/morphology.ome.tif
++    touch ${prefix}/transcripts.parquet
++    touch ${prefix}/gene_panel.json
++    
+     ## Dry-run untaring the archive to get the files and place all in prefix
+     if [[ \$(tar -taf ${archive} | grep -o -P "^.*?\\/" | uniq | wc -l) -eq 1 ]]; then
+         for i in `tar -tf ${archive}`;
+
+'modules/nf-core/untar/meta.yml' is unchanged
+'modules/nf-core/untar/tests/main.nf.test' is unchanged
+'modules/nf-core/untar/tests/main.nf.test.snap' is unchanged
+************************************************************

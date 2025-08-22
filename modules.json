@@ -7,23 +7,20 @@
                 "nf-core": {
                     "cellpose": {
                         "branch": "master",
-                        "git_sha": "666652151335353eef2fcd58880bcef5bc2928e1",
-                        "installed_by": ["modules"]
-                    },
-                    "custom/dumpsoftwareversions": {
-                        "branch": "master",
-                        "git_sha": "c8e35eb2055c099720a75538d1b8adb3fb5a464c",
-                        "installed_by": ["modules"]
-                    },
-                    "gunzip": {
-                        "branch": "master",
-                        "git_sha": "81880787133db07d9b4c1febd152c090eb8325dc",
-                        "installed_by": ["modules"]
+                        "git_sha": "05954dab2ff481bcb999f24455da29a5828af08d",
+                        "installed_by": ["modules"],
+                        "patch": "modules/nf-core/cellpose/cellpose.diff"
                     },
                     "multiqc": {
                         "branch": "master",
-                        "git_sha": "08108058ea36a63f141c25c4e75f9f872a5b2296",
+                        "git_sha": "7b50cb7be890e4b28cffb82e438cc6a8d7805d3f",
                         "installed_by": ["modules"]
+                    },
+                    "untar": {
+                        "branch": "master",
+                        "git_sha": "05954dab2ff481bcb999f24455da29a5828af08d",
+                        "installed_by": ["modules"],
+                        "patch": "modules/nf-core/untar/untar.diff"
                     },
                     "unzip": {
                         "branch": "master",
@@ -33,17 +30,20 @@
                     "xeniumranger/import-segmentation": {
                         "branch": "master",
                         "git_sha": "b5e1891a88491d8731b5e68e22bd907726caec4a",
-                        "installed_by": ["modules"]
+                        "installed_by": ["modules"],
+                        "patch": "modules/nf-core/xeniumranger/import-segmentation/xeniumranger-import-segmentation.diff"
                     },
                     "xeniumranger/relabel": {
                         "branch": "master",
                         "git_sha": "b5e1891a88491d8731b5e68e22bd907726caec4a",
-                        "installed_by": ["modules"]
+                        "installed_by": ["modules"],
+                        "patch": "modules/nf-core/xeniumranger/relabel/xeniumranger-relabel.diff"
                     },
                     "xeniumranger/resegment": {
                         "branch": "master",
                         "git_sha": "b5e1891a88491d8731b5e68e22bd907726caec4a",
-                        "installed_by": ["modules"]
+                        "installed_by": ["modules"],
+                        "patch": "modules/nf-core/xeniumranger/resegment/xeniumranger-resegment.diff"
                     }
                 }
             },
@@ -51,12 +51,12 @@
                 "nf-core": {
                     "utils_nextflow_pipeline": {
                         "branch": "master",
-                        "git_sha": "c2b22d85f30a706a3073387f30380704fcae013b",
+                        "git_sha": "05954dab2ff481bcb999f24455da29a5828af08d",
                         "installed_by": ["subworkflows"]
                     },
                     "utils_nfcore_pipeline": {
                         "branch": "master",
-                        "git_sha": "51ae5406a030d4da1e49e4dab49756844fdd6c7a",
+                        "git_sha": "05954dab2ff481bcb999f24455da29a5828af08d",
                         "installed_by": ["subworkflows"]
                     },
                     "utils_nfschema_plugin": {
