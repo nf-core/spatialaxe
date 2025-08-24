@@ -4,8 +4,7 @@
 
 include { PROSEG                           } from '../../../modules/local/proseg/preset/main'
 include { PROSEG2BAYSOR                    } from '../../../modules/local/proseg/proseg2baysor/main'
-include { PARQUET_TO_CSV                   } from '../../../modules/local/spatialconverter/parquet_to_csv/main'
-include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
+include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/local/xeniumranger/import-segmentation/main'
 
 workflow PROSEG_PRESET_PROSEG2BAYSOR {
 
@@ -18,32 +17,33 @@ workflow PROSEG_PRESET_PROSEG2BAYSOR {
 
     ch_versions = Channel.empty()
 
-    // run parquet-to-csv
-    PARQUET_TO_CSV ( ch_transcripts_parquet, ".gz" )
-    ch_versions = ch_versions.mix( PARQUET_TO_CSV.out.versions )
-
     // run proseg with the xenium format
-    PROSEG ( PARQUET_TO_CSV.out.transcripts_csv )
+    PROSEG ( ch_transcripts_parquet )
     ch_versions = ch_versions.mix( PROSEG.out.versions )
 
     // run proseg-to-baysor on the data generated with the proseg run
-    PROSEG2BAYSOR ( PROSEG.out.cell_polygons_2d, PROSEG.out.transcript_metadata )
+    PROSEG2BAYSOR ( 
+        PROSEG.out.cell_polygons_2d.combine(PROSEG.out.transcript_metadata, by: 0)
+    )
     ch_versions = ch_versions.mix( PROSEG2BAYSOR.out.versions )
-
-    ch_metadata = PROSEG2BAYSOR.out.xr_metadata
-    ch_polygons = PROSEG2BAYSOR.out.xr_polygons.map {
-        _meta, polygons -> return [ polygons ]
-    }
 
     // run xeniumranger import-segmentation
     XENIUMRANGER_IMPORT_SEGMENTATION (
-        ch_bundle_path,
-        [],
-        [],
-        [],
-        ch_metadata,
-        ch_polygons,
-        "microns"
+        ch_bundle_path
+            .combine(PROSEG2BAYSOR.out.xr_polygons, by: 0)
+            .combine(PROSEG2BAYSOR.out.xr_metadata, by: 0)
+            .map {
+                meta, bundle, xr_cell_polygons, xr_transcript_metadata -> tuple(
+                    meta, // meta
+                    bundle, // bundle
+                    [], // coordinate_transform
+                    [], // nuclei
+                    [], // cells
+                    xr_transcript_metadata, // transcript_assignment
+                    xr_cell_polygons, // viz_polygons
+                    "microns" // units
+                )
+            }
     )
     ch_versions = ch_versions.mix( XENIUMRANGER_IMPORT_SEGMENTATION.out.versions )
 
