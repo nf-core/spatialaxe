@@ -2,7 +2,7 @@ process CELLPOSE {
     tag "$meta.id"
     label 'process_medium'
 
-    container "docker.io/biocontainers/cellpose:3.0.1_cv1"
+    container "docker.io/biocontainers/cellpose:3.1.0_cv1"
 
     input:
     tuple val(meta), path(image)
@@ -29,6 +29,7 @@ process CELLPOSE {
     """
     export OMP_NUM_THREADS=${task.cpus}
     export MKL_NUM_THREADS=${task.cpus}
+    export NPY_PROMOTION_STATE=legacy
     cellpose \\
         --image_path $image \\
         --save_tif \\
