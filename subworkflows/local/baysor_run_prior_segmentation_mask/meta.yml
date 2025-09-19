@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "baysor_run_prior_segmentation_mask"
+description: to run the `baysor run` command if a prior segmentation mask is available
+keywords:
+  - baysor
+  - baysor run
+  - segmentation
+  - segmentation mask
+  - xeniumranger import-segmentation
+  - image-based segmentation
+  - transcript filtering
+  - polygons
+components:
+  - baysor/preprocess/transcripts
+  - baysor/run
+  - xeniumranger/import/segmentation
+input:
+  - ch_bundle_path:
+      description: |
+        path to the xenium bundle
+        Structure: [ val(meta), path("path-to-xenium-bundle") ]
+  - ch_transcripts_parquet:
+      description: |
+        input parquet file from the xenium bundle
+        Structure: [ val(meta), path("path-to-transcripts.parquet") ]
+  - ch_segmentation_mask:
+      description: |
+        prior segmentation mask filepath
+        Structure: [ path("path-to-prior-segmentation-mask.tif") ]
+  - ch_config:
+      description: |
+        config file for the xenium baysor run (stored in assets/config/xenium.toml)
+        Structure: [ path("path-to-xenium.toml") ]
+output:
+  - segmentation:
+      description: |
+        the segmentation.csv file generated from the baysor run command
+        Structure: [ val(meta), path("segmentation.csv") ]
+  - polygons2d:
+      description: |
+        the segmentation_polygons_2d.json file generated from the baysor run command
+        Structure: [ val(meta), path("segmentation_polygons_2d.json") ]
+  - htmls:
+      description: |
+        the html files generated from the baysor run command
+        Structure: [ val(meta), path("*.html") ]
+  - coordinate_space:
+      description: |
+        the coordinate space in which xeniumranger import-segmentation was run
+        Structure: [ val("microns") ]
+  - redefined_bundle:
+      description: |
+        the redefined xenium bundle generated with the segmentation results from baysor
+        Structure: [ val(meta), ["redefined-xenium-bundle"] ]
+  - versions:
+      description: |
+        Files containing software versions
+        Structure: [ path(versions.yml) ]
+authors:
+  - "@khersameesh24"
+maintainers:
+  - "@khersameesh24"

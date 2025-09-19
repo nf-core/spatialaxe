@@ -24,6 +24,7 @@ workflow CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF {
     ch_cellpose_nuclei_cells = Channel.empty()
     ch_cellpose_cells_flows  = Channel.empty()
     ch_cellpose_nuclei_flows = Channel.empty()
+    ch_coordinate_space      = Channel.value("pixels")
 
     cellpose_model = params.cellpose_model ? (Channel.fromPath(params.cellpose_model, checkIfExists: true)) : []
 
@@ -82,7 +83,7 @@ workflow CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF {
             [],
             [],
             [],
-            ""
+            ch_coordinate_space
         )
         ch_versions = ch_versions.mix( XENIUMRANGER_IMPORT_SEGMENTATION.out.versions )
 
@@ -95,7 +96,7 @@ workflow CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF {
             ch_cellpose_cells_mask,
             [],
             [],
-            ""
+            ch_coordinate_space
         )
         ch_versions = ch_versions.mix( XENIUMRANGER_IMPORT_SEGMENTATION.out.versions )
     }
@@ -108,6 +109,8 @@ workflow CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF {
     nuclei_mask  = ch_cellpose_nuclei_mask                         // channel: [ val(meta), [ "*masks.tif" ] ]
     nuclei_flows = ch_cellpose_nuclei_flows                        // channel: [ val(meta), [ "*flows.tif" ] ]
     nuclei_cells = ch_cellpose_nuclei_cells                        // channel: [ val(meta), [ "*seg.npy" ] ]
+
+    coordinate_space = ch_coordinate_space                         // channel: [ ["pixels"] ]
 
     redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.bundle // channel: [ val(meta), ["redefined-xenium-bundle"] ]
 

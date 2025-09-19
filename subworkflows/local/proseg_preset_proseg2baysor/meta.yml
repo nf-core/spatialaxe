@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "proseg_preset_proseg2baysor"
+description: to run proseg with the transcripts.parquet file as a coordinate-based segmentation run
+keywords:
+  - proseg
+  - segmentation
+  - xeniumranger import-segmentation
+  - coordinate-based segmentation
+  - polygons
+  - metadata
+components:
+  - proseg
+  - proseg2baysor
+  - xeniumranger/import/segmentation
+input:
+  - ch_bundle_path:
+      description: |
+        path to the xenium bundle
+        Structure: [ val(meta), path("path-to-xenium-bundle") ]
+  - ch_transcripts_parquet:
+      description: |
+        input parquet file from the xenium bundle
+        Structure: [ val(meta), path("path-to-transcripts.parquet") ]
+output:
+  - cell_polygons_2d:
+      description: |
+        the cell-polygons.geojson.gz file generated from proseg
+        Structure: [ val(meta), path("cell-polygons.geojson.gz") ]
+  - xr_polygons:
+      description: |
+        xeniumranger-compatible polygon file generated from the proseg command
+        Structure: [ val(meta), path("xr-cell-polygons.geojson") ]
+  - xr_metadata:
+      description: |
+        xeniumranger-compatible metadata file generated from the proseg command
+        Structure: [ val(meta), path("xr-transcript-metadata.csv") ]
+  - coordinate_space:
+      description: |
+        the coordinate space in which xeniumranger import-segmentation was run
+        Structure: [ val("microns") ]
+  - redefined_bundle:
+      description: |
+        the redefined xenium bundle generated with the segmentation results from baysor
+        Structure: [ val(meta), ["redefined-xenium-bundle"] ]
+  - versions:
+      description: |
+        Files containing software versions
+        Structure: [ path(versions.yml) ]
+authors:
+  - "@khersameesh24"
+maintainers:
+  - "@khersameesh24"

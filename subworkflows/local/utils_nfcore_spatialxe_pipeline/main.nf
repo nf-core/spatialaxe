@@ -67,7 +67,7 @@ workflow PIPELINE_INITIALISATION {
     // Custom validation for pipeline parameters
     //
     validateInputParameters()
-    log.info "INFO Input params validated  ✅ "
+    log.info "INFO Pipeline parameters validated  ✅ "
 
     //
     // Create channel from input file provided through params.input
@@ -81,7 +81,7 @@ workflow PIPELINE_INITIALISATION {
         }
         .set { ch_samplesheet }
 
-        log.info "INFO Samplesheet validated   ✅ "
+        log.info "INFO Samplesheet fields validated   ✅ "
 
     } catch (Exception e) {
 
@@ -198,7 +198,7 @@ def validateInputParameters() {
     // check if segmentation mask is provided in image mode and baysor method
     if ( params.mode == 'image' && params.method == 'baysor' )
         if (!params.segmentation_mask ) {
-        log.error "❌  Error: Missing segmentation mask with `--segmentation_mask` when pipeline is run in ${params.mode} and with the ${params.method}."
+        log.warn "⚠️  Missing segmentation mask with `--segmentation_mask` when pipeline is run in ${params.mode} and with the ${params.method}. Running in coordinate mode."
     }
 
 }
@@ -268,7 +268,7 @@ def validateXeniumBundle(ch_samplesheet) {
             }
         }
     }
-    log.info "INFO Xenium bundle validated ✅ \n"
+    log.info "INFO Xenium bundle validated        ✅ \n"
 }
 
 //
@@ -334,4 +334,3 @@ def methodsDescriptionText(mqc_methods_yaml) {
 
     return description_html.toString()
 }
-

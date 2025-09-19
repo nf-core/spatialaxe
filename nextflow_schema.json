@@ -208,6 +208,41 @@
                 "csplit_y_bins": {
                     "type": "integer",
                     "description": "number of slices along the y axis (default - 10)"
+                },
+                "tile_width": {
+                    "type": "integer",
+                    "description": "Width of the tiles in pixels",
+                    "default": 120
+                },
+                "tile_height": {
+                    "type": "integer",
+                    "description": "Height of the tiles in pixels",
+                    "default": 120
+                },
+                "batch_size_train": {
+                    "type": "integer",
+                    "description": "Number of samples to process per training batch",
+                    "default": 4
+                },
+                "devices": {
+                    "type": "integer",
+                    "description": "Number of devices (GPUs) to use during training",
+                    "default": 4
+                },
+                "max_epochs": {
+                    "type": "integer",
+                    "description": "Number of training epochs",
+                    "default": 200
+                },
+                "batch_size_predict": {
+                    "type": "integer",
+                    "description": "Number of samples to process per batch during prediction",
+                    "default": 1
+                },
+                "cc_analysis": {
+                    "type": "boolean",
+                    "description": "Whether to use connected components for grouping transcripts without direct nucleus association",
+                    "default": false
                 }
             }
         },

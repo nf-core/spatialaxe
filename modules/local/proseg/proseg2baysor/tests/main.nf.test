@@ -21,7 +21,7 @@ nextflow_process {
                 }
             }
             run("PROSEG") {
-                script "modules/local/proseg/proseg/main.nf"
+                script "modules/local/proseg/preset/main.nf"
                 process {
                     """
                     input[0] = Channel.of([

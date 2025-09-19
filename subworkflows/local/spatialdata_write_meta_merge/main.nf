@@ -2,61 +2,50 @@
 // generate spatialdata object from the spatialxe layers
 //
 
-include { SPATIALDATA_WRITE as SPATIALDATA_WRITE_RAW_BUNDLE       } from '../../../modules/local/spatialdata/write/main'
-include { SPATIALDATA_WRITE as SPATIALDATA_WRITE_REDEFINED_BUNDLE } from '../../../modules/local/spatialdata/write/main'
-include { SPATIALDATA_MERGE as SPATIALDATA_MERGE_RAW_REDEFINED    } from '../../../modules/local/spatialdata/merge/main'
 include { SPATIALDATA_META                                        } from '../../../modules/local/spatialdata/meta/main'
+include { SPATIALDATA_WRITE as SPATIALDATA_WRITE_RAW_BUNDLE       } from '../../../modules/local/spatialdata/write/main'
+include { SPATIALDATA_MERGE as SPATIALDATA_MERGE_RAW_REDEFINED    } from '../../../modules/local/spatialdata/merge/main'
+include { SPATIALDATA_WRITE as SPATIALDATA_WRITE_REDEFINED_BUNDLE } from '../../../modules/local/spatialdata/write/main'
 
 workflow SPATIALDATA_WRITE_META_MERGE {
 
     take:
     ch_bundle_path          // channel: [ val(meta), [ "path-to-xenium-bundle" ] ]
     ch_redefined_bundle     // channel: [ val(meta), [ "redefined-xenium-bundle" ] ]
+    ch_coordinate_space     // channel: [ "pixels" or "microns" ]
 
     main:
 
-    ch_versions = Channel.empty()
+    ch_versions         = Channel.empty()
     ch_segmented_object = Channel.empty()
 
     // check segmentation - only nuclei, cells or both cells & nuclei
     if ( params.mode == 'image') {
 
         if ( params.nucleus_segmentation_only && params.cell_segmentation_only ) {
-
             ch_segmented_object = Channel.value('cells_and_nuclei')
-
         }
-
         else if ( params.nucleus_segmentation_only ) {
-
             ch_segmented_object = Channel.value('nuclei')
-
         }
-
         else if ( params.cell_segmentation_only ) {
-
             ch_segmented_object = Channel.value('cells')
-
         } else {
-
             ch_segmented_object = Channel.value([])
-
         }
     }
 
     // set all boundaries as false - default
     if ( params.mode == 'coordinate') {
-
         ch_segmented_object = Channel.value([])
-
     }
-
 
     // write spatialdata object from the raw xenium bundle
     SPATIALDATA_WRITE_RAW_BUNDLE (
         ch_bundle_path,
         'spatialdata_raw',
-        ch_segmented_object
+        ch_segmented_object,
+        ch_coordinate_space
     )
     ch_versions = ch_versions.mix ( SPATIALDATA_WRITE_RAW_BUNDLE.out.versions )
 
@@ -65,7 +54,8 @@ workflow SPATIALDATA_WRITE_META_MERGE {
     SPATIALDATA_WRITE_REDEFINED_BUNDLE (
         ch_redefined_bundle,
         'spatialdata_redefined',
-        ch_segmented_object
+        ch_segmented_object,
+        ch_coordinate_space
     )
     ch_versions = ch_versions.mix ( SPATIALDATA_WRITE_REDEFINED_BUNDLE.out.versions )
 
@@ -86,17 +76,17 @@ workflow SPATIALDATA_WRITE_META_MERGE {
         _meta, bundle -> return [ bundle ]
     }
     SPATIALDATA_META (
-        SPATIALDATA_MERGE_RAW_REDEFINED.out.spatialxe_bundle,
+        SPATIALDATA_MERGE_RAW_REDEFINED.out.merged_bundle,
         ch_just_bundle_path
     )
     ch_versions = ch_versions.mix ( SPATIALDATA_META.out.versions )
 
     emit:
 
-    ch_sd_raw       = SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata         // channel: [ val(meta), "spatialdata_raw" ]
-    ch_sd_redefined = SPATIALDATA_WRITE_REDEFINED_BUNDLE.out.spatialdata   // channel: [ val(meta), "spatialdata_redefined" ]
-    ch_sd_merged    = SPATIALDATA_MERGE_RAW_REDEFINED.out.spatialxe_bundle // channel: [ val(meta), "spatialdata_spatialxe" ]
-    ch_sd_meta      = SPATIALDATA_META.out.spatialxe_bundle                // channel: [ val(meta), "spatialdata_spatialxe_final" ]
+    sd_raw_bundle       = SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata        // channel: [ val(meta), "spatialdata_raw" ]
+    sd_redefined_bundle = SPATIALDATA_WRITE_REDEFINED_BUNDLE.out.spatialdata  // channel: [ val(meta), "spatialdata_redefined" ]
+    sd_merged_bundle    = SPATIALDATA_MERGE_RAW_REDEFINED.out.merged_bundle   // channel: [ val(meta), "spatialdata_merged" ]
+    sd_metadata         = SPATIALDATA_META.out.metadata                       // channel: [ val(meta), "spatialdata_meta" ]
 
-    versions        = ch_versions                                          // channel: [ versions.yml ]
+    versions        = ch_versions                                             // channel: [ versions.yml ]
 }

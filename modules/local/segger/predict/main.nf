@@ -11,9 +11,9 @@ process SEGGER_PREDICT {
 
 
     output:
-    tuple val(meta), path("${meta.id}_benchmarks_dir")                                  , emit: benchmarks
-    tuple val(meta), path("${meta.id}_benchmarks_dir/*/segger_transcripts.parquet")     , emit: transcripts
-    path("versions.yml")                                                                , emit: versions
+    tuple val(meta), path("${meta.id}_benchmarks_dir")                             , emit: benchmarks
+    tuple val(meta), path("${meta.id}_benchmarks_dir/*/segger_transcripts.parquet"), emit: transcripts
+    path("versions.yml")                                                           , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -33,10 +33,10 @@ process SEGGER_PREDICT {
         --segger_data_dir ${segger_dataset} \\
         --transcripts_file ${transcripts} \\
         --benchmarks_dir ${prefix}_benchmarks_dir \\
-        --num_workers ${task.cpus} \\
-        --batch_size ${task.batch_size} \\
-        --use_cc ${task.cc_analysis} \\
+        --batch_size ${params.batch_size_predict} \\
+        --use_cc ${params.cc_analysis} \\
         --knn_method ${params.segger_knn_method} \\
+        --num_workers ${task.cpus} \\
         ${args}
 
     cat <<-END_VERSIONS > versions.yml

@@ -3,7 +3,7 @@
 //
 
 include { BAYSOR_SEGFREE } from '../../../modules/local/baysor/segfree/main'
-
+// include a module to process the output loom file with scapny or anndata
 
 workflow BAYSOR_GENERATE_SEGFREE {
 

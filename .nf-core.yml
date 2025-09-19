@@ -8,11 +8,11 @@ lint:
     - assets/nf-core-spatialxe_logo_light.png
     - docs/images/nf-core-spatialxe_logo_dark.png
     - docs/images/nf-core-spatialxe_logo_light.png
-nf_core_version: 3.2.1
+nf_core_version: 3.3.2
 repository_type: pipeline
 template:
-  author: Florian Heyl
-  description: A pipeline for spatialomics Xenium data.
+  author: Sameesh Kher, Florian Heyl
+  description: A pipeline for spatialomics Xenium In Situ data.
   force: false
   is_nfcore: true
   name: spatialxe

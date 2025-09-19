@@ -2,7 +2,7 @@ process PARQUET_TO_CSV {
     tag "$meta.id"
     label 'process_low'
 
-    container "ghcr.io/scverse/spatialdata:spatialdata0.3.0_spatialdata-io0.1.7_spatialdata-plot0.2.9"
+    container "heylf/spatialdata:0.2.6"
 
     input:
     tuple val(meta), path(transcripts)

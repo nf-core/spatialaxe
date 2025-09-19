@@ -12,7 +12,7 @@ def main():
 
     reference_bundle = "${ref_bundle}"
     add_bundle = "${add_bundle}"
-    output_folder = "./spatialdata_spatialxe"
+    output_folder = "./spatialdata_merged"
 
     # Ensure the output folder exists
     if os.path.exists(output_folder):

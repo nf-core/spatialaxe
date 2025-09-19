@@ -13,3 +13,26 @@ report_section_order:
 export_plots: true
 
 disable_version_detection: true
+
+run_module:
+  - xenium
+
+module_order:
+  - xenium
+
+log_filesize_limit: 5000000000 # 5GB
+
+sp:
+  cell_feature_matrix:
+    fn: cell_feature_matrix.h5
+  cells:
+    fn: cells.parquet
+  experiment:
+    fn: experiment.xenium
+    num_lines: 50
+  metrics:
+    contents: num_cells_detected
+    fn: metrics_summary.csv
+    num_lines: 5
+  transcripts:
+    fn: transcripts.parquet

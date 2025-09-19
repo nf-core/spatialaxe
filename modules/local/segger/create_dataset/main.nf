@@ -33,9 +33,9 @@ process SEGGER_CREATE_DATASET {
         --base_dir ${base_dir} \\
         --data_dir ${prefix} \\
         --sample_type ${params.format} \\
+        --tile_width ${params.tile_width} \\
+        --tile_height ${params.tile_height} \\
         --n_workers ${task.cpus} \\
-        --tile_width ${task.tile_width} \\
-        --tile_height ${task.tile_height} \\
         ${args}
 
     cat <<-END_VERSIONS > versions.yml

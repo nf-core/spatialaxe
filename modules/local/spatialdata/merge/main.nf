@@ -9,8 +9,8 @@ process SPATIALDATA_MERGE {
     path(add_bundle, stageAs: "*")
 
     output:
-    tuple val(meta), path("spatialdata_spatialxe"), emit: spatialxe_bundle
-    path("versions.yml")                          , emit: versions
+    tuple val(meta), path("spatialdata_merged"), emit: merged_bundle
+    path("versions.yml")                         , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -27,8 +27,8 @@ process SPATIALDATA_MERGE {
 
     stub:
     """
-    mkdir -p "spatialdata_spatialxe/"
-    touch spatialdata_spatialxe/fake_file.txt
+    mkdir -p "spatialdata_merged/"
+    touch spatialdata_merged/fake_file.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "xeniumranger_relabel_resegment"
+description: |
+  The relabel pipeline allows you to change the gene labels applied to decoded transcripts.
+  The resegment pipeline allows you to generate a new segmentation of the morphology image space by rerunning the
+  Xenium Onboard Analysis (XOA) segmentation algorithms with modified parameters.
+keywords:
+  - xenium
+  - xeniumranger resegment
+  - expansion distance
+  - gene panel
+  - relabel
+components:
+  - xeniumranger/relabel
+  - xeniumranger/resegment
+input:
+  - ch_bundle_path:
+      description: |
+        Directory containing the raw dataset
+        Structure: [ val(meta), path("path-to-xenium-bundle") ]
+  - ch_gene_panel:
+      description: |
+        The gene panel JSON file to use for relabeling decoded transcripts
+        Structure: [ path("path-to-gene_panel.json") ]
+output:
+  - redefined_bundle:
+      description: |
+        the redefined xenium bundle generated with the segmentation results from baysor
+        Structure: [ val(meta), ["redefined-xenium-bundle"] ]
+  - versions:
+      description: |
+        Files containing software versions
+        Structure: [ path(versions.yml) ]
+authors:
+  - "@khersameesh24"
+maintainers:
+  - "@khersameesh24"

@@ -8,8 +8,8 @@ process SEGGER_TRAIN {
     tuple val(meta), path(dataset_dir)
 
     output:
-    tuple val(meta), path("${meta.id}_trained_models")   , emit: trained_models
-    path("versions.yml")                                 , emit: versions
+    tuple val(meta), path("${meta.id}_trained_models"), emit: trained_models
+    path("versions.yml")                              , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -28,10 +28,10 @@ process SEGGER_TRAIN {
         --dataset_dir ${dataset_dir} \\
         --models_dir ${prefix}_trained_models \\
         --sample_tag ${prefix} \\
+        --batch_size ${params.batch_size_train} \\
+        --max_epochs ${params.max_epochs} \\
+        --devices ${params.devices} \\
         --num_workers ${task.cpus} \\
-        --batch_size ${task.batch_size} \\
-        --max_epochs ${task.max_epochs} \\
-        --devices ${task.devices} \\
         --accelerator ${params.segger_accelerator} \\
         ${args}
 

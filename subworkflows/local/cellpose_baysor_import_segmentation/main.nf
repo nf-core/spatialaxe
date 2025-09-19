@@ -24,6 +24,7 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     ch_image                 = Channel.empty()
     ch_polygons              = Channel.empty()
     ch_segmentation          = Channel.empty()
+    ch_transcripts           = Channel.empty()
     ch_filtered_transcripts  = Channel.empty()
     ch_cellpose_cells_mask   = Channel.empty()
     ch_cellpose_nuclei_mask  = Channel.empty()
@@ -31,6 +32,7 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     ch_cellpose_nuclei_cells = Channel.empty()
     ch_cellpose_cells_flows  = Channel.empty()
     ch_cellpose_nuclei_flows = Channel.empty()
+    ch_coordinate_space      = Channel.value("microns")
 
     cellpose_model = params.cellpose_model ? (Channel.fromPath(params.cellpose_model, checkIfExists: true)) : []
 
@@ -98,29 +100,34 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
         ch_versions = ch_versions.mix ( BAYSOR_PREPROCESS_TRANSCRIPTS.out.versions )
 
         ch_filtered_transcripts = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_parquet
+        ch_transcripts = ch_filtered_transcripts
 
+    } else {
+
+        ch_transcripts = ch_transcripts_parquet
     }
 
     // run baysor with cellpose results
     if ( params.nucleus_segmentation_only ) {
 
         // run baysor with nuclei mask
-        BAYSOR_RUN ( ch_filtered_transcripts, ch_cellpose_nuclei_mask, ch_config, 30 )
+        BAYSOR_RUN ( ch_transcripts, ch_cellpose_nuclei_mask, ch_config, 30 )
         ch_versions = ch_versions.mix ( BAYSOR_RUN.out.versions )
 
     } else if ( params.cell_segmentation_only ) {
 
         // run baysor with cell mask
-        BAYSOR_RUN ( ch_filtered_transcripts, ch_cellpose_cells_mask, ch_config, 30 )
+        BAYSOR_RUN ( ch_transcripts, ch_cellpose_cells_mask, ch_config, 30 )
         ch_versions = ch_versions.mix ( BAYSOR_RUN.out.versions )
 
     } else {
 
         // run baysor with cell mask
-        BAYSOR_RUN ( ch_filtered_transcripts, [], ch_config, 30 )
+        BAYSOR_RUN ( ch_transcripts, [], ch_config, 30 )
         ch_versions = ch_versions.mix ( BAYSOR_RUN.out.versions )
 
     }
+
 
     // run import-segmentation with baysor outs
     ch_segmentation = BAYSOR_RUN.out.segmentation.map {
@@ -136,24 +143,25 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
         [],
         ch_segmentation,
         ch_polygons,
-        "microns"
+        ch_coordinate_space
     )
     ch_versions = ch_versions.mix ( XENIUMRANGER_IMPORT_SEGMENTATION.out.versions )
 
     emit:
 
-    cells_mask  = ch_cellpose_cells_mask                           // channel: [ val(meta), [ "*masks.tif" ] ]
-    cells_flows = ch_cellpose_cells_flows                          // channel: [ val(meta), [ "*flows.tif" ] ]
-    cells_cells = ch_cellpose_cells_cells                          // channel: [ val(meta), [ "*seg.npy" ] ]
-    nuclei_mask  = ch_cellpose_nuclei_mask                         // channel: [ val(meta), [ "*masks.tif" ] ]
-    nuclei_flows = ch_cellpose_nuclei_flows                        // channel: [ val(meta), [ "*flows.tif" ] ]
-    nuclei_cells = ch_cellpose_nuclei_cells                        // channel: [ val(meta), [ "*seg.npy" ] ]
+    cells_mask        = ch_cellpose_cells_mask                     // channel: [ val(meta), [ "*masks.tif" ] ]
+    cells_flows       = ch_cellpose_cells_flows                    // channel: [ val(meta), [ "*flows.tif" ] ]
+    cells_cells       = ch_cellpose_cells_cells                    // channel: [ val(meta), [ "*seg.npy" ] ]
+    nuclei_mask       = ch_cellpose_nuclei_mask                    // channel: [ val(meta), [ "*masks.tif" ] ]
+    nuclei_flows      = ch_cellpose_nuclei_flows                   // channel: [ val(meta), [ "*flows.tif" ] ]
+    nuclei_cells      = ch_cellpose_nuclei_cells                   // channel: [ val(meta), [ "*seg.npy" ] ]
 
-    segmentation_mask = ch_segmentation                            // channel: [ val(meta), [ *segmentation.csv ] ]
-    polygons          = ch_polygons                                // channel: [ val(meta), [ *polygons.json ] ]
+    segmentation      = ch_segmentation                            // channel: [ val(meta), [ *segmentation.csv ] ]
+    polygons2d        = ch_polygons                                // channel: [ val(meta), [ *segmentation_polygons_2d.json ] ]
+
+    coordinate_space = ch_coordinate_space                         // channel: [ val("microns") ]
 
     redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.bundle // channel: [ val(meta), ["redefined-xenium-bundle"] ]
 
     versions         = ch_versions                                 // channel: [ versions.yml ]
 }
-

@@ -13,8 +13,9 @@ def main():
     output_path = "."
     outputfolder = "${outputfolder}"
     segmented_object = "${segmented_object}"
+    coordinate_space = "${coordinate_space}"
 
-    cells_as_circles=True
+    cells_as_circles=False
     cells_boundaries=False
     nucleus_boundaries=False
     cells_labels=False
@@ -32,7 +33,19 @@ def main():
         cells_labels=True
         nucleus_labels=True
     else:
-        cells_as_circles=False
+        cells_as_circles = False
+
+    # set sd variables based on the coordinate space
+    if ( coordinate_space == "pixels" ):
+        cells_labels = True
+        nucleus_labels = True
+
+    if ( coordinate_space == "microns" ):
+        cells_labels = False
+        cells_boundaries = True
+        nucleus_boundaries = False
+        nucleus_labels = False
+        cells_as_circles = False
 
     format = "${params.format}"
     if ( format == "xenium" ):

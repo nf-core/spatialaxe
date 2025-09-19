@@ -9,8 +9,8 @@ process SPATIALDATA_META {
     path(xenium_bundle, stageAs: "*")
 
     output:
-    tuple val(meta), path("spatialdata_spatialxe_final"), emit: spatialxe_bundle
-    path("versions.yml")                                , emit: versions
+    tuple val(meta), path("spatialdata_meta"), emit: metadata
+    path("versions.yml")                     , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -28,8 +28,8 @@ process SPATIALDATA_META {
     stub:
 
     """
-    mkdir -p "spatialdata_spatialxe_final/"
-    touch "spatialdata_spatialxe_final/fake_file.txt"
+    mkdir -p "spatialdata_meta/"
+    touch "spatialdata_meta/fake_file.txt"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

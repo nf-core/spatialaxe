@@ -3,8 +3,8 @@
 //
 
 // include { SPLIT_TRANSCRIPTS             } from '../../../modules/local/utility/split_transcripts/main'
-include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
 include { BAYSOR_RUN                       } from '../../../modules/local/baysor/run/main'
+include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
 include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
 
 
@@ -28,6 +28,7 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
     ch_htmls                = Channel.empty()
 
     ch_redefined_bundle     = Channel.empty()
+    ch_coordinate_space     = Channel.value("microns")
 
 
     // generate splits
@@ -102,7 +103,7 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
         [],
         ch_segmentation_csv,
         ch_polygons2d,
-        "microns"
+        ch_coordinate_space
     )
     ch_versions = ch_versions.mix( XENIUMRANGER_IMPORT_SEGMENTATION.out.versions )
 
@@ -113,6 +114,8 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
     segmentation     = ch_segmentation        // channel: [ val(meta), ["segmentation.csv"] ]
     polygons2d       = ch_polygons2d          // channel: [ ["segmentation_polygons_2d.json"] ]
     htmls            = ch_htmls               // channel: [ ["*.html"] ]
+
+    coordinate_space = ch_coordinate_space    // channel: [ ["microns"] ]
 
     redefined_bundle = ch_redefined_bundle    // channel: [ val(meta), "redefined-xenium-bundle" ]
 

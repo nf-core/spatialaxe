@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "xeniumranger_import_segmentation_redefine_bundle"
+description: |
+  The import-segmentation pipeline allows you to specify 2D nuclei and/or cell segmentation results to use for
+  assigning transcripts to cells and recalculate all Xenium Onboard Analysis (XOA) outputs that depend on segmentation.
+keywords:
+  - xenium
+  - xeniumranger import-segmentation
+  - qupath
+  - expansion distance
+  - segmentation
+  - polygons
+components:
+  - xeniumranger/import/segmentation
+input:
+  - ch_bundle_path:
+      description: |
+        Directory containing the raw dataset
+        Structure: [ val(meta), path("path-to-xenium-bundle") ]
+output:
+  - redefined_bundle:
+      description: |
+        the redefined xenium bundle generated with the segmentation results from baysor
+        Structure: [ val(meta), ["redefined-xenium-bundle"] ]
+  - coordinate_space:
+      description: |
+        the coordinate space in which xeniumranger import-segmentation was run
+        Structure: [ val("microns") ]
+  - versions:
+      description: |
+        Files containing software versions
+        Structure: [ path(versions.yml) ]
+authors:
+  - "@khersameesh24"
+maintainers:
+  - "@khersameesh24"

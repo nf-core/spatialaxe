@@ -73,6 +73,7 @@ workflow SPATIALXE {
     ch_multiqc_files       = Channel.empty()
     ch_morphology_image    = Channel.empty()
     ch_redefined_bundle    = Channel.empty()
+    ch_coordinate_space    = Channel.empty()
     ch_transcripts_parquet = Channel.empty()
 
 
@@ -215,6 +216,23 @@ workflow SPATIALXE {
         )
     }
 
+
+    /*
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        SPATIALXE - XENIUMRANGER LAYER
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    */
+    // run only xeniumranger import segmentation with changes xr specific params
+    if  ( params.mode == 'image' && params.xeniumranger_only ) {
+
+        XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE (
+            ch_bundle_path
+        )
+        ch_redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE.out.redefined_bundle
+        ch_coordinate_space = XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE.out.coordinate_space
+    }
+
+
     /*
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         SPATIALXE - IMAGE-BASED SEGMENTATION LAYER
@@ -232,6 +250,7 @@ workflow SPATIALXE {
                 ch_config
             )
             ch_redefined_bundle = CELLPOSE_BAYSOR_IMPORT_SEGMENTATION.out.redefined_bundle
+            ch_coordinate_space = CELLPOSE_BAYSOR_IMPORT_SEGMENTATION.out.coordinate_space
         }
 
         // check it the provided method is part of the methods list
@@ -244,6 +263,7 @@ workflow SPATIALXE {
                     ch_bundle_path
                 )
                 ch_redefined_bundle = XENIUMRANGER_RESEGMENT_MORPHOLOGY_OME_TIF.out.redefined_bundle
+                ch_coordinate_space = XENIUMRANGER_RESEGMENT_MORPHOLOGY_OME_TIF.out.coordinate_space
             }
 
             // run baysor run with morphology_ome.tif
@@ -265,6 +285,7 @@ workflow SPATIALXE {
                     )
                 }
                 ch_redefined_bundle = BAYSOR_RUN_PRIOR_SEGMENTATION_MASK.out.redefined_bundle
+                ch_coordinate_space = BAYSOR_RUN_PRIOR_SEGMENTATION_MASK.out.coordinate_space
             }
 
             // run cellpose on the morphology_ome.tif
@@ -275,6 +296,7 @@ workflow SPATIALXE {
                     ch_bundle_path
                 )
                 ch_redefined_bundle = CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF.out.redefined_bundle
+                ch_coordinate_space = CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF.out.coordinate_space
             }
 
         }
@@ -295,6 +317,7 @@ workflow SPATIALXE {
                 ch_transcripts_parquet
             )
             ch_redefined_bundle = PROSEG_PRESET_PROSEG2BAYSOR.out.redefined_bundle
+            ch_coordinate_space = PROSEG_PRESET_PROSEG2BAYSOR.out.coordinate_space
 
         }
 
@@ -309,6 +332,7 @@ workflow SPATIALXE {
                     ch_transcripts_parquet
                 )
                 ch_redefined_bundle = PROSEG_PRESET_PROSEG2BAYSOR.out.redefined_bundle
+                ch_coordinate_space = PROSEG_PRESET_PROSEG2BAYSOR.out.coordinate_space
 
             }
 
@@ -319,6 +343,8 @@ workflow SPATIALXE {
                     ch_bundle_path,
                     ch_transcripts_parquet
                 )
+                ch_redefined_bundle = SEGGER_CREATE_TRAIN_PREDICT.out.redefined_bundle
+                ch_coordinate_space = SEGGER_CREATE_TRAIN_PREDICT.out.coordinate_space
 
             }
 
@@ -331,23 +357,10 @@ workflow SPATIALXE {
                     ch_config
                 )
                 ch_redefined_bundle = BAYSOR_RUN_TRANSCRIPTS_PARQUET.out.redefined_bundle
+                ch_coordinate_space = BAYSOR_RUN_TRANSCRIPTS_PARQUET.out.coordinate_space
             }
 
         }
-    }
-
-    /*
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        SPATIALXE - XENIUMRANGER LAYER
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    */
-    // run only xeniumranger import segmentation with changes xr specific params
-    if  ( params.xeniumranger_only ) {
-
-        XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE (
-            ch_bundle_path
-        )
-        ch_redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE.out.redefined_bundle
     }
 
 
@@ -362,7 +375,8 @@ workflow SPATIALXE {
 
         SPATIALDATA_WRITE_META_MERGE (
             ch_bundle_path,
-            ch_redefined_bundle
+            ch_redefined_bundle,
+            ch_coordinate_space
         )
 
     }
@@ -472,6 +486,13 @@ workflow SPATIALXE {
             sort: true
         )
     )
+
+    // get all files from the redefined bundle
+    ch_redefined_bundle_files = ch_redefined_bundle.flatMap { _meta, path ->
+        file("${path}/*")
+    }
+
+    ch_multiqc_files = ch_multiqc_files.mix ( ch_redefined_bundle_files.collect() )
 
     MULTIQC (
         ch_multiqc_files.collect(),

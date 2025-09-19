@@ -17,13 +17,14 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
 
     ch_versions = Channel.empty()
     ch_redefined_bundle = Channel.empty()
+    ch_coordinate_space = Channel.empty("pixels")
 
     cells = ch_bundle_path.map {
         _meta, bundle -> return [ bundle + "/cells.zarr.zip" ]
     }
 
     // scenario - 1 change nuclear expansion distance / create a nucleus-only count matrix(--expansion_distance=0)
-    if ( params.expansion_distance == 0 || params.expansion_distance != 5 ){
+    if ( params.expansion_distance == 0 || params.expansion_distance != 5 ) {
 
         IMP_SEG_COUNT_MATRIX_EXP_DISTANCE (
             ch_bundle_path,
@@ -32,7 +33,7 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
             [],
             [],
             [],
-            "pixel"
+            ch_coordinate_space
         )
         ch_redefined_bundle = IMP_SEG_COUNT_MATRIX_EXP_DISTANCE.out.bundle
 
@@ -49,7 +50,7 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
             [],
             [],
             [],
-            "pixel"
+            ch_coordinate_space
         )
         ch_redefined_bundle = IMP_SEG_POLYGON_GEOJSON_INPUT.out.bundle
 
@@ -64,7 +65,7 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
             params.qupath_polygons,
             [],
             [],
-            "pixel"
+            ch_coordinate_space
         )
         ch_redefined_bundle = IMP_SEG_POLYGON_GEOJSON_INPUT.out.bundle
 
@@ -86,7 +87,7 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
             params.qupath_polygons,
             [],
             [],
-            "pixel"
+            ch_coordinate_space
         )
         ch_redefined_bundle = IMP_SEG_TRANS_MATRIX_INPUT.out.bundle
 
@@ -98,6 +99,7 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
 
     redefined_bundle  = ch_redefined_bundle // channel: [ val(meta), ["redefined-xenium-bundle"] ]
 
+    coordinate_space = ch_coordinate_space  // channel: [ ["pixels"] ]
+
     versions          = ch_versions         // channel: [ versions.yml ]
 }
-

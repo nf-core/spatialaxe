@@ -4,7 +4,8 @@
 
 include { FICTURE_PREPROCESS } from '../../../modules/local/ficture/preprocess/main'
 include { FICTURE            } from '../../../modules/local/ficture/model/main'
-include { PARQUET_TO_CSV     } from '../../../modules/local/spatialconverter/parquet_to_csv/main'
+include { PARQUET_TO_CSV     } from '../../../modules/local/utility/spatialconverter/parquet_to_csv/main'
+
 
 
 workflow FICTURE_PREPROCESS_MODEL {
@@ -50,4 +51,3 @@ workflow FICTURE_PREPROCESS_MODEL {
 
     versions = ch_versions                                          // channel: [ versions.yml ]
 }
-

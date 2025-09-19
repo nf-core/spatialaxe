@@ -19,13 +19,13 @@ process FICTURE {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def features = features ? "--in-feature ${features}": ""
+    def features_list = features ? "--in-feature ${features}": ""
 
     """
     ficture run_together \\
         --in-tsv ${transcripts} \\
         --in-minmax ${coordinate_minmax} \\
-        ${features} \\
+        ${features_list} \\
         --out-dir results \\
         --train-width 12,18 \\
         --n-factor 6,12 \\

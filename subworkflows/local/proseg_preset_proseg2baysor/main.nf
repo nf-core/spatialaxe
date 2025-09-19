@@ -6,6 +6,7 @@ include { PROSEG                           } from '../../../modules/local/proseg
 include { PROSEG2BAYSOR                    } from '../../../modules/local/proseg/proseg2baysor/main'
 include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/local/xeniumranger/import-segmentation/main'
 
+
 workflow PROSEG_PRESET_PROSEG2BAYSOR {
 
     take:
@@ -44,6 +45,7 @@ workflow PROSEG_PRESET_PROSEG2BAYSOR {
                     "microns" // units
                 )
             }
+
     )
     ch_versions = ch_versions.mix( XENIUMRANGER_IMPORT_SEGMENTATION.out.versions )
 
@@ -53,9 +55,9 @@ workflow PROSEG_PRESET_PROSEG2BAYSOR {
 
     xr_polygons           = PROSEG2BAYSOR.out.xr_polygons               // channel: [ val(meta), [ "xr-cell-polygons.geojson" ] ]
     xr_metadata           = PROSEG2BAYSOR.out.xr_metadata               // channel: [ [ "xr-transcript-metadata.csv" ] ]
+    coordinate_space      = ch_coordinate_space                         // channel: [ "microns" ]
 
     redefined_bundle      = XENIUMRANGER_IMPORT_SEGMENTATION.out.bundle // channel: [ val(meta), ["redefined-xenium-bundle"] ]
 
     versions              = ch_versions                                 // channel: [ versions.yml ]
 }
-
