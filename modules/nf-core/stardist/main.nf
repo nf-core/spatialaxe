@@ -1,7 +1,6 @@
 process STARDIST {
     tag "${meta.id}"
-    label 'process_medium'
-    label 'process_gpu'
+    label 'gpu_single'
 
     conda "${moduleDir}/environment.yml"
     container "ghcr.io/schapirolabor/stardist:0.9.1"
