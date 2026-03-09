@@ -1,15 +1,19 @@
 process SEGGER2XR {
     tag "$meta.id"
-    label 'process_low'
+    label 'process_medium'
 
-    container "community.wave.seqera.io/library/pip_pandas:5c59aaec7d5d4750"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/cb/cb8fc03fa657c164c5d83f075578bbb5d9c10f1178165f94e94f33c67efca1a1/data' :
+        'community.wave.seqera.io/library/spatialdata-io_spatialdata:b264928c30680e87' }"
 
     input:
     tuple val(meta), path(transcripts)
 
     output:
-    tuple val(meta), path("${meta.id}/transcripts.parquet"), emit: transcripts_parquet
-    path("versions.yml")                                   , emit: versions
+    tuple val(meta), path("${meta.id}/segmentation.csv")           , emit: segmentation_csv
+    tuple val(meta), path("${meta.id}/transcripts.parquet")        , emit: transcripts_parquet
+    tuple val(meta), path("${meta.id}/segmentation_polygons.json") , emit: viz_polygons
+    path("versions.yml")                                           , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -32,7 +36,9 @@ process SEGGER2XR {
 
     """
     mkdir -p ${prefix}
+    echo 'transcript_id,x,y,z,gene,cell,is_noise' > "${prefix}/segmentation.csv"
     touch "${prefix}/transcripts.parquet"
+    echo '{"type":"FeatureCollection","features":[]}' > "${prefix}/segmentation_polygons.json"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

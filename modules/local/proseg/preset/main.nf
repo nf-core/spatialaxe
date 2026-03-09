@@ -2,13 +2,14 @@ process PROSEG {
     tag "${meta.id}"
     label 'process_high'
 
-    container "khersameesh24/proseg:2.0.0"
+    container "ghcr.io/dcjones/proseg:v3.1.0"
 
     input:
     tuple val(meta), path(transcripts)
 
     output:
     tuple val(meta), path("${prefix}/cell-polygons.geojson.gz"), path("${prefix}/transcript-metadata.csv.gz"), emit: seg_outs
+    tuple val(meta), path("${prefix}/proseg-output.zarr"), emit: zarr
     path ("versions.yml"), emit: versions
 
     when:
@@ -42,7 +43,8 @@ process PROSEG {
         --output-rates ${prefix}/rates.csv.gz \\
         --output-cell-polygons ${prefix}/cell-polygons.geojson.gz \\
         --output-cell-polygon-layers ${prefix}/cell-polygons-layers.geojson.gz \\
-        --output-cell-hulls ${prefix}/cell-hulls.geojson.gz \\
+        --output-union-cell-polygons ${prefix}/union-cell-polygons.geojson.gz \\
+        --output-spatialdata ${prefix}/proseg-output.zarr \\
         ${args}
 
     cat <<-END_VERSIONS > versions.yml
@@ -68,8 +70,8 @@ process PROSEG {
     touch "${prefix}/rates.csv.gz"
     touch "${prefix}/cell-polygons.geojson.gz"
     touch "${prefix}/cell-polygons-layers.geojson.gz"
-    touch "${prefix}/cell-hulls.geojson.gz"
     touch "${prefix}/union-cell-polygons.geojson.gz"
+    mkdir -p "${prefix}/proseg-output.zarr"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

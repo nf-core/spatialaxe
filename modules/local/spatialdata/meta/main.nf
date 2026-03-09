@@ -2,7 +2,9 @@ process SPATIALDATA_META {
     tag "${meta.id}"
     label 'process_high'
 
-    container "khersameesh24/spatialdata:0.2.6"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/cb/cb8fc03fa657c164c5d83f075578bbb5d9c10f1178165f94e94f33c67efca1a1/data' :
+        'community.wave.seqera.io/library/spatialdata-io_spatialdata:b264928c30680e87' }"
 
     input:
     tuple val(meta), path(spatialdata_bundle, stageAs: "*"), path(xenium_bundle, stageAs: "*")

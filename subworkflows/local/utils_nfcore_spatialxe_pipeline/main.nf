@@ -256,7 +256,6 @@ def validateXeniumBundle(ch_samplesheet) {
         "cell_boundaries.csv.gz",
         "cell_boundaries.parquet",
         "cell_feature_matrix.h5",
-        "cell_feature_matrix.tar.gz",
         "cell_feature_matrix.zarr.zip",
         "cells.csv.gz",
         "cells.parquet",
@@ -279,59 +278,51 @@ def validateXeniumBundle(ch_samplesheet) {
         "analysis_summary.html"
     ]
 
-    // get bundle path
-    def ch_bundle_path = ch_samplesheet.map { _meta, bundle, _image ->
-        def bundle_path = file(
-            bundle.toString().replaceFirst(/\/$/, '')
-        )
-        return bundle_path
+    // get bundle path (keep raw string for remote-path detection)
+    def ch_bundle_info = ch_samplesheet.map { _meta, bundle, _image ->
+        def rawPath = bundle.toString().replaceFirst(/\/$/, '')
+        def bundle_path = file(rawPath)
+        return [rawPath, bundle_path]
     }
 
-    // check if the path exists
-    if (!ch_bundle_path.map { it.exists() }) {
-        error("❌ Error: Xenium bundle path not found. Check if the path provided in the samplesheet exists.")
-        exit(1)
-    }
-
-    // if the path exists, check for the presence of xenium files
-    if (ch_bundle_path.map { it.exists() }) {
-
-        ch_bundle_path.map { path ->
-            def missing_required_files = []
-            def missing_optional_files = []
-
-            def requiredExist = bundle_required_files.every { filename ->
-                def fullPath = file("${path}/${filename}")
-                if (!fullPath.exists()) {
-                    missing_required_files.add(filename)
-                    return false
-                }
-                return true
-            }
-            // raise error if required files are missing
-            if (!requiredExist) {
-                log.error("❌ Missing file(s) at bundle path provided in the samplesheet: ${missing_required_files}")
-                exit(1)
-            }
-
-            def optionalExist = bundle_optional_files.every { filename ->
-                def fullPath = file("${path}/${filename}")
-                if (!fullPath.exists()) {
-                    missing_optional_files.add(filename)
-                    return false
-                }
-                return true
-            }
-            // log message if optional files are missing
-            if (!optionalExist) {
-                log.warn("⚠️ Missing optional file(s) at bundle path provided in the samplesheet: ${missing_optional_files}")
-                exit(1)
-            }
-
-
+    // Skip file-level validation for remote paths (S3, GS, AZ) because
+    // file().exists() is unreliable on cloud storage during initialization
+    // (Fusion mounts s3://bucket as /bucket, breaking startsWith checks).
+    // Files will be validated at task staging time instead.
+    ch_bundle_info.map { rawPath, path ->
+        if (rawPath.startsWith('s3://') || rawPath.startsWith('gs://') || rawPath.startsWith('az://')) {
+            log.info("Skipping bundle file validation for remote path: ${rawPath}")
+            return
         }
-    }
-    else {
+
+        def missing_required_files = []
+        def missing_optional_files = []
+
+        def requiredExist = bundle_required_files.every { filename ->
+            def fullPath = file("${path}/${filename}")
+            if (!fullPath.exists()) {
+                missing_required_files.add(filename)
+                return false
+            }
+            return true
+        }
+        if (!requiredExist) {
+            log.error("❌ Missing file(s) at bundle path provided in the samplesheet: ${missing_required_files}")
+            exit(1)
+        }
+
+        def optionalExist = bundle_optional_files.every { filename ->
+            def fullPath = file("${path}/${filename}")
+            if (!fullPath.exists()) {
+                missing_optional_files.add(filename)
+                return false
+            }
+            return true
+        }
+        if (!optionalExist) {
+            log.warn("⚠️ Missing optional file(s) at bundle path provided in the samplesheet: ${missing_optional_files}")
+        }
+
         log.info("✅ Xenium bundle validated.\n")
     }
 }

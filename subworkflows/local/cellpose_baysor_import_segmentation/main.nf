@@ -16,7 +16,7 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     ch_morphology_image          // channel: [ val(meta), ["path-to-morphology.ome.tif"] ]
     ch_bundle_path               // channel: [ val(meta), ["path-to-xenium-bundle"] ]
     ch_transcripts_parquet       // channel: [ val(meta), ["path-to-transcripts.parquet"] ]
-    ch_experiment_metadata       // channel: [ ["path-to-experiment.xenium"] ]
+    ch_experiment_metadata       // channel: [ val(meta), ["path-to-experiment.xenium"] ]
     ch_config                    // channel: ["path-to-xenium.toml"]
 
     main:
@@ -28,7 +28,8 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     ch_coordinate_space = Channel.value("microns")
 
 
-    cellpose_model = params.cellpose_model ? (Channel.fromPath(params.cellpose_model, checkIfExists: true)) : []
+    // Use empty string when no model is provided; keep as plain string for val input
+    cellpose_model = params.cellpose_model ?: ''
 
     // sharpen morphology tiff if param - sharpen_tiff is true
     if (params.sharpen_tiff) {
@@ -58,26 +59,19 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     }
 
 
-    // filter transcripts.parquet based on thresholds
-    if (params.filter_transcripts) {
-
-        BAYSOR_PREPROCESS_TRANSCRIPTS(
-            ch_transcripts_parquet,
-            params.min_qv,
-            params.max_x,
-            params.min_x,
-            params.max_y,
-            params.min_y,
-        )
-        ch_versions = ch_versions.mix(BAYSOR_PREPROCESS_TRANSCRIPTS.out.versions)
-
-        ch_filtered_transcripts = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_parquet
-        ch_transcripts = ch_filtered_transcripts
-    }
-    else {
-
-        ch_transcripts = ch_transcripts_parquet
-    }
+    // Always preprocess transcripts.parquet to CSV for Baysor 0.7.1 compatibility.
+    // Baysor's Julia Parquet.jl cannot read zstd-compressed parquet files from Xenium bundles.
+    // Also applies optional spatial/QV filtering when params.filter_transcripts is true.
+    BAYSOR_PREPROCESS_TRANSCRIPTS(
+        ch_transcripts_parquet,
+        params.min_qv,
+        params.max_x,
+        params.min_x,
+        params.max_y,
+        params.min_y,
+    )
+    ch_versions = ch_versions.mix(BAYSOR_PREPROCESS_TRANSCRIPTS.out.versions)
+    ch_transcripts = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_csv
 
 
     // run baysor with cellpose results
@@ -86,7 +80,7 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
         // check if the size of the segmentation mask matches the max transcripts coordinate range
         ch_resizetif_input = ch_transcripts
             .combine(CELLPOSE_NUCLEI.out.mask, by: 0)
-            .combine(ch_experiment_metadata)
+            .combine(ch_experiment_metadata, by: 0)
             .map { meta, transcripts, mask, exp_meta ->
                 tuple(
                     meta,
@@ -119,7 +113,7 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
         // check if the size of the segmentation mask matches the max transcripts coordinate range
         ch_resizetif_input = ch_transcripts
             .combine(CELLPOSE_CELLS.out.mask, by: 0)
-            .combine(ch_experiment_metadata)
+            .combine(ch_experiment_metadata, by: 0)
             .map { meta, transcripts, mask, exp_meta ->
                 tuple(
                     meta,
@@ -173,20 +167,19 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
             tuple(
                 meta,
                 bundle,
-                [],
-                [],
-                [],
                 segmentation_csv,
                 polygons2d,
+                [],
+                [],
+                [],
                 ch_coordinate_space.val,
             )
         }
 
     XENIUMRANGER_IMPORT_SEGMENTATION(ch_imp_seg_inputs)
-    ch_versions = ch_versions.mix(XENIUMRANGER_IMPORT_SEGMENTATION.out.versions)
 
     emit:
     coordinate_space = ch_coordinate_space                         // channel: [ val("microns") ]
-    redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.bundle // channel: [ val(meta), ["redefined-xenium-bundle"] ]
+    redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs // channel: [ val(meta), ["redefined-xenium-bundle"] ]
     versions = ch_versions                                         // channel: [ versions.yml ]
 }

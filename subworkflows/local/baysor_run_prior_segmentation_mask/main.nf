@@ -23,25 +23,19 @@ workflow BAYSOR_RUN_PRIOR_SEGMENTATION_MASK {
     ch_redefined_bundle = Channel.empty()
     ch_coordinate_space = Channel.value("pixels")
 
-    // filter transcripts.parquet based on thresholds
-    if (params.filter_transcripts) {
-
-        BAYSOR_PREPROCESS_TRANSCRIPTS(
-            ch_transcripts_parquet,
-            params.min_qv,
-            params.max_x,
-            params.min_x,
-            params.max_y,
-            params.min_y,
-        )
-        ch_versions = ch_versions.mix(BAYSOR_PREPROCESS_TRANSCRIPTS.out.versions)
-
-        ch_transcripts = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_parquet
-    }
-    else {
-
-        ch_transcripts = ch_transcripts_parquet
-    }
+    // Always preprocess transcripts.parquet to CSV for Baysor 0.7.1 compatibility.
+    // Baysor's Julia Parquet.jl cannot read zstd-compressed parquet files from Xenium bundles.
+    // Also applies optional spatial/QV filtering when params.filter_transcripts is true.
+    BAYSOR_PREPROCESS_TRANSCRIPTS(
+        ch_transcripts_parquet,
+        params.min_qv,
+        params.max_x,
+        params.min_x,
+        params.max_y,
+        params.min_y,
+    )
+    ch_versions = ch_versions.mix(BAYSOR_PREPROCESS_TRANSCRIPTS.out.versions)
+    ch_transcripts = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_csv
 
 
     // run baysor with prior segmentation mask
@@ -69,9 +63,9 @@ workflow BAYSOR_RUN_PRIOR_SEGMENTATION_MASK {
                 meta,
                 bundle,
                 [],
-                polygons2d,
-                polygons2d,
                 [],
+                polygons2d,
+                polygons2d,
                 [],
                 ch_coordinate_space.val,
             )
@@ -79,9 +73,8 @@ workflow BAYSOR_RUN_PRIOR_SEGMENTATION_MASK {
     XENIUMRANGER_IMPORT_SEGMENTATION(
         ch_imp_seg_inputs
     )
-    ch_versions = ch_versions.mix(XENIUMRANGER_IMPORT_SEGMENTATION.out.versions)
 
-    ch_redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.bundle
+    ch_redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs
 
     emit:
     coordinate_space = ch_coordinate_space // channel: [ "microns" ]

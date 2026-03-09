@@ -1,0 +1,13 @@
+--- /tmp/unzip_upstream_main.nf	2026-03-02 17:38:52.492116213 +0000
++++ /home/projects/nextflow-tower-pipeline-dev/nf-core/spatialxe/modules/nf-core/unzip/main.nf	2026-03-02 17:38:50.319195566 +0000
+@@ -38,7 +38,9 @@
+     if ( archive instanceof List && archive.name.size > 1 ) { error "[UNZIP] error: 7za only accepts a single archive as input. Please check module input." }
+     prefix = task.ext.prefix ?: ( meta.id ? "${meta.id}" : archive.baseName)
+     """
+-    mkdir "${prefix}"
++    mkdir -p "${prefix}/morphology_focus"
++    touch "${prefix}/transcripts.parquet"
++    touch "${prefix}/morphology_focus/morphology_focus_0000.ome.tif"
+ 
+     cat <<-END_VERSIONS > versions.yml
+     "${task.process}":

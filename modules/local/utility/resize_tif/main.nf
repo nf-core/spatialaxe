@@ -2,7 +2,9 @@ process RESIZE_TIF {
     tag "${meta.id}"
     label 'process_low'
 
-    container "community.wave.seqera.io/library/scikit-image_pip_numpy_pandas_tifffile:ef6d9eac4fb80ac9"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/6d/6d5aedb8fcf066eecd9f0dfac93bfffc8161bdae65b4502509d9953db2036a7e/data' :
+        'community.wave.seqera.io/library/numpy_pandas_pyarrow_scikit-image_tifffile:131397039376b375' }"
 
     input:
     tuple val(meta), path(transcripts), path(mask), path(metadata)

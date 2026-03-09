@@ -31,8 +31,8 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
                     meta,
                     bundle,
                     [],
-                    cells_zarr,
                     [],
+                    cells_zarr,
                     [],
                     [],
                     ch_coordinate_space.val,
@@ -42,9 +42,7 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
         IMP_SEG_COUNT_MATRIX_EXP_DISTANCE(
             ch_imp_seg_inputs
         )
-        ch_redefined_bundle = IMP_SEG_COUNT_MATRIX_EXP_DISTANCE.out.bundle
-
-        ch_versions = ch_versions.mix(IMP_SEG_COUNT_MATRIX_EXP_DISTANCE.out.versions)
+        ch_redefined_bundle = IMP_SEG_COUNT_MATRIX_EXP_DISTANCE.out.outs
     }
 
     // scenario - 2 polygon input - geojson format (from QuPath)
@@ -58,8 +56,8 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
                     meta,
                     bundle,
                     [],
-                    polygons_geojson,
                     [],
+                    polygons_geojson,
                     [],
                     [],
                     ch_coordinate_space.val,
@@ -69,9 +67,7 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
         IMP_SEG_POLYGON_GEOJSON_INPUT(
             ch_imp_seg_inputs
         )
-        ch_redefined_bundle = IMP_SEG_POLYGON_GEOJSON_INPUT.out.bundle
-
-        ch_versions = ch_versions.mix(IMP_SEG_POLYGON_GEOJSON_INPUT.out.versions)
+        ch_redefined_bundle = IMP_SEG_POLYGON_GEOJSON_INPUT.out.outs
     }
     else if (params.qupath_polygons) {
 
@@ -83,9 +79,9 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
                     meta,
                     bundle,
                     [],
-                    polygons_geojson,
-                    polygons_geojson,
                     [],
+                    polygons_geojson,
+                    polygons_geojson,
                     [],
                     ch_coordinate_space.val,
                 )
@@ -94,9 +90,7 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
         IMP_SEG_POLYGON_GEOJSON_INPUT(
             ch_imp_seg_inputs
         )
-        ch_redefined_bundle = IMP_SEG_POLYGON_GEOJSON_INPUT.out.bundle
-
-        ch_versions = ch_versions.mix(IMP_SEG_POLYGON_GEOJSON_INPUT.out.versions)
+        ch_redefined_bundle = IMP_SEG_POLYGON_GEOJSON_INPUT.out.outs
     }
 
     // scenario 3 - mask input - included in the cellpose subworkflow
@@ -107,17 +101,17 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
     if (params.qupath_polygons && params.alignment_csv) {
 
         ch_imp_seg_inputs = ch_bundle_path
-            .combine(params.qupath_polygins)
+            .combine(params.qupath_polygons)
             .combine(params.alignment_csv)
             .map { meta, bundle, polygons_geojson, alignment_csv ->
                 tuple(
                     meta,
                     bundle,
+                    [],
+                    [],
+                    polygons_geojson,
+                    polygons_geojson,
                     alignment_csv,
-                    polygons_geojson,
-                    polygons_geojson,
-                    [],
-                    [],
                     ch_coordinate_space.val,
                 )
             }
@@ -125,9 +119,7 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
         IMP_SEG_TRANS_MATRIX_INPUT(
             ch_imp_seg_inputs
         )
-        ch_redefined_bundle = IMP_SEG_TRANS_MATRIX_INPUT.out.bundle
-
-        ch_versions = ch_versions.mix(IMP_SEG_TRANS_MATRIX_INPUT.out.versions)
+        ch_redefined_bundle = IMP_SEG_TRANS_MATRIX_INPUT.out.outs
     }
 
     emit:

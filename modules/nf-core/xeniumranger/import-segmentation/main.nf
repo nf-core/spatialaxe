@@ -1,78 +1,69 @@
 process XENIUMRANGER_IMPORT_SEGMENTATION {
-    tag "${meta.id}"
+    tag "$meta.id"
     label 'process_high'
 
-    container "nf-core/xeniumranger:3.1.1"
+    container "nf-core/xeniumranger:4.0"
 
     input:
-    tuple val(meta), path(xenium_bundle, stageAs: "bundle/"), path(coordinate_transform), path(nuclei), path(cells), path(transcript_assignment), path(viz_polygons), val(units)
+    tuple val(meta), path(xenium_bundle, stageAs: "bundle/"), path(transcript_assignment), path(viz_polygons), path(nuclei), path(cells), path(coordinate_transform), val(units)
 
     output:
-    tuple val(meta), path("${prefix}/outs"), emit: bundle
-    path ("versions.yml"), emit: versions
+    tuple val(meta), path("${prefix}"), emit: outs
+    tuple val("${task.process}"), val("xeniumranger"), eval("xeniumranger -V | sed -e 's/.*xenium-//'"), emit: versions_xeniumranger, topic: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
+
     // Exit if running this module with -profile conda / -profile mamba
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
-        error("XENIUMRANGER_IMPORT-SEGMENTATION module does not support Conda. Please use Docker / Singularity / Podman instead.")
+        error "XENIUMRANGER_IMPORT_SEGMENTATION module does not support Conda. Please use Docker / Singularity / Podman instead."
     }
-    def args = task.ext.args ?: ''
+
     prefix = task.ext.prefix ?: "${meta.id}"
 
-    // image based segmentation options
-    def coord_transform = coordinate_transform ? "--coordinate-transform=\"${coordinate_transform}\"" : ""
-    def nuclei_detection = nuclei ? "--nuclei=\"${nuclei}\"" : ""
-    def cell_detection = cells ? "--cells=\"${cells}\"" : ""
+    // nuclei and cells are for image segmentation results
+    // transcript_assignment and viz_polygons are for transcript assignment results
+    // they are mutually exclusive
+    if ((nuclei || cells) && (transcript_assignment || viz_polygons)) {
+        error "--nuclei and --cells are for image segmentation results, which are mutually exclusive with --transcript-assignment and --viz-polygons for transcript assignment results. Please use only one of them."
+    }
 
-    // transcript based segmentation
-    def transcript_assign = transcript_assignment ? "--transcript-assignment=\"${transcript_assignment}\"" : ""
-    def polygons = viz_polygons ? "--viz-polygons=\"${viz_polygons}\"" : ""
+    def assembled_args = []
+    if (task.ext.args) { assembled_args << task.ext.args.trim() }
+    if (nuclei) { assembled_args << "--nuclei=\"${nuclei}\"" }
+    if (cells) { assembled_args << "--cells=\"${cells}\"" }
+    if (transcript_assignment) { assembled_args << "--transcript-assignment=\"${transcript_assignment}\"" }
+    if (viz_polygons) { assembled_args << "--viz-polygons=\"${viz_polygons}\"" }
+    if (nuclei) { assembled_args << "--expansion-distance=${params.expansion_distance}" }
+    if (coordinate_transform) {
+        assembled_args << "--coordinate-transform=\"${coordinate_transform}\""
+        // if coordinate_transform is provided, units must be microns
+        assembled_args << "--units=\"microns\""
+    } else if (units) {
+        assembled_args << "--units=\"${units}\""
+    }
 
-    // shared argument
-    def space = units ? "--units=${units}" : ""
-
-    // conditional args
-    def exp_dist = nuclei ? "--expansion-distance=${params.expansion_distance}" : ""
+    def args = assembled_args ? assembled_args.join(" \\\n        ") : ""
 
     """
     xeniumranger import-segmentation \\
-        --id="${prefix}" \\
+        --id="XENIUMRANGER_IMPORT_SEGMENTATION" \\
         --xenium-bundle="${xenium_bundle}" \\
-        ${exp_dist} \\
-        ${coord_transform} \\
-        ${nuclei_detection} \\
-        ${cell_detection} \\
-        ${transcript_assign} \\
-        ${polygons} \\
-        ${space} \\
         --localcores=${task.cpus} \\
         --localmem=${task.memory.toGiga()} \\
         ${args}
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        xeniumranger: \$(xeniumranger -V | sed -e "s/xeniumranger-/- /g")
-    END_VERSIONS
+    rm -rf "${prefix}"
+    mv XENIUMRANGER_IMPORT_SEGMENTATION/outs "${prefix}"
     """
 
     stub:
-    // Exit if running this module with -profile conda / -profile mamba
-    if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
-        error("XENIUMRANGER_IMPORT-SEGMENTATION module does not support Conda. Please use Docker / Singularity / Podman instead.")
-    }
-
     prefix = task.ext.prefix ?: "${meta.id}"
-
     """
-    mkdir -p "${prefix}/outs"
-    touch "${prefix}/outs/fake_file.txt"
-
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        xeniumranger: \$(xeniumranger -V | sed -e "s/xeniumranger-/- /g")
-    END_VERSIONS
+    mkdir -p "${prefix}"
+    touch "${prefix}/experiment.xenium"
     """
+
 }

@@ -1,43 +1,52 @@
-# Base image with CUDA 12.1 runtime and cuDNN
-FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
+# GPU image for segger segmentation
+# Base: PyTorch with CUDA 12.4 (consistent CUDA support)
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
 
-# Install essential system tools and Python
-RUN apt-get update -y && apt-get install -y --no-install-recommends \
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
-    wget \
-    curl \
-    unzip \
-    htop \
-    vim \
+    procps \
     build-essential \
-    python3 \
-    python3-pip \
-    python3-venv \
-    && apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
-# Create a symbolic link to enable `python` instead of `python3`
-RUN ln -s /usr/bin/python3 /usr/bin/python
+# Upgrade pip
+RUN pip install --no-cache-dir --upgrade pip
 
-# Install global python tools
-RUN python -m pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir debugpy jupyterlab
-
-# Set working directory
+# Clone and install segger from fork with CUDA 12 support
+# Using fork with fixed API (is_token_based, num_node_features) and data module exports
 WORKDIR /workspace
+RUN git clone https://github.com/an-altosian/segger_dev.git /workspace/segger_dev && \
+    cd /workspace/segger_dev && \
+    pip install --no-cache-dir -e ".[cuda12]"
 
-# Install PyTorch 2.5.1 with CUDA 12 support
-RUN pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1
+# Install missing dependencies for data.io module and training
+RUN pip install --no-cache-dir dask-geopandas lightning pytorch_lightning
 
-# Clone the repository and install segger with CUDA 12 support
-RUN git clone https://github.com/EliHei2/segger_dev.git /workspace/segger_dev && \
-    pip install -e "/workspace/segger_dev[cuda12]"
+# Fix squidpy/anndata compatibility - upgrade squidpy to version compatible with anndata 0.10+
+RUN pip install --no-cache-dir "squidpy>=1.4.0"
 
-# Set environment variables
+# Make NVRTC discoverable for CuPy (needs libnvrtc.so.12 for JIT kernel compilation)
+# The nvidia-cuda-nvrtc-cu12 pip package installs it under site-packages.
+# Use both ldconfig AND symlinks for maximum reliability (ldconfig may not survive
+# Wave container augmentation on Seqera Platform).
+RUN NVRTC_LIB=$(python -c "import nvidia.cuda_nvrtc, pathlib; print(pathlib.Path(nvidia.cuda_nvrtc.__file__).parent / 'lib')") && \
+    echo "$NVRTC_LIB" > /etc/ld.so.conf.d/nvidia-nvrtc.conf && \
+    ln -sf "$NVRTC_LIB"/libnvrtc* /usr/lib/ && \
+    ldconfig && \
+    echo "NVRTC registered at: $NVRTC_LIB" && \
+    ldconfig -p | grep nvrtc
+
+# Install faiss-cpu for vector search (faiss-gpu not available via pip)
+# Note: Removed cuvs-cu12 and nvidia library force-reinstalls as they break PyTorch CUDA detection
+RUN pip install --no-cache-dir faiss-cpu
+
+# Verify PyTorch was built with CUDA support (doesn't require GPU at build time)
+RUN python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA compiled: {torch.version.cuda}')"
+
+# Set environment variables for segger
 ENV PYTHONPATH=/workspace/segger_dev/src:$PYTHONPATH
 ENV PATH="$PATH:/workspace/segger_dev/src/segger/cli/"
 ENV CUPY_CACHE_DIR="/tmp/cupy_cache"
 
-# Create a non-root user for security
-RUN useradd --create-home seguser
-USER seguser
+# Set default shell
+CMD ["/bin/bash"]

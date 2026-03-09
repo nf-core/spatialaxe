@@ -2,7 +2,9 @@ process FICTURE_PREPROCESS {
     tag "$meta.id"
     label 'process_high'
 
-    container "nf-core/ficture:0.0.4.0"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/08/08f94799a8abd47d274654c49ed5ae225811b8a64bc9788739f4c5d23fa08230/data' :
+        'community.wave.seqera.io/library/pip_ficture:ad8a1265a51b53cf' }"
 
     input:
     tuple val(meta), path(transcripts)

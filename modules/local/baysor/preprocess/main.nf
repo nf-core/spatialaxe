@@ -13,7 +13,7 @@ process BAYSOR_PREPROCESS_TRANSCRIPTS {
     val min_y
 
     output:
-    tuple val(meta), path("${prefix}/filtered_transcripts.parquet"), emit: transcripts_parquet
+    tuple val(meta), path("${prefix}/filtered_transcripts.csv"), emit: transcripts_csv
     path ("versions.yml"), emit: versions
 
     when:
@@ -39,7 +39,7 @@ process BAYSOR_PREPROCESS_TRANSCRIPTS {
 
     """
     mkdir -p ${prefix}
-    touch ${prefix}/filtered_transcripts.parquet
+    touch ${prefix}/filtered_transcripts.csv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

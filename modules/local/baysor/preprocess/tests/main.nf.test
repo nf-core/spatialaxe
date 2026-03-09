@@ -32,7 +32,7 @@ nextflow_process {
             assertAll(
                 { assert process.success },
                 { assert file(process.out.transcripts_parquet[0][1]).exists() },
-                { assert file(process.out.transcripts_parquet[0][1]).name == "filtered_transcripts.parquet" },
+                { assert file(process.out.transcripts_parquet[0][1]).name == "filtered_transcripts.csv" },
                 { assert snapshot(process.out.versions).match("versions") }
             )
         }

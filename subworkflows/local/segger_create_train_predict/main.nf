@@ -16,30 +16,37 @@ workflow SEGGER_CREATE_TRAIN_PREDICT {
     main:
 
     ch_versions = Channel.empty()
+    // Note: spatialxe uses "pixels" but per 10x docs, transcript-based segmentation
+    // (like Baysor/Segger) must use "microns" since Xenium coordinates are in microns
+    ch_coordinate_space = Channel.value("microns")
 
-    ch_updated_bundle = Channel.empty()
-    ch_redefined_bundle = Channel.empty()
-    ch_coordinate_space = Channel.value("pixels")
-
-    // create dataset
+    // create dataset (always needed for predict step)
     SEGGER_CREATE_DATASET(ch_bundle)
     ch_versions = ch_versions.mix(SEGGER_CREATE_DATASET.out.versions)
 
-    // train a model with the dataset created
-    SEGGER_TRAIN(SEGGER_CREATE_DATASET.out.datasetdir)
-    ch_versions = ch_versions.mix(SEGGER_TRAIN.out.versions)
+    // Determine model source and join all PREDICT inputs by meta.
+    // Without meta-based join, queue channels align by emission order,
+    // which is non-deterministic and causes cross-sample input mispairing.
+    if (params.segger_model) {
+        // Use pre-trained model - skip training
+        def model_path = file(params.segger_model)
+        ch_predict_paired = SEGGER_CREATE_DATASET.out.datasetdir
+            .join(ch_transcripts_parquet)
+            .map { meta, dataset, tx -> [meta, dataset, model_path, tx] }
+    } else {
+        // Train a new model per sample, join all inputs by meta
+        SEGGER_TRAIN(SEGGER_CREATE_DATASET.out.datasetdir)
+        ch_versions = ch_versions.mix(SEGGER_TRAIN.out.versions)
+        ch_predict_paired = SEGGER_CREATE_DATASET.out.datasetdir
+            .join(SEGGER_TRAIN.out.trained_models)
+            .join(ch_transcripts_parquet)
+    }
+    // ch_predict_paired: [meta, dataset_dir, models_dir, transcripts]
 
-    // run prediction with the trained models
-    ch_just_trained_models = SEGGER_TRAIN.out.trained_models.map { _meta, models ->
-        return [models]
-    }
-    ch_just_transcripts_parquet = ch_transcripts_parquet.map { _meta, transcripts ->
-        return [transcripts]
-    }
     SEGGER_PREDICT(
-        SEGGER_CREATE_DATASET.out.datasetdir,
-        ch_just_trained_models,
-        ch_just_transcripts_parquet,
+        ch_predict_paired.map { meta, dataset, _m, _tx -> [meta, dataset] },
+        ch_predict_paired.map { _meta, _dataset, models, _tx -> models },
+        ch_predict_paired.map { _meta, _dataset, _m, tx -> [tx] },
     )
     ch_versions = ch_versions.mix(SEGGER_PREDICT.out.versions)
 
@@ -47,17 +54,30 @@ workflow SEGGER_CREATE_TRAIN_PREDICT {
     SEGGER2XR(SEGGER_PREDICT.out.transcripts)
     ch_versions = ch_versions.mix(SEGGER2XR.out.versions)
 
-    ch_segger_transcripts_parquet = SEGGER2XR.out.transcripts_parquet.map { _meta, transcripts ->
-        return [transcripts]
-    }
+    // run xeniumranger import-segmentation with Baysor-format CSV + viz polygons
+    // xeniumranger 4.0 expects Baysor CSV (with is_noise column) for --transcript-assignment
+    ch_imp_seg_inputs = ch_bundle
+        .combine(SEGGER2XR.out.segmentation_csv, by: 0)
+        .combine(SEGGER2XR.out.viz_polygons, by: 0)
+        .map { meta, bundle, segmentation_csv, polygons ->
+            tuple(
+                meta,
+                bundle,
+                segmentation_csv,  // transcript_assignment (Baysor-format CSV)
+                polygons,  // viz_polygons (GeoJSON cell boundaries)
+                [],  // nuclei
+                [],  // cells
+                [],  // coordinate_transform
+                ch_coordinate_space.val,
+            )
+        }
 
-    // swap transscripts.parquet with segger transcripts
-    ch_updated_bundle = ch_bundle.map { _meta, fileobj ->
-        fileobj == "transcripts.parquet" ? ch_segger_transcripts_parquet : fileobj
-    }
+    XENIUMRANGER_IMPORT_SEGMENTATION(
+        ch_imp_seg_inputs
+    )
 
     emit:
-    coordinate_space = ch_coordinate_space // channel: [ ["pixels"] ]
-    redefined_bundle = ch_redefined_bundle // channel: [ val(meta), ["redefined-xenium-bundle"] ]
+    coordinate_space = ch_coordinate_space // channel: [ "microns" ]
+    redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs // channel: [ val(meta), ["redefined-xenium-bundle"] ]
     versions         = ch_versions // channel: [ versions.yml ]
 }

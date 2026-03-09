@@ -1,24 +1,31 @@
-Changes in component 'nf-core/cellpose'
-'modules/nf-core/cellpose/meta.yml' is unchanged
-Changes in 'cellpose/main.nf':
---- modules/nf-core/cellpose/main.nf
-+++ modules/nf-core/cellpose/main.nf
-@@ -1,17 +1,20 @@
+Local patches applied on top of nf-core/cellpose
+upstream git_sha: 39365e944e936511e33b993cdd978e0f12adac9a
+
+Patch 1 – GPU support: label changed to gpu_single, Wave community container
+Patch 2 – Input signature: val(model) + val(maskname), prefixed output dirs
+Patch 3 – Environment: NPY_PROMOTION_STATE, MPLCONFIGDIR, CELLPOSE_LOCAL_MODELS_PATH
+Patch 4 – Tiling: use --tile via ext.args (modules.config) for large image support
+
+--- a/modules/nf-core/cellpose/main.nf
++++ b/modules/nf-core/cellpose/main.nf
+@@ -1,17 +1,19 @@
  process CELLPOSE {
 -    tag "$meta.id"
 -    label 'process_medium'
 +    tag "${meta.id}"
-+    label 'process_high'
-+    maxForks params.restrict_concurrency ? 1 : 0
- 
-     container "docker.io/biocontainers/cellpose:3.1.0_cv1"
- 
++    label 'gpu_single'
+
+-    container "docker.io/biocontainers/cellpose:3.1.0_cv1"
++    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
++        'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/cb/cb670191b7ae1a9fd5449746453916c7014b9ea622942ca76a7cb40da7deee46/data' :
++        'community.wave.seqera.io/library/python_pip_cellpose:fdf7a8c3a305a26e' }"
+
      input:
      tuple val(meta), path(image)
 -    path(model)
 +    val model
 +    val maskname
- 
+
      output:
 -    tuple val(meta), path("*masks.tif") ,   emit: mask
 -    tuple val(meta), path("*flows.tif") ,   emit: flows, optional: true
@@ -27,10 +34,10 @@ Changes in 'cellpose/main.nf':
 +    tuple val(meta), path("${prefix}/*flows.tif"), emit: flows, optional: true
 +    tuple val(meta), path("${prefix}/*seg.npy"), emit: cells, optional: true
 +    path "versions.yml", emit: versions
- 
+
      when:
      task.ext.when == null || task.ext.when
-@@ -19,40 +22,49 @@
+@@ -19,21 +21,30 @@
      script:
      // Exit if running this module with -profile conda / -profile mamba
      if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
@@ -38,7 +45,6 @@ Changes in 'cellpose/main.nf':
 +        error("CELLPOSE module does not support conda. Please use Docker / Singularity / Podman instead.")
      }
      def args = task.ext.args ?: ''
--    def prefix = task.ext.prefix ?: "${meta.id}"
 -    def model_command = model ? "--pretrained_model $model" : ""
 +    def model_command = model ? "--pretrained_model ${model}" : ""
 +    prefix = task.ext.prefix ?: "${meta.id}"
@@ -46,18 +52,24 @@ Changes in 'cellpose/main.nf':
      export OMP_NUM_THREADS=${task.cpus}
      export MKL_NUM_THREADS=${task.cpus}
 +    export NPY_PROMOTION_STATE=legacy
++    export HOME=\$PWD
++    export MPLCONFIGDIR=\$PWD/.matplotlib
++    export CELLPOSE_LOCAL_MODELS_PATH=\$PWD/.cellpose
++    mkdir -p \$MPLCONFIGDIR \$CELLPOSE_LOCAL_MODELS_PATH
++
      cellpose \\
 -        --image_path $image \\
 +        --image_path ${image} \\
          --save_tif \\
 -        $model_command \\
 -        $args
++        --verbose \\
 +        ${model_command} \\
 +        ${args}
 +
 +    mkdir -p ${prefix}
 +    mv *masks.tif ${prefix}/morphology.ome_${maskname}_masks.tif
- 
+
      cat <<-END_VERSIONS > versions.yml
      "${task.process}":
          cellpose: \$(cellpose --version | awk 'NR==2 {print \$3}')
@@ -70,8 +82,6 @@ Changes in 'cellpose/main.nf':
 -        error "I did not manage to create a cellpose module in Conda that works in all OSes. Please use Docker / Singularity / Podman instead."
 +        error("CELLPOSE module does not support conda. Please use Docker / Singularity / Podman instead.")
      }
--    def prefix = task.ext.prefix ?: "${meta.id}"
-+
      def name = image.name
      def base = name.lastIndexOf('.') != -1 ? name[0..name.lastIndexOf('.') - 1] : name
 +    prefix = task.ext.prefix ?: "${meta.id}"
@@ -81,7 +91,7 @@ Changes in 'cellpose/main.nf':
 +    touch ${prefix}/morphology.ome_${maskname}_masks.tif
 +    touch ${prefix}/morphology.ome_${maskname}_seg.npy
      touch ${base}_cp_masks.tif
- 
+
 -        cat <<-END_VERSIONS > versions.yml
 +    cat <<-END_VERSIONS > versions.yml
      "${task.process}":
@@ -90,8 +100,3 @@ Changes in 'cellpose/main.nf':
      """
 -
  }
-
-'modules/nf-core/cellpose/tests/main.nf.test.snap' is unchanged
-'modules/nf-core/cellpose/tests/main.nf.test' is unchanged
-'modules/nf-core/cellpose/tests/nextflow_wflows.config' is unchanged
-************************************************************
