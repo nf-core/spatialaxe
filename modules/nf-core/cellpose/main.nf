@@ -13,9 +13,7 @@ process CELLPOSE {
     path(model)
 
     output:
-    tuple val(meta), path("${prefix}/*masks.tif"), emit: mask
-    tuple val(meta), path("${prefix}/*flows.tif"), emit: flows, optional: true
-    tuple val(meta), path("${prefix}/*seg.npy"), emit: cells, optional: true
+    tuple val(meta), path("${prefix}/*_cp_masks.tif"), emit: mask
     tuple val("${task.process}"), val('cellpose'), eval("cellpose --version | sed -n 's/cellpose version:[[:space:]]*//p' | tr -d '[:space:]'"), topic: versions, emit: versions_cellpose
     tuple val("${task.process}"), val('python'), eval("cellpose --version | sed -n 's/python version:[[:space:]]*//p' | tr -d '[:space:]'"), topic: versions, emit: versions_python
     tuple val("${task.process}"), val('torch'), eval("cellpose --version | sed -n 's/torch version:[[:space:]]*//p' | tr -d '[:space:]'"), topic: versions, emit: versions_torch
@@ -51,9 +49,7 @@ process CELLPOSE {
     fi
 
     mkdir -p ${prefix}
-    mv *masks.tif ${prefix}/
-    mv *flows.tif ${prefix}/ 2>/dev/null || true
-    mv *seg.npy ${prefix}/ 2>/dev/null || true
+    mv *_cp_masks.tif ${prefix}/
     """
 
     stub:

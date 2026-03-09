@@ -1,102 +1,38 @@
-Local patches applied on top of nf-core/cellpose
-upstream git_sha: 39365e944e936511e33b993cdd978e0f12adac9a
-
-Patch 1 – GPU support: label changed to gpu_single, Wave community container
-Patch 2 – Input signature: val(model) + val(maskname), prefixed output dirs
-Patch 3 – Environment: NPY_PROMOTION_STATE, MPLCONFIGDIR, CELLPOSE_LOCAL_MODELS_PATH
-Patch 4 – Output capture: move flows.tif and seg.npy into prefix dir alongside masks
-
---- a/modules/nf-core/cellpose/main.nf
-+++ b/modules/nf-core/cellpose/main.nf
-@@ -1,17 +1,19 @@
+--- a/modules/nf-core/cellpose/main.nf	2026-03-09 23:13:42.359216339 +0000
++++ b/modules/nf-core/cellpose/main.nf	2026-03-09 23:14:14.408548975 +0000
+@@ -1,6 +1,6 @@
  process CELLPOSE {
--    tag "$meta.id"
+     tag "${meta.id}"
 -    label 'process_medium'
-+    tag "${meta.id}"
-+    label 'gpu_single'
-
--    container "docker.io/biocontainers/cellpose:3.1.0_cv1"
-+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-+        'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/cb/cb670191b7ae1a9fd5449746453916c7014b9ea622942ca76a7cb40da7deee46/data' :
-+        'community.wave.seqera.io/library/python_pip_cellpose:fdf7a8c3a305a26e' }"
-
-     input:
-     tuple val(meta), path(image)
--    path(model)
-+    val model
-+    val maskname
-
++    label 'process_high'
+     label 'process_gpu'
+ 
+     conda "${moduleDir}/environment.yml"
+@@ -13,9 +13,7 @@
+     path(model)
+ 
      output:
--    tuple val(meta), path("*masks.tif") ,   emit: mask
--    tuple val(meta), path("*flows.tif") ,   emit: flows, optional: true
--    path "versions.yml"                 ,   emit: versions
-+    tuple val(meta), path("${prefix}/*masks.tif"), emit: mask
-+    tuple val(meta), path("${prefix}/*flows.tif"), emit: flows, optional: true
-+    tuple val(meta), path("${prefix}/*seg.npy"), emit: cells, optional: true
-+    path "versions.yml", emit: versions
-
-     when:
-     task.ext.when == null || task.ext.when
-@@ -19,21 +21,30 @@
-     script:
-     // Exit if running this module with -profile conda / -profile mamba
-     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
--        error "I did not manage to create a cellpose module in Conda that works in all OSes. Please use Docker / Singularity / Podman instead."
-+        error("CELLPOSE module does not support conda. Please use Docker / Singularity / Podman instead.")
-     }
-     def args = task.ext.args ?: ''
--    def model_command = model ? "--pretrained_model $model" : ""
-+    def model_command = model ? "--pretrained_model ${model}" : ""
-+    prefix = task.ext.prefix ?: "${meta.id}"
+-    tuple val(meta), path("${prefix}/*masks.tif"), emit: mask
+-    tuple val(meta), path("${prefix}/*flows.tif"), emit: flows, optional: true
+-    tuple val(meta), path("${prefix}/*seg.npy"), emit: cells, optional: true
++    tuple val(meta), path("${prefix}/*_cp_masks.tif"), emit: mask
+     tuple val("${task.process}"), val('cellpose'), eval("cellpose --version | sed -n 's/cellpose version:[[:space:]]*//p' | tr -d '[:space:]'"), topic: versions, emit: versions_cellpose
+     tuple val("${task.process}"), val('python'), eval("cellpose --version | sed -n 's/python version:[[:space:]]*//p' | tr -d '[:space:]'"), topic: versions, emit: versions_python
+     tuple val("${task.process}"), val('torch'), eval("cellpose --version | sed -n 's/torch version:[[:space:]]*//p' | tr -d '[:space:]'"), topic: versions, emit: versions_torch
+@@ -45,10 +43,13 @@
+         ${model_command} \\
+         ${args}
+ 
++    # Fail fast if cellpose detected zero cells
++    if grep -q "No cell pixels found" .cellpose/run.log 2>/dev/null; then
++        echo "ERROR: cellpose detected 0 cells" >&2; exit 1
++    fi
++
+     mkdir -p ${prefix}
+-    mv *masks.tif ${prefix}/
+-    mv *flows.tif ${prefix}/ 2>/dev/null || true
+-    mv *seg.npy ${prefix}/ 2>/dev/null || true
++    mv *_cp_masks.tif ${prefix}/
      """
-     export OMP_NUM_THREADS=${task.cpus}
-     export MKL_NUM_THREADS=${task.cpus}
-+    export NPY_PROMOTION_STATE=legacy
-+    export HOME=\$PWD
-+    export MPLCONFIGDIR=\$PWD/.matplotlib
-+    export CELLPOSE_LOCAL_MODELS_PATH=\$PWD/.cellpose
-+    mkdir -p \$MPLCONFIGDIR \$CELLPOSE_LOCAL_MODELS_PATH
-+
-     cellpose \\
--        --image_path $image \\
-+        --image_path ${image} \\
-         --save_tif \\
--        $model_command \\
--        $args
-+        --verbose \\
-+        ${model_command} \\
-+        ${args}
-+
-+    mkdir -p ${prefix}
-+    mv *masks.tif ${prefix}/morphology.ome_${maskname}_masks.tif
-
-     cat <<-END_VERSIONS > versions.yml
-     "${task.process}":
-         cellpose: \$(cellpose --version | awk 'NR==2 {print \$3}')
-     END_VERSIONS
-     """
-+
+ 
      stub:
-     // Exit if running this module with -profile conda / -profile mamba
-     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
--        error "I did not manage to create a cellpose module in Conda that works in all OSes. Please use Docker / Singularity / Podman instead."
-+        error("CELLPOSE module does not support conda. Please use Docker / Singularity / Podman instead.")
-     }
-     def name = image.name
-     def base = name.lastIndexOf('.') != -1 ? name[0..name.lastIndexOf('.') - 1] : name
-+    prefix = task.ext.prefix ?: "${meta.id}"
-+
-     """
-+    mkdir -p ${prefix}
-+    touch ${prefix}/morphology.ome_${maskname}_masks.tif
-+    touch ${prefix}/morphology.ome_${maskname}_seg.npy
-     touch ${base}_cp_masks.tif
-
--        cat <<-END_VERSIONS > versions.yml
-+    cat <<-END_VERSIONS > versions.yml
-     "${task.process}":
-         cellpose: \$(cellpose --version | awk 'NR==2 {print \$3}')
-     END_VERSIONS
-     """
--
- }
