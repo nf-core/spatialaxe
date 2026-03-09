@@ -13,7 +13,7 @@ process BAYSOR_PREPROCESS_TRANSCRIPTS {
     val min_y
 
     output:
-    tuple val(meta), path("${prefix}/filtered_transcripts.csv"), emit: transcripts_csv
+    tuple val(meta), path("${prefix}/filtered_transcripts.csv"), emit: transcripts_parquet
     path ("versions.yml"), emit: versions
 
     when:

@@ -29,7 +29,7 @@ workflow BAYSOR_GENERATE_SEGFREE {
         params.min_y,
     )
     ch_versions = ch_versions.mix(BAYSOR_PREPROCESS_TRANSCRIPTS.out.versions)
-    ch_transcripts = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_csv
+    ch_transcripts = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_parquet
 
     // run baysor segfree
     ch_baysor_segfree_input = ch_transcripts

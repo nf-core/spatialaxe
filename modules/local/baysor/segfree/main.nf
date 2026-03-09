@@ -24,6 +24,8 @@ process BAYSOR_SEGFREE {
     prefix = task.ext.prefix ?: "${meta.id}"
 
     """
+    export JULIA_NUM_THREADS=${task.cpus}
+
     mkdir -p ${prefix}
 
     baysor segfree \\

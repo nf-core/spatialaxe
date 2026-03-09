@@ -5,7 +5,9 @@
 include { RESOLIFT                         } from '../../../modules/local/resolift/main'
 include { BAYSOR_RUN                       } from '../../../modules/local/baysor/run/main'
 include { CELLPOSE as CELLPOSE_CELLS       } from '../../../modules/nf-core/cellpose/main'
-include { CELLPOSE as CELLPOSE_NUCLEI      } from '../../../modules/nf-core/cellpose/main'
+include { EXTRACT_DAPI                     } from '../../../modules/local/utility/extract_dapi/main'
+include { STARDIST as STARDIST_NUCLEI      } from '../../../modules/nf-core/stardist/main'
+include { CONVERT_MASK_UINT32              } from '../../../modules/local/utility/convert_mask_uint32/main'
 include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
 include { RESIZE_TIF                       } from '../../../modules/local/utility/resize_tif/main'
 include { GET_TRANSCRIPTS_COORDINATES      } from '../../../modules/local/utility/get_coordinates/main'
@@ -28,8 +30,9 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     ch_coordinate_space = Channel.value("microns")
 
 
-    // Use empty string when no model is provided; keep as plain string for val input
-    cellpose_model = params.cellpose_model ?: ''
+    // Use empty list when no model is provided; path input for official cellpose module
+    cellpose_model = params.cellpose_model ? file(params.cellpose_model) : []
+    stardist_nuclei_model = params.stardist_nuclei_model ?: '2D_versatile_fluo'
 
     // sharpen morphology tiff if param - sharpen_tiff is true
     if (params.sharpen_tiff) {
@@ -48,14 +51,21 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     // run cellpose on the morphology (enhanced) tiff
     if (params.cell_segmentation_only) {
 
-        CELLPOSE_CELLS(ch_image, cellpose_model, 'cells')
-        ch_versions = ch_versions.mix(CELLPOSE_CELLS.out.versions)
+        CELLPOSE_CELLS(ch_image, cellpose_model)
+        ch_versions = ch_versions.mix(CELLPOSE_CELLS.out.versions_cellpose)
     }
 
     if (params.nucleus_segmentation_only) {
 
-        CELLPOSE_NUCLEI(ch_image, 'nuclei', 'nuclei')
-        ch_versions = ch_versions.mix(CELLPOSE_NUCLEI.out.versions)
+        // Extract DAPI channel, run StarDist, convert to uint32
+        EXTRACT_DAPI(ch_image)
+        ch_versions = ch_versions.mix(EXTRACT_DAPI.out.versions)
+
+        STARDIST_NUCLEI(EXTRACT_DAPI.out.dapi, [stardist_nuclei_model, []])
+        ch_versions = ch_versions.mix(STARDIST_NUCLEI.out.versions_stardist)
+
+        CONVERT_MASK_UINT32(STARDIST_NUCLEI.out.mask)
+        ch_versions = ch_versions.mix(CONVERT_MASK_UINT32.out.versions)
     }
 
 
@@ -71,7 +81,7 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
         params.min_y,
     )
     ch_versions = ch_versions.mix(BAYSOR_PREPROCESS_TRANSCRIPTS.out.versions)
-    ch_transcripts = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_csv
+    ch_transcripts = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_parquet
 
 
     // run baysor with cellpose results
@@ -79,7 +89,7 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
 
         // check if the size of the segmentation mask matches the max transcripts coordinate range
         ch_resizetif_input = ch_transcripts
-            .combine(CELLPOSE_NUCLEI.out.mask, by: 0)
+            .combine(CONVERT_MASK_UINT32.out.mask, by: 0)
             .combine(ch_experiment_metadata, by: 0)
             .map { meta, transcripts, mask, exp_meta ->
                 tuple(

@@ -1,6 +1,5 @@
 process SEGGER_PREDICT {
     tag "${meta.id}"
-    label 'process_high'
     label 'process_gpu'
 
     container "quay.io/dongzehe/segger:1.0.14"

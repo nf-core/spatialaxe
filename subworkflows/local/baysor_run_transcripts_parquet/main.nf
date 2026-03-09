@@ -130,7 +130,7 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
         ch_versions = ch_versions.mix(BAYSOR_PREPROCESS_TRANSCRIPTS.out.versions)
 
         // Run Baysor on full transcripts (with optional image-based prior mask)
-        ch_csv_with_mask = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_csv
+        ch_csv_with_mask = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_parquet
             .join(ch_prior_mask, by: 0, remainder: true)
             .map { meta, transcripts, mask ->
                 tuple(meta, transcripts, mask ?: [])
@@ -169,32 +169,16 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
 /*
  * RECONSTRUCT_PATCHES: Reconstruct the patches directory structure from
  * individually staged patch files for stitch_transcripts.py.
- *
- * Input:
- *   - meta: Sample metadata map
- *   - grid_json: patch_grid.json from DIVIDE
- *   - patch_ids: List of patch IDs
- *   - csv_files: Per-patch segmentation CSV files
- *   - geojson_files: Per-patch polygon GeoJSON files
- *
- * Output:
- *   - patches_dir: Reconstructed patches directory for STITCH
- *   - versions: Software versions
  */
 process RECONSTRUCT_PATCHES {
     tag "$meta.id"
     label 'process_single'
-
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/f9/f9c8f3a2de4e2aa94500011f7d7d09276e9b6f2d79ee8737c9098fe22d4649bc/data' :
-        'community.wave.seqera.io/library/sopa_procps-ng_pyarrow:c9ce8cd2ede79d72' }"
 
     input:
     tuple val(meta), path(grid_json), val(patch_ids), path(csv_files, stageAs: 'csv_?/*'), path(geojson_files, stageAs: 'geo_?/*')
 
     output:
     tuple val(meta), path("patches") , emit: patches_dir
-    path("versions.yml")             , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -216,23 +200,5 @@ process RECONSTRUCT_PATCHES {
     cp ${grid_json} patches/patch_grid.json
 
     ${reconstruct_script}
-
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        bash: \$(bash --version | head -1 | sed 's/.*version //' | sed 's/ .*//')
-    END_VERSIONS
-    """
-
-    stub:
-    """
-    mkdir -p patches/patch_0_0
-    echo '{}' > patches/patch_grid.json
-    echo 'transcript_id,x,y,z,gene,cell,is_noise' > patches/patch_0_0/segmentation.csv
-    echo '{"type":"FeatureCollection","features":[]}' > patches/patch_0_0/segmentation_polygons.json
-
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        bash: "5.2.0"
-    END_VERSIONS
     """
 }

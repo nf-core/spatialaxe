@@ -410,7 +410,6 @@ workflow SPATIALXE {
                 PROSEG_PRESET_PROSEG2BAYSOR_TILED(
                     ch_bundle_path,
                     ch_transcripts_parquet,
-                    ch_morphology_image,
                 )
                 ch_redefined_bundle = PROSEG_PRESET_PROSEG2BAYSOR_TILED.out.redefined_bundle
                 ch_coordinate_space = PROSEG_PRESET_PROSEG2BAYSOR_TILED.out.coordinate_space
@@ -593,7 +592,7 @@ workflow SPATIALXE {
         )
 
         MULTIQC_PRE_XR_RUN (
-            ch_multiqc_files.toSortedList(),
+            ch_multiqc_files.collect(),
             ch_multiqc_config.toList(),
             ch_multiqc_custom_config.toList(),
             ch_multiqc_logo.toList(),
@@ -608,7 +607,7 @@ workflow SPATIALXE {
         )
 
         MULTIQC_POST_XR_RUN (
-            ch_multiqc_files.toSortedList(),
+            ch_multiqc_files.collect(),
             ch_multiqc_config.toList(),
             ch_multiqc_custom_config.toList(),
             ch_multiqc_logo.toList(),
@@ -647,7 +646,7 @@ workflow SPATIALXE {
 
 
         MULTIQC (
-            ch_multiqc_files.toSortedList(),
+            ch_multiqc_files.collect(),
             ch_multiqc_config.toList(),
             ch_multiqc_custom_config.toList(),
             ch_multiqc_logo.toList(),

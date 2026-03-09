@@ -4,7 +4,7 @@ upstream git_sha: 39365e944e936511e33b993cdd978e0f12adac9a
 Patch 1 – GPU support: label changed to gpu_single, Wave community container
 Patch 2 – Input signature: val(model) + val(maskname), prefixed output dirs
 Patch 3 – Environment: NPY_PROMOTION_STATE, MPLCONFIGDIR, CELLPOSE_LOCAL_MODELS_PATH
-Patch 4 – Tiling: use --tile via ext.args (modules.config) for large image support
+Patch 4 – Output capture: move flows.tif and seg.npy into prefix dir alongside masks
 
 --- a/modules/nf-core/cellpose/main.nf
 +++ b/modules/nf-core/cellpose/main.nf

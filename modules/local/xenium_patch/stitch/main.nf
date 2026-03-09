@@ -32,12 +32,11 @@ process XENIUM_PATCH_STITCH {
     task.ext.when == null || task.ext.when
 
     script:
-    def min_tx = task.ext.min_transcripts_per_cell ?: 5
     """
     stitch_transcripts.py \\
         --patches ${patches} \\
         --output output \\
-        --min-transcripts-per-cell ${min_tx}
+        --min-transcripts-per-cell ${params.baysor_tiling_min_transcripts_per_cell}
 
     # Post-process: ensure all GeoJSON geometries are Polygon.
     # make_valid() and solve_conflicts() can produce MultiPolygon,

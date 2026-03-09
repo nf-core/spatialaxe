@@ -43,25 +43,36 @@ process DOWNSCALE_MORPHOLOGY {
 
     python3 -c "
 import tifffile, numpy as np, json
-from PIL import Image
+from skimage.transform import resize
 
 diameter = ${diameter}
 diam_mean = ${diam_mean}
 scale = diameter / diam_mean  # e.g., 9/30 = 0.3
 
-with tifffile.TiffFile('${image}') as tif:
-    img = tif.pages[0].asarray()
+img = tifffile.imread('${image}')
+print(f'Original: {img.shape}, dtype={img.dtype}, ndim={img.ndim}')
 
-orig_h, orig_w = img.shape[:2]
-new_h = max(int(orig_h * scale), 256)
-new_w = max(int(orig_w * scale), 256)
+# Handle multichannel OME-TIFFs: shape can be (H, W), (C, H, W), or (Z, C, H, W)
+if img.ndim == 2:
+    orig_h, orig_w = img.shape
+    new_h = max(int(orig_h * scale), 256)
+    new_w = max(int(orig_w * scale), 256)
+    output_shape = (new_h, new_w)
+elif img.ndim == 3:
+    orig_h, orig_w = img.shape[1], img.shape[2]
+    new_h = max(int(orig_h * scale), 256)
+    new_w = max(int(orig_w * scale), 256)
+    output_shape = (img.shape[0], new_h, new_w)
+else:
+    orig_h, orig_w = img.shape[-2], img.shape[-1]
+    new_h = max(int(orig_h * scale), 256)
+    new_w = max(int(orig_w * scale), 256)
+    output_shape = img.shape[:-2] + (new_h, new_w)
 
-print(f'Original: {img.shape}, dtype={img.dtype}')
 print(f'Downscaling by {scale:.3f}: ({orig_h}, {orig_w}) -> ({new_h}, {new_w})')
 
-pil_img = Image.fromarray(img)
-pil_img = pil_img.resize((new_w, new_h), Image.LANCZOS)
-img_ds = np.array(pil_img, dtype=img.dtype)
+img_ds = resize(img, output_shape, order=3, preserve_range=True, anti_aliasing=True)
+img_ds = img_ds.astype(img.dtype)
 
 tifffile.imwrite('${prefix}/downscaled.tif', img_ds, compression='zlib')
 json.dump({
@@ -73,14 +84,14 @@ json.dump({
     'diameter': diameter,
     'diam_mean': diam_mean
 }, open('${prefix}/scale_info.json', 'w'))
-print(f'Done: downscaled.tif written')
+print(f'Done: downscaled.tif written, shape={img_ds.shape}')
 "
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python3 --version | awk '{print \$2}')
         tifffile: \$(python3 -c 'import tifffile; print(tifffile.__version__)')
-        pillow: \$(python3 -c 'import PIL; print(PIL.__version__)')
+        scikit-image: \$(python3 -c 'import skimage; print(skimage.__version__)')
     END_VERSIONS
     """
 
