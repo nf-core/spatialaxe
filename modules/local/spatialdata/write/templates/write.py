@@ -5,7 +5,6 @@
 import sys
 import pandas as pd
 import spatialdata
-import zarr
 from spatialdata_io import xenium
 
 # Fix zarr v3 + anndata + numcodecs incompatibility:
@@ -42,9 +41,11 @@ _zarr_group.Group.create_array = _v3_compat_create_array
 
 def _is_arrow_backed(dtype):
     """Check if a pandas dtype is backed by PyArrow."""
-    return isinstance(dtype, pd.ArrowDtype) or (
-        hasattr(dtype, "storage") and getattr(dtype, "storage", None) == "pyarrow"
-    ) or "pyarrow" in str(dtype)
+    return (
+        isinstance(dtype, pd.ArrowDtype)
+        or (hasattr(dtype, "storage") and getattr(dtype, "storage", None) == "pyarrow")
+        or "pyarrow" in str(dtype)
+    )
 
 
 def _convert_df_arrow_to_numpy(df):
@@ -74,6 +75,7 @@ def convert_arrow_to_numpy(sdata):
         _convert_df_arrow_to_numpy(adata.obs)
         _convert_df_arrow_to_numpy(adata.var)
 
+
 def main():
     print("[START]")
 
@@ -83,32 +85,37 @@ def main():
     segmented_object = "${segmented_object}"
     coordinate_space = "${coordinate_space}"
 
-    cells_as_circles=False
-    cells_boundaries=False
-    nucleus_boundaries=False
-    cells_labels=False
-    nucleus_labels=False
+    cells_as_circles = False
+    cells_boundaries = False
+    nucleus_boundaries = False
+    cells_labels = False
+    nucleus_labels = False
 
-    if ( segmented_object == 'cells' ):
-        cells_boundaries=True
-        cells_labels=True
-    elif ( segmented_object == 'nuclei' ):
-        nucleus_boundaries=True
-        nucleus_labels=True
-    elif ( segmented_object == 'cells_and_nuclei' ):
-        cells_boundaries=True
-        nucleus_boundaries=True
-        cells_labels=True
-        nucleus_labels=True
+    if segmented_object == "cells":
+        cells_boundaries = True
+        cells_labels = True
+    elif segmented_object == "nuclei":
+        nucleus_boundaries = True
+        nucleus_labels = True
+    elif segmented_object == "cells_and_nuclei":
+        cells_boundaries = True
+        nucleus_boundaries = True
+        cells_labels = True
+        nucleus_labels = True
     else:
         cells_as_circles = False
 
     # set sd variables based on the coordinate space
-    if ( coordinate_space == "pixels" ):
+    if coordinate_space == "pixels":
         cells_labels = True
         nucleus_labels = True
+        # Labels are sufficient in pixel space; boundaries can contain
+        # degenerate polygons (< 4 vertices) from XeniumRanger that
+        # crash spatialdata_io's shapely LinearRing parser.
+        cells_boundaries = False
+        nucleus_boundaries = False
 
-    if ( coordinate_space == "microns" ):
+    if coordinate_space == "microns":
         cells_labels = False
         cells_boundaries = True
         nucleus_boundaries = False
@@ -116,7 +123,7 @@ def main():
         cells_as_circles = False
 
     format = "${params.format}"
-    if ( format == "xenium" ):
+    if format == "xenium":
         sd_xenium_obj = xenium(
             input_path,
             cells_as_circles=cells_as_circles,
@@ -134,12 +141,13 @@ def main():
     else:
         sys.exit("[ERROR] Format not found")
 
-    #Output version information
+    # Output version information
     with open("versions.yml", "w") as f:
         f.write('"${task.process}":\\n')
         f.write(f'spatialdata: "{spatialdata.__version__}"\\n')
 
     print("[FINISH]")
+
 
 if __name__ == "__main__":
     main()
