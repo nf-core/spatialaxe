@@ -45,6 +45,11 @@ process CELLPOSE {
         ${model_command} \\
         ${args}
 
+    # Fail fast if cellpose detected zero cells
+    if grep -q "No cell pixels found" .cellpose/run.log 2>/dev/null; then
+        echo "ERROR: cellpose detected 0 cells" >&2; exit 1
+    fi
+
     mkdir -p ${prefix}
     mv *masks.tif ${prefix}/
     mv *flows.tif ${prefix}/ 2>/dev/null || true
