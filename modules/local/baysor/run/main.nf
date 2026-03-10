@@ -21,22 +21,34 @@ process BAYSOR_RUN {
     }
 
     def args = task.ext.args ?: ''
-    def prior_seg = "${prior_segmentation}" ? "${prior_segmentation}" : ""
-    def scaling_factor = scale ? "--scale=${scale}" : ""
+    // Column-based prior (e.g. :cell_id) takes precedence over file-based prior
+    def prior_col = task.ext.prior_column ? ":${task.ext.prior_column}" : ''
+    def prior_seg = prior_col ?: (prior_segmentation ? prior_segmentation : '')
+    def confidence = task.ext.prior_confidence != null ? "--prior-segmentation-confidence=${task.ext.prior_confidence}" : ''
+    def scaling_factor = scale ? "--scale=${scale}" : ''
+    def config_arg = config ? "--config=${config}" : ''
     prefix = task.ext.prefix ?: "${meta.id}"
 
+    // Build command parts, filtering out empty strings
+    def cmd_parts = [
+        "baysor run",
+        "${transcripts}",
+        prior_seg,
+        scaling_factor,
+        confidence,
+        "--output=\"${prefix}/segmentation.csv\"",
+        config_arg,
+        "--plot",
+        "--polygon-format=GeometryCollectionLegacy",
+        args
+    ].findAll { it }
+
     """
+    export JULIA_NUM_THREADS=${task.cpus}
+
     mkdir -p ${prefix}
 
-    baysor run \\
-    ${transcripts} \\
-    ${prior_seg} \\
-    ${scaling_factor} \\
-    --output="${prefix}/segmentation.csv" \\
-    --config=${config} \\
-    --plot \\
-    --polygon-format=GeometryCollectionLegacy \\
-    ${args}
+    ${cmd_parts.join(' \\\n    ')}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -28,10 +28,7 @@ workflow FICTURE_PREPROCESS_MODEL {
     ch_versions = ch_versions.mix(FICTURE_PREPROCESS.out.versions)
 
     // run the ficture wrapper pipeline
-    ch_features_clean = Channel.empty()
-    if (params.features) {
-        ch_features_clean = FICTURE_PREPROCESS.out.features
-    }
+    ch_features_clean = params.features ? FICTURE_PREPROCESS.out.features : Channel.value([])
     FICTURE(
         FICTURE_PREPROCESS.out.transcripts,
         FICTURE_PREPROCESS.out.coordinate_minmax,

@@ -8,24 +8,22 @@ include { XENIUMRANGER_RESEGMENT } from '../../../modules/nf-core/xeniumranger/r
 workflow XENIUMRANGER_RELABEL_RESEGMENT {
     take:
     ch_bundle_path // channel: [ val(meta), [ "path-to-xenium-bundle" ] ]
-    ch_gene_panel  // channel: [ ["path-to-gene_panel.json"] ]
+    ch_gene_panel  // channel: [ val(meta), ["path-to-gene_panel.json"] ]
 
     main:
 
     ch_versions = Channel.empty()
 
+    // Combine bundle path with gene panel into a single tuple for relabel
     XENIUMRANGER_RELABEL(
-        ch_bundle_path,
-        ch_gene_panel,
+        ch_bundle_path.combine(ch_gene_panel, by: 0),
     )
-    ch_versions = ch_versions.mix(XENIUMRANGER_RELABEL.out.versions)
 
     XENIUMRANGER_RESEGMENT(
-        XENIUMRANGER_RELABEL.out.bundle
+        XENIUMRANGER_RELABEL.out.outs
     )
-    ch_versions = ch_versions.mix(XENIUMRANGER_RESEGMENT.out.versions)
 
     emit:
-    redefined_bundle = XENIUMRANGER_RESEGMENT.out.bundle // channel: [ val(meta), ["redefined-xenium-bundle"] ]
+    redefined_bundle = XENIUMRANGER_RESEGMENT.out.outs // channel: [ val(meta), ["redefined-xenium-bundle"] ]
     versions         = ch_versions // channel: [ versions.yml ]
 }

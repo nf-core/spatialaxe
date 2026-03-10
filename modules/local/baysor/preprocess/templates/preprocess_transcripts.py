@@ -49,9 +49,12 @@ def filter_transcripts (
     neg_cell_row = filtered_df["cell_id"] == -1
     filtered_df.loc[neg_cell_row,"cell_id"] = 0
 
-    # Output filtered transcripts to parquet
+    # Output filtered transcripts as CSV for Baysor 0.7.1 compatibility.
+    # Baysor's Julia Parquet.jl cannot read modern pyarrow Parquet files
+    # (pyarrow 15+ writes size_statistics Thrift field 16 unconditionally,
+    # which Baysor's old Thrift deserializer doesn't recognize).
     os.makedirs(prefix, exist_ok=True)
-    filtered_df.to_parquet(f"{prefix}/filtered_transcripts.parquet", index=False)
+    filtered_df.to_csv(f"{prefix}/filtered_transcripts.csv", index=False)
 
     return None
 

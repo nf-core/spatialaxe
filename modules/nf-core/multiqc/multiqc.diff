@@ -6,13 +6,13 @@ Changes in 'multiqc/main.nf':
 +++ modules/nf-core/multiqc/main.nf
 @@ -2,9 +2,7 @@
      label 'process_single'
- 
+
      conda "${moduleDir}/environment.yml"
 -    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
 -        'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/ef/eff0eafe78d5f3b65a6639265a16b89fdca88d06d18894f90fcdb50142004329/data' :
 -        'community.wave.seqera.io/library/multiqc:1.31--1efbafd542a23882' }"
 +    container "community.wave.seqera.io/library/multiqc-xenium-extra_multiqc_polars_scanpy_scipy:4e27199c6ca05c8b"
- 
+
      input:
      path  multiqc_files, stageAs: "?/*"
 

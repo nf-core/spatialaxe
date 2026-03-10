@@ -14,4 +14,32 @@ export_plots: true
 
 disable_version_detection: true
 
-log_filesize_limit: 5000000000 # 5GB
+run_module:
+  - xenium
+
+module_order:
+  - xenium
+
+sp:
+  cell_feature_matrix:
+    fn: cell_feature_matrix.h5
+  cells:
+    fn: cells.parquet
+  experiment:
+    fn: experiment.xenium
+    num_lines: 50
+  metrics:
+    contents: num_cells_detected
+    fn: metrics_summary.csv
+    num_lines: 5
+  transcripts:
+    fn: transcripts.parquet
+
+custom_data:
+  focus_density_plot:
+    pconfig:
+      title: "Focus Score: Per Sequence Density"
+      xlab: "CCFS Focus Score"
+      ylab: "Density"
+      ymin: 0
+      logswitch: False

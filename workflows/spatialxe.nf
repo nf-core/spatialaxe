@@ -21,6 +21,7 @@ include { UNTAR                                            } from '../modules/nf
 // coordinate-based segmentation subworklfows
 include { SEGGER_CREATE_TRAIN_PREDICT                      } from '../subworkflows/local/segger_create_train_predict/main'
 include { PROSEG_PRESET_PROSEG2BAYSOR                      } from '../subworkflows/local/proseg_preset_proseg2baysor/main'
+include { PROSEG_PRESET_PROSEG2BAYSOR_TILED                } from '../subworkflows/local/proseg_preset_proseg2baysor_tiled/main'
 include { BAYSOR_GENERATE_PREVIEW                          } from '../subworkflows/local/baysor_generate_preview/main'
 include { BAYSOR_RUN_TRANSCRIPTS_PARQUET                   } from '../subworkflows/local/baysor_run_transcripts_parquet/main'
 
@@ -28,6 +29,7 @@ include { BAYSOR_RUN_TRANSCRIPTS_PARQUET                   } from '../subworkflo
 include { BAYSOR_RUN_PRIOR_SEGMENTATION_MASK               } from '../subworkflows/local/baysor_run_prior_segmentation_mask/main'
 include { CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF             } from '../subworkflows/local/cellpose_resolift_morphology_ome_tif/main'
 include { CELLPOSE_BAYSOR_IMPORT_SEGMENTATION              } from '../subworkflows/local/cellpose_baysor_import_segmentation/main'
+include { STARDIST_RESOLIFT_MORPHOLOGY_OME_TIF             } from '../subworkflows/local/stardist_resolift_morphology_ome_tif/main'
 include { XENIUMRANGER_RESEGMENT_MORPHOLOGY_OME_TIF        } from '../subworkflows/local/xeniumranger_resegment_morphology_ome_tif/main'
 
 // segmentation-free subworkflows
@@ -65,9 +67,8 @@ workflow SPATIALXE {
     ch_versions = Channel.empty()
 
     ch_input = Channel.empty()
-    ch_bundle = Channel.empty()
     ch_config = Channel.empty()
-    ch_features = Channel.empty()
+    ch_features = Channel.value([])
     ch_raw_bundle = Channel.empty()
     ch_gene_panel = Channel.empty()
     ch_qc_reports = Channel.empty()
@@ -94,6 +95,7 @@ workflow SPATIALXE {
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     */
 
+    // TODO: Replace with params.test_data_mode for robustness
     if (workflow.profile.contains('test')) {
 
         // get sample, xenium bundle and image path
@@ -103,14 +105,13 @@ workflow SPATIALXE {
 
         // get testdata
         UNTAR(ch_input_untar)
-        ch_versions = ch_versions.mix(UNTAR.out.versions)
 
-        ch_untar_outs = UNTAR.out.untar.map { _meta, bundle ->
-            return [bundle.toString()]
+        ch_untar_outs = UNTAR.out.untar.map { meta, bundle ->
+            return [meta, bundle.toString()]
         }
 
         ch_samplesheet
-            .combine(ch_untar_outs)
+            .combine(ch_untar_outs, by: 0)
             .map { meta, _url, image, test_bundle ->
                 return [meta, test_bundle, image]
             }
@@ -152,24 +153,41 @@ workflow SPATIALXE {
         return [meta, transcripts_parquet]
     }
 
-    // get morphology.ome.tif from the xenium bundle
+    // get morphology focus image from the xenium bundle (single 2D plane)
+    // supports all Xenium versions:
+    //   v2/v3: morphology_focus/morphology_focus_0000.ome.tif
+    //   v4+:   morphology_focus/ch0000_dapi.ome.tif
+    //   v1.x:  morphology_focus.ome.tif (single file at bundle root)
+    //   fallback: morphology.ome.tif (multi-Z stack, not ideal for Cellpose)
     ch_morphology_image = ch_input.map { meta, bundle, image ->
-        def morphology_img = image
-            ? file(image)
-            : file(
-                bundle.toString().replaceFirst(/\/$/, '') + "/morphology.ome.tif",
-                checkIfExists: true
-            )
+        def morphology_img
+        if (image) {
+            morphology_img = file(image)
+        } else {
+            def bundle_path = bundle.toString().replaceFirst(/\/$/, '')
+            def focus_v3 = file("${bundle_path}/morphology_focus/morphology_focus_0000.ome.tif")
+            def focus_v4 = file("${bundle_path}/morphology_focus/ch0000_dapi.ome.tif")
+            def focus_v1 = file("${bundle_path}/morphology_focus.ome.tif")
+            if (focus_v3.exists()) {
+                morphology_img = focus_v3
+            } else if (focus_v4.exists()) {
+                morphology_img = focus_v4
+            } else if (focus_v1.exists()) {
+                morphology_img = focus_v1
+            } else {
+                morphology_img = file("${bundle_path}/morphology.ome.tif", checkIfExists: true)
+            }
+        }
         return [meta, morphology_img]
     }
 
     // get experiment metdata - experiment.xenium
-    ch_exp_metadata = ch_input.map { _meta, bundle, _image ->
+    ch_exp_metadata = ch_input.map { meta, bundle, _image ->
         def exp_metadata = file(
             bundle.toString().replaceFirst(/\/$/, '') + "/experiment.xenium",
             checkIfExists: true
         )
-        return [exp_metadata]
+        return [meta, exp_metadata]
     }
 
     // get baysor xenium config
@@ -189,17 +207,13 @@ workflow SPATIALXE {
     }
 
     // get a list of features if provided with the --features for the ficture method
-    if (params.features) {
-        ch_features = Channel.fromPath(
-                params.features,
-                checkIfExists: true
-            )
-            .flatten()
-    }
+    ch_features = params.features
+        ? Channel.fromPath(params.features, checkIfExists: true).flatten()
+        : Channel.value([])
 
     // get custom cellpose model if provided with the --cellpose_model for the cellpose method
     if (params.cellpose_model) {
-        ch_features = Channel.fromPath(
+        ch_cellpose_model = Channel.fromPath(
                 params.cellpose_model,
                 checkIfExists: true
             )
@@ -243,14 +257,13 @@ workflow SPATIALXE {
     }
 
     // get gene_panel.json if provided with --gene_panel, sets relabel_genes to true
+    def do_relabel = params.gene_panel ? true : params.relabel_genes
     if (params.gene_panel) {
 
-        params.relabel_genes = true
-        ch_gene_panel = Channel.fromPath(
-                params.gene_panel,
-                checkIfExists: true
-            )
-            .flatten()
+        def gene_panel_file = file(params.gene_panel, checkIfExists: true)
+        ch_gene_panel = ch_input.map { meta, _bundle, _image ->
+            return [meta, gene_panel_file]
+        }
     }
     else {
 
@@ -271,7 +284,7 @@ workflow SPATIALXE {
     */
 
     // run xr relabel if relabel_genes is true, check if gene_panel.json is provided
-    if (params.relabel_genes) {
+    if (do_relabel) {
 
         XENIUMRANGER_RELABEL_RESEGMENT(
             ch_bundle_path,
@@ -280,7 +293,7 @@ workflow SPATIALXE {
         ch_raw_bundle = XENIUMRANGER_RELABEL_RESEGMENT.out.redefined_bundle
     }
     else {
-        ch_raw_bundle = ch_bundle
+        ch_raw_bundle = ch_bundle_path
     }
 
     /*
@@ -370,6 +383,17 @@ workflow SPATIALXE {
             ch_redefined_bundle = CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF.out.redefined_bundle
             ch_coordinate_space = CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF.out.coordinate_space
         }
+
+        // run stardist on the morphology_ome.tif
+        if (params.method == 'stardist') {
+
+            STARDIST_RESOLIFT_MORPHOLOGY_OME_TIF(
+                ch_morphology_image,
+                ch_bundle_path,
+            )
+            ch_redefined_bundle = STARDIST_RESOLIFT_MORPHOLOGY_OME_TIF.out.redefined_bundle
+            ch_coordinate_space = STARDIST_RESOLIFT_MORPHOLOGY_OME_TIF.out.coordinate_space
+        }
     }
 
     /*
@@ -382,12 +406,21 @@ workflow SPATIALXE {
         // run proseg with transcripts.parquet if method = proseg or is not provided (default workflow)
         if (!params.method || params.method == 'proseg') {
 
-            PROSEG_PRESET_PROSEG2BAYSOR(
-                ch_bundle_path,
-                ch_transcripts_parquet,
-            )
-            ch_redefined_bundle = PROSEG_PRESET_PROSEG2BAYSOR.out.redefined_bundle
-            ch_coordinate_space = PROSEG_PRESET_PROSEG2BAYSOR.out.coordinate_space
+            if (params.tiling) {
+                PROSEG_PRESET_PROSEG2BAYSOR_TILED(
+                    ch_bundle_path,
+                    ch_transcripts_parquet,
+                )
+                ch_redefined_bundle = PROSEG_PRESET_PROSEG2BAYSOR_TILED.out.redefined_bundle
+                ch_coordinate_space = PROSEG_PRESET_PROSEG2BAYSOR_TILED.out.coordinate_space
+            } else {
+                PROSEG_PRESET_PROSEG2BAYSOR(
+                    ch_bundle_path,
+                    ch_transcripts_parquet,
+                )
+                ch_redefined_bundle = PROSEG_PRESET_PROSEG2BAYSOR.out.redefined_bundle
+                ch_coordinate_space = PROSEG_PRESET_PROSEG2BAYSOR.out.coordinate_space
+            }
         }
 
         // run segger with transcripts.parquet
@@ -401,13 +434,23 @@ workflow SPATIALXE {
             ch_coordinate_space = SEGGER_CREATE_TRAIN_PREDICT.out.coordinate_space
         }
 
-        // run baysor with transcripts.parquet
+        // run baysor with transcripts.parquet (unified tiled/non-tiled subworkflow)
         if (params.method == 'baysor') {
+
+            // Image-based prior (cellpose mask) requires non-tiled Baysor
+            if ( params.baysor_tiling && params.baysor_prior == 'cellpose' ) {
+                error "ERROR: baysor_prior='cellpose' (image-based) requires baysor_tiling=false. " +
+                      "For tiled Baysor, use baysor_prior='cells' (column-based)."
+            }
+
+            ch_prior_mask = Channel.empty()
 
             BAYSOR_RUN_TRANSCRIPTS_PARQUET(
                 ch_bundle_path,
                 ch_transcripts_parquet,
+                ch_morphology_image,
                 ch_config,
+                ch_prior_mask,
             )
             ch_redefined_bundle = BAYSOR_RUN_TRANSCRIPTS_PARQUET.out.redefined_bundle
             ch_coordinate_space = BAYSOR_RUN_TRANSCRIPTS_PARQUET.out.coordinate_space
@@ -544,10 +587,9 @@ workflow SPATIALXE {
     if (params.mode == 'image' || params.mode == 'coordinate') {
 
         // get path to the raw bundle
-        ch_just_bundle_path = ch_bundle_path.map {
-            _meta, bundle_path -> return [bundle_path]
-        }
-        ch_multiqc_files = ch_multiqc_files.mix(ch_just_bundle_path.flatten())
+        ch_multiqc_files = ch_multiqc_files.mix(
+            ch_bundle_path.map { _meta, bundle -> file(bundle) }.collect().ifEmpty([])
+        )
 
         MULTIQC_PRE_XR_RUN (
             ch_multiqc_files.collect(),
@@ -560,11 +602,9 @@ workflow SPATIALXE {
         ch_multiqc_pre_xr_report = MULTIQC_PRE_XR_RUN.out.report.toList()
 
         // get path to the redefined bundle
-        ch_just_redefined_bundle_path = ch_redefined_bundle.map {
-            _meta, bundle_path -> return [bundle_path]
-        }
-
-        ch_multiqc_files = ch_multiqc_files.mix(ch_just_redefined_bundle_path.flatten())
+        ch_multiqc_files = ch_multiqc_files.mix(
+            ch_redefined_bundle.map { _meta, bundle -> file(bundle) }.collect().ifEmpty([])
+        )
 
         MULTIQC_POST_XR_RUN (
             ch_multiqc_files.collect(),
@@ -579,20 +619,18 @@ workflow SPATIALXE {
     } else {
 
         // get path to the raw bundle
-        ch_just_bundle_path = ch_bundle_path.map {
-            _meta, bundle_path -> return [bundle_path]
-        }
-        ch_multiqc_files = ch_multiqc_files.mix(ch_just_bundle_path.flatten())
+        ch_multiqc_files = ch_multiqc_files.mix(
+            ch_bundle_path.map { _meta, bundle -> file(bundle) }.collect().ifEmpty([])
+        )
 
 
         // get the qc htmls if qc mode is run
         if (params.mode == 'qc' || params.run_qc) {
 
             // TODO collect all qc outs in a channel to be passed to multiqc
-            ch_just_qc_htmls = ch_qc_reports.map { _meta, qc_reports ->
-                return [qc_reports]
-            }
-            ch_multiqc_files = ch_multiqc_files.mix(ch_just_qc_htmls.flatten())
+            ch_multiqc_files = ch_multiqc_files.mix(
+                ch_qc_reports.map { _meta, qc_reports -> qc_reports }.collect().ifEmpty([])
+            )
 
         }
 
@@ -600,10 +638,9 @@ workflow SPATIALXE {
         // get the preview html if preview mode is run
         if (params.mode == 'preview') {
 
-            ch_just_preview_html = ch_preview_html.map { _meta, preview_html ->
-                return [preview_html]
-            }
-            ch_multiqc_files = ch_multiqc_files.mix(ch_just_preview_html.flatten())
+            ch_multiqc_files = ch_multiqc_files.mix(
+                ch_preview_html.map { _meta, preview_html -> preview_html }.collect().ifEmpty([])
+            )
 
         }
 

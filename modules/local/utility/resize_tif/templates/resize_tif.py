@@ -27,10 +27,13 @@ def read_mask(mask_path: str) -> np.ndarray:
 def read_transcript_bounds(transcript_path: str) -> Tuple[float, float, float, float]:
     """Read transcript coordinates and return their bounding box."""
     print(f"Reading transcripts: {transcript_path}")
-    transcripts = pd.read_csv(transcript_path)
+    if transcript_path.endswith(".parquet"):
+        transcripts = pd.read_parquet(transcript_path, columns=["x_location", "y_location"])
+    else:
+        transcripts = pd.read_csv(transcript_path)
 
     if "x_location" not in transcripts.columns or "y_location" not in transcripts.columns:
-        raise ValueError("Transcript CSV must contain 'x_location' and 'y_location' columns.")
+        raise ValueError("Transcript file must contain 'x_location' and 'y_location' columns.")
 
     x_min, x_max = transcripts["x_location"].min(), transcripts["x_location"].max()
     y_min, y_max = transcripts["y_location"].min(), transcripts["y_location"].max()
@@ -108,13 +111,16 @@ if __name__ == "__main__":
     mask: str = "${mask}"
     transcripts: str = "${transcripts}"
     metadata: str = "${metadata}"
-    output_mask: str = "resized_${mask}.tif"
+    prefix: str = "${prefix}"
+
+    os.makedirs(prefix, exist_ok=True)
+    output_mask: str = os.path.join(prefix, "resized_${mask}.tif")
 
     main(
         mask_path=mask,
-        transcript_path=transcripts,
+        transcripts_path=transcripts,
         metadata_path=metadata,
-        output_path=output_mask
+        output_path=output_mask,
     )
 
     #Output versions.yml

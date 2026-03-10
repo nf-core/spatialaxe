@@ -17,43 +17,42 @@ workflow XENIUMRANGER_RESEGMENT_MORPHOLOGY_OME_TIF {
 
     // run resegment with changed config values
     XENIUMRANGER_RESEGMENT(ch_bundle_path)
-    ch_versions = ch_versions.mix(XENIUMRANGER_RESEGMENT.out.versions)
 
 
     // run import segmentation to redine xenium bundle along with nuclear segmentation
-    cells = XENIUMRANGER_RESEGMENT.out.bundle.map { _meta, bundle ->
-        return [bundle + "/cells.zarr.zip"]
+    // Keep meta in the cells channel for proper per-sample joining
+    def cells = XENIUMRANGER_RESEGMENT.out.outs.map { meta, bundle ->
+        return [meta, bundle + "/cells.zarr.zip"]
     }
 
     // adjust the nuclear expansion distance without altering nuclei detection
     if (params.nucleus_segmentation_only) {
 
-        ch_imp_seg_inputs = ch_bundle_path
-            .combine(XENIUMRANGER_RESEGMENT.out.bundle, by: 0)
-            .combine(cells)
-            .map { meta, bundle, cells_zarr ->
+        def ch_imp_seg_inputs = ch_bundle_path
+            .join(XENIUMRANGER_RESEGMENT.out.outs, by: 0)
+            .join(cells, by: 0)
+            .map { meta, bundle, reseg_bundle, cells_zarr ->
                 tuple(
                     meta,
                     bundle,
                     [],
+                    [],
+                    [],
                     cells_zarr,
                     [],
-                    [],
-                    [],
-                    ch_coordinate_space.val,
+                    "pixels",
                 )
             }
 
         XENIUMRANGER_IMPORT_SEGMENTATION(
             ch_imp_seg_inputs
         )
-        ch_versions = ch_versions.mix(XENIUMRANGER_IMPORT_SEGMENTATION.out.versions)
 
-        ch_redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.bundle
+        ch_redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs
     }
     else {
 
-        ch_redefined_bundle = XENIUMRANGER_RESEGMENT.out.bundle
+        ch_redefined_bundle = XENIUMRANGER_RESEGMENT.out.outs
     }
 
     emit:

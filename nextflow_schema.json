@@ -36,7 +36,7 @@
                 },
                 "method": {
                     "type": "string",
-                    "enum": ["cellpose", "xeniumranger", "baysor", "proseg", "segger", "ficture"],
+                    "enum": ["cellpose", "xeniumranger", "baysor", "proseg", "segger", "ficture", "stardist"],
                     "description": "Segmentation method to run."
                 },
                 "gene_panel": {
@@ -58,6 +58,28 @@
                     "type": "string",
                     "description": "Model to use for running or starting training.",
                     "format": "file-path"
+                },
+                "stardist_model": {
+                    "type": "string",
+                    "default": "2D_versatile_fluo",
+                    "description": "StarDist pretrained model for cell segmentation (e.g., '2D_versatile_fluo', '2D_versatile_he')."
+                },
+                "stardist_nuclei_model": {
+                    "type": "string",
+                    "default": "2D_versatile_fluo",
+                    "description": "StarDist pretrained model for nuclei segmentation."
+                },
+                "stardist_prob_thresh": {
+                    "type": "number",
+                    "description": "StarDist object probability threshold. Lower values detect more objects."
+                },
+                "stardist_nms_thresh": {
+                    "type": "number",
+                    "description": "StarDist non-maximum suppression threshold. Lower values reduce overlapping detections."
+                },
+                "stardist_n_tiles": {
+                    "type": "string",
+                    "description": "StarDist tiling for large images (e.g., '4 4'). Reduces memory usage."
                 },
                 "segmentation_mask": {
                     "type": "string",
@@ -174,7 +196,7 @@
                     "type": "array",
                     "items": {
                         "type": "string",
-                        "enum": ["cellpose", "xeniumranger", "baysor"]
+                        "enum": ["cellpose", "xeniumranger", "baysor", "stardist"]
                     },
                     "description": "List of image-based segmentation methods."
                 },
@@ -226,6 +248,36 @@
                 "max_y": {
                     "type": "number",
                     "description": "only keep transcripts whose y-coordinate is less than specified limit, if no limit is specified, the default value will retain all transcripts since Xenium slide is <24000 microns in x and y (default: 24000.0)"
+                },
+                "tiling": {
+                    "type": "boolean",
+                    "description": "Enable tiled segmentation for large datasets. Divides transcripts into overlapping patches, runs segmentation in parallel per patch, then stitches results.",
+                    "default": false
+                },
+                "patch_grid": {
+                    "type": "string",
+                    "description": "Grid layout for tiling (rows x cols), e.g. '3x3', '4x4'.",
+                    "default": "3x3"
+                },
+                "patch_overlap": {
+                    "type": "integer",
+                    "description": "Overlap between adjacent patches in microns.",
+                    "default": 50
+                },
+                "patch_filter_method": {
+                    "type": "string",
+                    "description": "Post-stitch cell size filtering method. Options: 'empirical' (IQR-based), 'distribution' (z-score), 'both', or null to disable.",
+                    "enum": ["empirical", "distribution", "both"]
+                },
+                "patch_filter_iqr_multiplier": {
+                    "type": "number",
+                    "description": "IQR multiplier for empirical cell size filtering during stitching.",
+                    "default": 3.0
+                },
+                "patch_filter_z_threshold": {
+                    "type": "number",
+                    "description": "Z-score threshold for distribution-based cell size filtering during stitching.",
+                    "default": 4.0
                 },
                 "csplit_x_bins": {
                     "type": "integer",

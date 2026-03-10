@@ -2,10 +2,10 @@ process PROSEG2BAYSOR {
     tag "$meta.id"
     label 'process_high'
 
-    container "khersameesh24/proseg:2.0.0"
+    container "ghcr.io/dcjones/proseg:v3.1.0"
 
     input:
-    tuple val(meta), path(cell_polygons), path(transcript_metadata)
+    tuple val(meta), path(zarr_dir)
 
     output:
     tuple val(meta), path("${prefix}/cell-polygons.geojson")  , emit: xr_polygons
@@ -25,8 +25,7 @@ process PROSEG2BAYSOR {
     mkdir -p ${prefix}
 
     proseg-to-baysor  \\
-        ${transcript_metadata} \\
-        ${cell_polygons} \\
+        ${zarr_dir} \\
         --output-transcript-metadata ${prefix}/transcript-metadata.csv \\
         --output-cell-polygons ${prefix}/cell-polygons.geojson \\
         ${args}

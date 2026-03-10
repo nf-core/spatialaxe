@@ -2,6 +2,7 @@
 
 """Merge two spatialdata bundles to create a layered spatialdata object."""
 
+import json
 import os
 import shutil
 import spatialdata
@@ -49,6 +50,21 @@ def main():
                 src_folder = os.path.join(add_category_path, folder)
                 dest_folder = os.path.join(output_category_path, f"redefined_{folder}")
                 shutil.copytree(src_folder, dest_folder)
+
+    # Invalidate consolidated metadata in zarr.json — the directory renames above
+    # made the element paths in the metadata stale (e.g., 'points/transcripts' →
+    # 'points/raw_transcripts'). Without consolidated metadata, sd.read_zarr()
+    # discovers elements by scanning the filesystem directly.
+    output_dir = f"spatialdata/{output_path}/{output_folder}"
+    zarr_json = os.path.join(output_dir, "zarr.json")
+    if os.path.exists(zarr_json):
+        with open(zarr_json) as f:
+            meta = json.load(f)
+        if "consolidated_metadata" in meta:
+            del meta["consolidated_metadata"]
+            with open(zarr_json, "w") as f:
+                json.dump(meta, f)
+            print("[NOTE] Removed stale consolidated metadata from zarr.json")
 
     #Output version information
     with open("versions.yml", "w") as f:

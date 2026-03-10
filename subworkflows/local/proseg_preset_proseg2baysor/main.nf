@@ -21,8 +21,8 @@ workflow PROSEG_PRESET_PROSEG2BAYSOR {
     ch_versions = ch_versions.mix(PROSEG.out.versions)
 
 
-    // run proseg-to-baysor on the data generated with the proseg run
-    PROSEG2BAYSOR(PROSEG.out.seg_outs)
+    // run proseg-to-baysor on the zarr output from proseg v3
+    PROSEG2BAYSOR(PROSEG.out.zarr)
     ch_versions = ch_versions.mix(PROSEG2BAYSOR.out.versions)
 
 
@@ -34,11 +34,11 @@ workflow PROSEG_PRESET_PROSEG2BAYSOR {
             tuple(
                 meta,
                 bundle,
-                [],
-                [],
-                [],
                 metadata,
                 polygons2d,
+                [],
+                [],
+                [],
                 ch_coordinate_space.val,
             )
         }
@@ -46,10 +46,9 @@ workflow PROSEG_PRESET_PROSEG2BAYSOR {
     XENIUMRANGER_IMPORT_SEGMENTATION(
         ch_imp_seg_inputs
     )
-    ch_versions = ch_versions.mix(XENIUMRANGER_IMPORT_SEGMENTATION.out.versions)
 
     emit:
     coordinate_space = ch_coordinate_space // channel: [ "microns" ]
-    redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.bundle // channel: [ val(meta), ["redefined-xenium-bundle"] ]
+    redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs // channel: [ val(meta), ["redefined-xenium-bundle"] ]
     versions         = ch_versions // channel: [ versions.yml ]
 }
