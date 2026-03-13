@@ -2,18 +2,6 @@
     "-profile test": {
         "content": [
             {
-                "SEGTRAQ_BASELINE": {
-                    "segtraq": null
-                },
-                "SEGTRAQ_CLUSTERING_STABILITY": {
-                    "segtraq": null
-                },
-                "SEGTRAQ_REGION_SIMILARITY": {
-                    "segtraq": null
-                },
-                "SEGTRAQ_VOLUME": {
-                    "segtraq": null
-                },
                 "UNTAR": {
                     "untar": "bsdtar 3.5.3 - libarchive 3.7.4 zlib/1.2.12 liblzma/5.4.3 bz2lib/1.0.8"
                 },
@@ -50,23 +38,6 @@
                 "image/multiqc/redefined_bundle/multiqc_data",
                 "image/multiqc/redefined_bundle/multiqc_plots",
                 "image/multiqc/redefined_bundle/multiqc_report.html",
-                "image/segtraq",
-                "image/segtraq/baseline",
-                "image/segtraq/baseline/segtraq_qc",
-                "image/segtraq/baseline/segtraq_qc/test_run",
-                "image/segtraq/baseline/segtraq_qc/test_run/baseline_summary.json",
-                "image/segtraq/clustering_stability",
-                "image/segtraq/clustering_stability/segtraq_qc",
-                "image/segtraq/clustering_stability/segtraq_qc/test_run",
-                "image/segtraq/clustering_stability/segtraq_qc/test_run/clustering_stability_summary.json",
-                "image/segtraq/region_similarity",
-                "image/segtraq/region_similarity/segtraq_qc",
-                "image/segtraq/region_similarity/segtraq_qc/test_run",
-                "image/segtraq/region_similarity/segtraq_qc/test_run/region_similarity.json",
-                "image/segtraq/volume",
-                "image/segtraq/volume/segtraq_qc",
-                "image/segtraq/volume/segtraq_qc/test_run",
-                "image/segtraq/volume/segtraq_qc/test_run/volume_summary.json",
                 "image/spatialdata",
                 "image/spatialdata/merge",
                 "image/spatialdata/merge/spatialdata",
@@ -138,10 +109,6 @@
                 "versions.yml:md5,d0820ff27c0f37874e94c7922991053b",
                 "multiqc_report.html:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "multiqc_report.html:md5,d41d8cd98f00b204e9800998ecf8427e",
-                "baseline_summary.json:md5,d41d8cd98f00b204e9800998ecf8427e",
-                "clustering_stability_summary.json:md5,d41d8cd98f00b204e9800998ecf8427e",
-                "region_similarity.json:md5,d41d8cd98f00b204e9800998ecf8427e",
-                "volume_summary.json:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "fake_file.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "versions.yml:md5,07f7a043ac5687b8d7fc33891b040eec",
                 "fake_file.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
@@ -160,13 +127,13 @@
                     "canonicalPath": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle/analysis.tar.gz",
                     "directory": false,
                     "file": true,
-                    "freeSpace": 7783440384,
+                    "freeSpace": 7662481408,
                     "hidden": false,
                     "name": "analysis.tar.gz",
                     "parent": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle",
                     "path": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle/analysis.tar.gz",
                     "totalSpace": 245107195904,
-                    "usableSpace": 7783440384
+                    "usableSpace": 7662481408
                 },
                 "analysis.zarr.zip:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "analysis_summary.html:md5,d41d8cd98f00b204e9800998ecf8427e",
@@ -176,13 +143,13 @@
                     "canonicalPath": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle/aux_outputs.tar.gz",
                     "directory": false,
                     "file": true,
-                    "freeSpace": 7783440384,
+                    "freeSpace": 7662481408,
                     "hidden": false,
                     "name": "aux_outputs.tar.gz",
                     "parent": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle",
                     "path": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle/aux_outputs.tar.gz",
                     "totalSpace": 245107195904,
-                    "usableSpace": 7783440384
+                    "usableSpace": 7662481408
                 },
                 {
                     "absolute": true,
@@ -190,13 +157,13 @@
                     "canonicalPath": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle/cell_boundaries.csv.gz",
                     "directory": false,
                     "file": true,
-                    "freeSpace": 7783440384,
+                    "freeSpace": 7662481408,
                     "hidden": false,
                     "name": "cell_boundaries.csv.gz",
                     "parent": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle",
                     "path": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle/cell_boundaries.csv.gz",
                     "totalSpace": 245107195904,
-                    "usableSpace": 7783440384
+                    "usableSpace": 7662481408
                 },
                 "cell_boundaries.parquet:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "cell_feature_matrix.h5:md5,d41d8cd98f00b204e9800998ecf8427e",
@@ -206,13 +173,13 @@
                     "canonicalPath": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle/cell_feature_matrix.tar.gz",
                     "directory": false,
                     "file": true,
-                    "freeSpace": 7783440384,
+                    "freeSpace": 7662481408,
                     "hidden": false,
                     "name": "cell_feature_matrix.tar.gz",
                     "parent": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle",
                     "path": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle/cell_feature_matrix.tar.gz",
                     "totalSpace": 245107195904,
-                    "usableSpace": 7783440384
+                    "usableSpace": 7662481408
                 },
                 "cell_feature_matrix.zarr.zip:md5,d41d8cd98f00b204e9800998ecf8427e",
                 {
@@ -221,13 +188,13 @@
                     "canonicalPath": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle/cells.csv.gz",
                     "directory": false,
                     "file": true,
-                    "freeSpace": 7783440384,
+                    "freeSpace": 7662481408,
                     "hidden": false,
                     "name": "cells.csv.gz",
                     "parent": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle",
                     "path": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle/cells.csv.gz",
                     "totalSpace": 245107195904,
-                    "usableSpace": 7783440384
+                    "usableSpace": 7662481408
                 },
                 "cells.parquet:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "cells.zarr.zip:md5,d41d8cd98f00b204e9800998ecf8427e",
@@ -242,13 +209,13 @@
                     "canonicalPath": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle/nucleus_boundaries.csv.gz",
                     "directory": false,
                     "file": true,
-                    "freeSpace": 7783440384,
+                    "freeSpace": 7662481408,
                     "hidden": false,
                     "name": "nucleus_boundaries.csv.gz",
                     "parent": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle",
                     "path": "/Users/priyaltripathi/spatialxe/.nf-test/tests/de9fb8c060dbe28872fd2f7f09f3598/output/image/untar/test_run/xenium_bundle/nucleus_boundaries.csv.gz",
                     "totalSpace": 245107195904,
-                    "usableSpace": 7783440384
+                    "usableSpace": 7662481408
                 },
                 "nucleus_boundaries.parquet:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "transcripts.parquet:md5,d41d8cd98f00b204e9800998ecf8427e",
@@ -258,7 +225,7 @@
                 "versions.yml:md5,686bf4196185d2e13ae2e12221233b7e"
             ]
         ],
-        "timestamp": "2026-03-13T18:17:14.903785",
+        "timestamp": "2026-03-13T18:50:53.479045",
         "meta": {
             "nf-test": "0.9.4",
             "nextflow": "25.10.4"
