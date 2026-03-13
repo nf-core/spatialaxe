@@ -76,7 +76,7 @@
             ],
             [
                 "fake_file.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
-                "versions.yml:md5,124884bd49548c3ea63ddf29d238c589",
+                "versions.yml:md5,2724e961c331730dd33bf958f22b0b0c",
                 "segmentation.csv:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "segmentation_polygons_2d.json:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "versions.yml:md5,a072fc212a30ce4d87379d0871eff5fb",
