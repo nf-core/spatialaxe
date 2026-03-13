@@ -14,7 +14,7 @@ workflow SEGTRAQ_QC {
 
     ch_versions = channel.empty()
     ch_qc = channel.empty()
-    def modules_to_run = params.segtraq_modules == 'all' ? 
+    def modules_to_run = params.segtraq_modules == 'all' ?
     ['baseline', 'clustering_stability', 'region_similarity'] : params.segtraq_modules.tokenize(',')
 
 

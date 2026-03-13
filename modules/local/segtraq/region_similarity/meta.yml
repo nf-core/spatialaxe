@@ -5,7 +5,7 @@ description: Run SegTraQ region similarity metrics on a SpatialData object to as
 keywords:
   - segtraq
   - quality control
-  - region 
+  - region
   - similarity
   - stability
   - spatial transcriptomics
