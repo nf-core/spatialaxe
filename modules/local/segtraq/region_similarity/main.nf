@@ -22,7 +22,7 @@ process SEGTRAQ_REGION_SIMILARITY {
 
     prefix = task.ext.prefix ?: "${meta.id}"
 
-    template('clustering_stability.py')
+    template 'clustering_stability.py'
 
     stub:
     // Exit if running this module with -profile conda / -profile mamba
