@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "segtraq_qc"
+description: Run SegTraQ quality control on SpatialData objects to assess segmentation
+  and transcript assignment quality in spatial omics data.
+keywords:
+  - segtraq
+  - quality control
+  - segmentation
+  - spatial transcriptomics
+components:
+  - segtraq/baseline
+  - segtraq/clustering_stability
+  - segtraq/region_similarity
+  - segtraq/volume
+  - segtraq/supervised
+  - segtraq/point_statistics
+input:
+  - ch_spatialdata:
+      type: directory
+      description: |
+        Input channel containing the sample info and the SpatialData .zarr directory
+        Structure: [ val(meta), path("spatialdata.zarr") ]
+      pattern: "*.zarr"
+  - markers:
+      type: file
+      description: |
+        Path to a JSON file containing cell-type specific markers (positive and negative).
+      pattern: "*.json"
+  - cell_type_key:
+      type: string
+      description: |
+        The column name in the AnnData table's .obs that contains the cell type assignments.
+
+output:
+  - qc_results:
+      type: directory
+      description: |
+        Directory containing SegTraQ QC results
+        Structure: [ val(meta), path("segtraq_qc/*/") ]
+  - versions:
+      type: file
+      description: |
+        File containing software versions
+        Structure: [ path(versions.yml) ]
+      pattern: "versions.yml"
+authors:
+  - "@priyaltripathi"
+maintainers:
+  - "@priyaltripathi"

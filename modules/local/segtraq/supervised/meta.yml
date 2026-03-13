@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/yaml-schema.json
+name: segtraq_supervised
+description: Run SegTraQ region similarity metrics on a SpatialData object to assess
+  how similar the expression profiles are between subcellular regions.
+keywords:
+  - segtraq
+  - quality control
+  - supervised
+  - scRNA
+  - spatial transcriptomics
+tools:
+  - custom:
+      description: SegTraQ - A Python toolkit for quantitative and visual quality
+        control of segmentation and transcript assignment in spatial omics data.
+      homepage: https://github.com/LazDaria/SegTraQ
+      documentation: https://lazdaria.github.io/SegTraQ
+      licence: ["MIT"]
+input:
+  - meta:
+      type: map
+      description: |
+        Groovy Map containing sample information
+        e.g. [ id:'sample' ]
+  - spatialdata_zarr:
+      type: directory
+      description: |
+        Path to a SpatialData .zarr directory containing the spatial omics
+        data with segmentation results.
+      pattern: "*.zarr"
+  - markers:
+      type: file
+      description: |
+        Path to a JSON file containing cell-type specific markers (positive and negative).
+      pattern: "*.json"
+  - cell_type_key:
+      type: string
+      description: |
+        The column name in the AnnData table's `.obs` that contains the cell type assignments.
+output:
+  - qc_results:
+      - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'sample' ]
+      - "segtraq_qc/${prefix}/":
+          type: directory
+          description: |
+            Directory containing SegTraQ supervised metrics QC results including
+            supervised_summary.json.
+          pattern: "segtraq_qc/*/"
+  - versions:
+      type: file
+      description: File containing software versions
+      pattern: "versions.yml"
+authors:
+  - "@priyaltripathi"
+maintainers:
+  - "@priyaltripathi"

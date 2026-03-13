@@ -423,6 +423,36 @@
                     "type": "boolean",
                     "description": "Restrict parallelizing a process. Eg. restrict running cellpose cell and nuclei segmentation together if the resources are limited.",
                     "default": false
+                },
+                "run_segtraq": {
+                    "type": "boolean",
+                    "description": "Whether to run SegTraQ baseline QC after segmentation.",
+                    "default": false
+                },
+                "segtraq_centroid_x_key": {
+                    "type": "string",
+                    "description": "Key for x centroid in SpatialData tables, used by SegTraQ.",
+                    "default": "x_centroid"
+                },
+                "segtraq_centroid_y_key": {
+                    "type": "string",
+                    "description": "Key for y centroid in SpatialData tables, used by SegTraQ.",
+                    "default": "y_centroid"
+                },
+                "segtraq_modules": {
+                    "type": "string",
+                    "description": "Key for which modules to run, used by SegTraQ.",
+                    "default": "all"
+                },
+                "segtraq_markers": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to a JSON file containing cell-type specific markers (positive and negative)."
+                },
+                "segtraq_cell_type_key": {
+                    "type": "string",
+                    "description": "Key for cell type annotation in the AnnData table.",
+                    "default": "transferred_cell_type"
                 }
             }
         },
