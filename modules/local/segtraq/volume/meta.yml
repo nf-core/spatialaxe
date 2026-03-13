@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/yaml-schema.json
-name: segtraq_region_similarity
-description: Run SegTraQ region similarity metrics on a SpatialData object to assess
-  how similar the expression profiles are between subcellular regions.
+name: segtraq_volume
+description: Run SegTraQ volume metrics on a SpatialData object to assess
+  how well a segmentation method resolves cell overlaps in 3D.
 keywords:
   - segtraq
   - quality control
@@ -38,8 +38,8 @@ output:
       - "segtraq_qc/${prefix}/":
           type: directory
           description: |
-            Directory containing SegTraQ region similarity QC results including
-            region_similarity.json.
+            Directory containing SegTraQ volume QC results including
+            volume_summary.json.
           pattern: "segtraq_qc/*/"
   - versions:
       type: file

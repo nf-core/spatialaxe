@@ -22,7 +22,7 @@ process SEGTRAQ_REGION_SIMILARITY {
 
     prefix = task.ext.prefix ?: "${meta.id}"
 
-    template 'clustering_stability.py'
+    template 'rs.py'
 
     stub:
     // Exit if running this module with -profile conda / -profile mamba
@@ -34,7 +34,7 @@ process SEGTRAQ_REGION_SIMILARITY {
 
     """
     mkdir -p "segtraq_qc/${prefix}"
-    touch "segtraq_qc/${prefix}/clustering_stability_summary.json"
+    touch "segtraq_qc/${prefix}/region_similarity.json"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

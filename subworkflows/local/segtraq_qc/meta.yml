@@ -11,6 +11,7 @@ components:
   - segtraq/baseline
   - segtraq/clustering_stability
   - segtraq/region_similarity
+  - segtraq/volume
 input:
   - ch_spatialdata:
       type: directory
