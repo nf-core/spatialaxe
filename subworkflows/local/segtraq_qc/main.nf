@@ -7,6 +7,9 @@ include { SEGTRAQ_CLUSTERING_STABILITY         } from '../../../modules/local/se
 include { SEGTRAQ_REGION_SIMILARITY            } from '../../../modules/local/segtraq/region_similarity/main'
 include { SEGTRAQ_VOLUME                       } from '../../../modules/local/segtraq/volume/main'
 include { SEGTRAQ_SUPERVISED                   } from '../../../modules/local/segtraq/supervised/main'
+include { SEGTRAQ_POINT_STATISTICS             } from '../../../modules/local/segtraq/point_statistics/main'
+
+
 workflow SEGTRAQ_QC {
     take:
     ch_spatialdata              // channel: [ val(meta), path("spatialdata.zarr") ]
@@ -18,7 +21,7 @@ workflow SEGTRAQ_QC {
     ch_versions = channel.empty()
     ch_qc = channel.empty()
     def modules_to_run = params.segtraq_modules == 'all' ?
-    ['baseline', 'clustering_stability', 'region_similarity', 'volume', 'supervised'] : params.segtraq_modules.tokenize(',')
+    ['baseline', 'clustering_stability', 'region_similarity', 'volume', 'supervised', 'point_statistics'] : params.segtraq_modules.tokenize(',')
 
 
     // run SegTraQ baseline QC metrics
@@ -52,6 +55,16 @@ workflow SEGTRAQ_QC {
             log.warn "SegTraQ Supervised QC was requested but 'params.segtraq_markers' is not provided. Skipping."
         }
     }
+    if ('point_statistics' in modules_to_run) {
+        if (ch_markers) {
+            SEGTRAQ_POINT_STATISTICS(ch_spatialdata, ch_markers)
+            ch_versions = ch_versions.mix(SEGTRAQ_POINT_STATISTICS.out.versions)
+            ch_qc = ch_qc.mix(SEGTRAQ_POINT_STATISTICS.out.qc_results)
+        } else {
+            log.warn "SegTraQ Point Statistics QC was requested but 'params.segtraq_markers' is not provided. Skipping."
+        }
+    }
+
 
 
     emit:

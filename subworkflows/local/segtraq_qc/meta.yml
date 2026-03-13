@@ -13,6 +13,7 @@ components:
   - segtraq/region_similarity
   - segtraq/volume
   - segtraq/supervised
+  - segtraq/point_statistics
 input:
   - ch_spatialdata:
       type: directory

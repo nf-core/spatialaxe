@@ -93,12 +93,12 @@ def main():
     version = subprocess.check_output(
         ["pip", "show", "segtraq"], text=True
     )
-    segtraq_version = [l for l in version.split("\\n") if l.startswith("Version:")][0].split(": ")[1]
+    segtraq_version = [l for l in version.splitlines() if l.startswith("Version:")][0].split(": ")[1]
 
     with open("versions.yml", "w") as f:
-        f.write('"${task.process}":\\n')
-        f.write(f'  segtraq: "{segtraq_version}"\\n')
-        f.write(f'  spatialdata: "{sd.__version__}"\\n')
+        f.write(f'"{task.process}":\n')
+        f.write(f'  segtraq: "{segtraq_version}"\n')
+        f.write(f'  spatialdata: "{sd.__version__}"\n')
     print("[FINISH] SegTraQ Region Similarity QC")
 
 if __name__ == "__main__":
