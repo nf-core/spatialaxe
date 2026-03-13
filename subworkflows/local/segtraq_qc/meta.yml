@@ -12,6 +12,7 @@ components:
   - segtraq/clustering_stability
   - segtraq/region_similarity
   - segtraq/volume
+  - segtraq/supervised
 input:
   - ch_spatialdata:
       type: directory
@@ -19,6 +20,16 @@ input:
         Input channel containing the sample info and the SpatialData .zarr directory
         Structure: [ val(meta), path("spatialdata.zarr") ]
       pattern: "*.zarr"
+  - markers:
+      type: file
+      description: |
+        Path to a JSON file containing cell-type specific markers (positive and negative).
+      pattern: "*.json"
+  - cell_type_key:
+      type: string
+      description: |
+        The column name in the AnnData table's .obs that contains the cell type assignments.
+
 output:
   - qc_results:
       type: directory

@@ -1,12 +1,12 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/yaml-schema.json
-name: segtraq_volume
-description: Run SegTraQ volume metrics on a SpatialData object to assess
-  how well a segmentation method resolves cell overlaps in 3D.
+name: segtraq_supervised
+description: Run SegTraQ region similarity metrics on a SpatialData object to assess
+  how similar the expression profiles are between subcellular regions.
 keywords:
   - segtraq
   - quality control
-  - volume
-  - three dimensional
+  - supervised
+  - scRNA
   - spatial transcriptomics
 tools:
   - custom:
@@ -27,6 +27,15 @@ input:
         Path to a SpatialData .zarr directory containing the spatial omics
         data with segmentation results.
       pattern: "*.zarr"
+  - markers:
+      type: file
+      description: |
+        Path to a JSON file containing cell-type specific markers (positive and negative).
+      pattern: "*.json"
+  - cell_type_key:
+      type: string
+      description: |
+        The column name in the AnnData table's `.obs` that contains the cell type assignments.
 output:
   - qc_results:
       - meta:
@@ -37,8 +46,8 @@ output:
       - "segtraq_qc/${prefix}/":
           type: directory
           description: |
-            Directory containing SegTraQ volume QC results including
-            volume_summary.json.
+            Directory containing SegTraQ supervised metrics QC results including
+            supervised_summary.json.
           pattern: "segtraq_qc/*/"
   - versions:
       type: file

@@ -1,4 +1,4 @@
-process SEGTRAQ_REGION_SIMILARITY {
+process SEGTRAQ_SUPERVISED {
     tag "${meta.id}"
     label 'process_medium'
 
@@ -6,6 +6,8 @@ process SEGTRAQ_REGION_SIMILARITY {
 
     input:
     tuple val(meta), path(spatialdata_zarr)
+    path  markers
+    val   cell_type_key
 
     output:
     tuple val(meta), path("segtraq_qc/${prefix}/"), emit: qc_results
@@ -17,24 +19,24 @@ process SEGTRAQ_REGION_SIMILARITY {
     script:
     // Exit if running this module with -profile conda / -profile mamba
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
-        error("SEGTRAQ_REGION_SIMILARITY module does not support Conda. Please use Docker / Singularity / Podman instead.")
+        error("SEGTRAQ_SUPERVISED module does not support Conda. Please use Docker / Singularity / Podman instead.")
     }
 
     prefix = task.ext.prefix ?: "${meta.id}"
 
-    template 'rs.py'
+    template 'supervised.py'
 
     stub:
     // Exit if running this module with -profile conda / -profile mamba
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
-        error("SEGTRAQ_REGION_SIMILARITY module does not support Conda. Please use Docker / Singularity / Podman instead.")
+        error("SEGTRAQ_SUPERVISED module does not support Conda. Please use Docker / Singularity / Podman instead.")
     }
 
     prefix = task.ext.prefix ?: "${meta.id}"
 
     """
     mkdir -p "segtraq_qc/${prefix}"
-    touch "segtraq_qc/${prefix}/region_similarity.json"
+    touch "segtraq_qc/${prefix}/supervised_summary.json"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

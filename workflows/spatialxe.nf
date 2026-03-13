@@ -463,7 +463,9 @@ workflow SPATIALXE {
     // check to run the qc layer
     if (params.run_segtraq && (params.mode == 'image' || params.mode == 'coordinate')) {
         SEGTRAQ_QC(
-            SPATIALDATA_WRITE_META_MERGE.out.sd_redefined_bundle
+            SPATIALDATA_WRITE_META_MERGE.out.sd_redefined_bundle,
+            params.segtraq_markers ? file(params.segtraq_markers) : [],
+            params.segtraq_cell_type_key
         )
         ch_versions = ch_versions.mix(SEGTRAQ_QC.out.versions)
     }

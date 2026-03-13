@@ -304,6 +304,16 @@
                     "type": "string",
                     "description": "Key for which modules to run, used by SegTraQ.",
                     "default": "all"
+                },
+                "segtraq_markers": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to a JSON file containing cell-type specific markers (positive and negative)."
+                },
+                "segtraq_cell_type_key": {
+                    "type": "string",
+                    "description": "Key for cell type annotation in the AnnData table.",
+                    "default": "transferred_cell_type"
                 }
             }
         },

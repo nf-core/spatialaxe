@@ -9,7 +9,7 @@ process SEGTRAQ_VOLUME {
 
     output:
     tuple val(meta), path("segtraq_qc/${prefix}/"), emit: qc_results
-    path ("versions.yml")                         , emit: versions
+    path("versions.yml")                         , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
