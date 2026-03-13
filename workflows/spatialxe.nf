@@ -44,6 +44,8 @@ include { SPATIALDATA_WRITE_META_MERGE                     } from '../subworkflo
 // TODO qc layer subworkflows
 include { OPT_FLIP_TRACK_STAT                              } from '../subworkflows/local/opt_flip_track_stat/main'
 
+// SegTraQ workflow
+include { SEGTRAQ                                          } from '../subworkflows/local/segtraq_qc/main'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -451,6 +453,21 @@ workflow SPATIALXE {
             )
         }
     }
+
+    /*
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        SPATIALXE - SegTraQ QC LAYER
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    */
+
+    // check to run the qc layer
+    if (params.run_segtraq && (params.mode == 'image' || params.mode == 'coordinate')) {
+        SEGTRAQ(
+            SPATIALDATA_WRITE_META_MERGE.out.sd_redefined_bundle
+        )
+        ch_versions = ch_versions.mix(SEGTRAQ.out.versions)
+    }
+
 
 
     /*

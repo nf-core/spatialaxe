@@ -284,6 +284,21 @@
                     "type": "boolean",
                     "description": "Restrict parallelizing a process. Eg. restrict running cellpose cell and nuclei segmentation together if the resources are limited.",
                     "default": false
+                },
+                "run_segtraq": {
+                    "type": "boolean",
+                    "description": "Whether to run SegTraQ baseline QC after segmentation.",
+                    "default": false
+                },
+                "segtraq_centroid_x_key": {
+                    "type": "string",
+                    "description": "Key for x centroid in SpatialData tables, used by SegTraQ.",
+                    "default": "x_centroid"
+                },
+                "segtraq_centroid_y_key": {
+                    "type": "string",
+                    "description": "Key for y centroid in SpatialData tables, used by SegTraQ.",
+                    "default": "y_centroid"
                 }
             }
         },
