@@ -251,8 +251,8 @@ def validateInputParameters() {
 //
 def validateXeniumBundle(ch_samplesheet) {
 
-    // define xenium bundle directory structure - required files
-    def bundle_required_files = [
+    // define xenium bundle directory structure - full required files
+    def bundle_required_files_full = [
         "cell_boundaries.csv.gz",
         "cell_boundaries.parquet",
         "cell_feature_matrix.h5",
@@ -271,6 +271,18 @@ def validateXeniumBundle(ch_samplesheet) {
         "transcripts.parquet",
         "transcripts.zarr.zip",
     ]
+
+    // minimal files required for SCS input preparation
+    def bundle_required_files_scs = [
+        "experiment.xenium",
+        "morphology.ome.tif",
+        "transcripts.parquet",
+    ]
+
+    // choose required files based on mode/method
+    def bundle_required_files = (params.mode == 'image' && params.method == 'scs')
+        ? bundle_required_files_scs
+        : bundle_required_files_full
 
     // bundle optional files
     def bundle_optional_files = [

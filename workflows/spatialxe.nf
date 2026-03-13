@@ -29,6 +29,7 @@ include { BAYSOR_RUN_PRIOR_SEGMENTATION_MASK               } from '../subworkflo
 include { CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF             } from '../subworkflows/local/cellpose_resolift_morphology_ome_tif/main'
 include { CELLPOSE_BAYSOR_IMPORT_SEGMENTATION              } from '../subworkflows/local/cellpose_baysor_import_segmentation/main'
 include { XENIUMRANGER_RESEGMENT_MORPHOLOGY_OME_TIF        } from '../subworkflows/local/xeniumranger_resegment_morphology_ome_tif/main'
+include { SCS_PREPARE_MORPHOLOGY                            } from '../subworkflows/local/scs_prepare_morphology/main'
 
 // segmentation-free subworkflows
 include { BAYSOR_GENERATE_SEGFREE                          } from '../subworkflows/local/baysor_generate_segfree/main'
@@ -74,6 +75,7 @@ workflow SPATIALXE {
     ch_bundle_path = Channel.empty()
     ch_preview_html = Channel.empty()
     ch_exp_metadata = Channel.empty()
+    ch_experiment_xenium = Channel.empty()
     ch_gene_synonyms = Channel.empty()
     ch_multiqc_files = Channel.empty()
     ch_multiqc_report = Channel.empty()
@@ -170,6 +172,14 @@ workflow SPATIALXE {
             checkIfExists: true
         )
         return [exp_metadata]
+    }
+
+    ch_experiment_xenium = ch_input.map { meta, bundle, _image ->
+        def exp_metadata = file(
+            bundle.toString().replaceFirst(/\/$/, '') + "/experiment.xenium",
+            checkIfExists: true
+        )
+        return [meta, exp_metadata]
     }
 
     // get baysor xenium config
@@ -369,6 +379,20 @@ workflow SPATIALXE {
             )
             ch_redefined_bundle = CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF.out.redefined_bundle
             ch_coordinate_space = CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF.out.coordinate_space
+        }
+
+        // prepare transcripts and morphology for SCS segmentation
+        if (params.method == 'scs') {
+
+            SCS_PREPARE_MORPHOLOGY(
+                ch_morphology_image,
+                ch_transcripts_parquet,
+                ch_experiment_xenium,
+            )
+            // TODO: Add SCS segment module here when ready
+            // For now, just preparing inputs
+            ch_redefined_bundle = ch_bundle_path
+            ch_coordinate_space = Channel.value("microns")
         }
     }
 
