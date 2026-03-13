@@ -8,6 +8,8 @@ include { SEGTRAQ_REGION_SIMILARITY            } from '../../../modules/local/se
 include { SEGTRAQ_VOLUME                       } from '../../../modules/local/segtraq/volume/main'
 include { SEGTRAQ_SUPERVISED                   } from '../../../modules/local/segtraq/supervised/main'
 include { SEGTRAQ_POINT_STATISTICS             } from '../../../modules/local/segtraq/point_statistics/main'
+include { SEGTRAQ_PLOTTING                    } from '../../../modules/local/segtraq/plotting/main'
+
 
 
 workflow SEGTRAQ_QC {
@@ -21,10 +23,9 @@ workflow SEGTRAQ_QC {
     ch_versions = channel.empty()
     ch_qc = channel.empty()
     def modules_to_run = params.segtraq_modules == 'all' ?
-    ['baseline', 'clustering_stability', 'region_similarity', 'volume', 'supervised', 'point_statistics'] : params.segtraq_modules.tokenize(',')
+    ['baseline', 'clustering_stability', 'region_similarity', 'volume', 'supervised', 'point_statistics', 'plotting'] : params.segtraq_modules.tokenize(',')
 
 
-    // run SegTraQ baseline QC metrics
     if ('baseline' in modules_to_run) {
         SEGTRAQ_BASELINE(ch_spatialdata)
         ch_versions = ch_versions.mix(SEGTRAQ_BASELINE.out.versions)
@@ -47,7 +48,7 @@ workflow SEGTRAQ_QC {
     }
 
     if ('supervised' in modules_to_run) {
-        if (ch_markers) {
+        if (params.segtraq_markers) {
             SEGTRAQ_SUPERVISED(ch_spatialdata, ch_markers, ch_cell_type_key)
             ch_versions = ch_versions.mix(SEGTRAQ_SUPERVISED.out.versions)
             ch_qc = ch_qc.mix(SEGTRAQ_SUPERVISED.out.qc_results)
@@ -56,7 +57,7 @@ workflow SEGTRAQ_QC {
         }
     }
     if ('point_statistics' in modules_to_run) {
-        if (ch_markers) {
+        if (params.segtraq_markers) {
             SEGTRAQ_POINT_STATISTICS(ch_spatialdata, ch_markers)
             ch_versions = ch_versions.mix(SEGTRAQ_POINT_STATISTICS.out.versions)
             ch_qc = ch_qc.mix(SEGTRAQ_POINT_STATISTICS.out.qc_results)
@@ -64,7 +65,15 @@ workflow SEGTRAQ_QC {
             log.warn "SegTraQ Point Statistics QC was requested but 'params.segtraq_markers' is not provided. Skipping."
         }
     }
-
+    if ('plotting' in modules_to_run) {
+        if (params.segtraq_cell_type_key) {
+            SEGTRAQ_PLOTTING(ch_spatialdata, ch_cell_type_key)
+            ch_versions = ch_versions.mix(SEGTRAQ_PLOTTING.out.versions)
+            ch_qc = ch_qc.mix(SEGTRAQ_PLOTTING.out.qc_results)
+        } else {
+            log.warn "SegTraQ Plotting was requested but 'params.segtraq_cell_type_key' is not provided. Skipping."
+        }
+    }
 
 
     emit:

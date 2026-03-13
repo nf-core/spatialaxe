@@ -42,8 +42,8 @@ output:
       - "segtraq_qc/${prefix}/":
           type: directory
           description: |
-            Directory containing SegTraQ supervised metrics QC results including
-            supervised_summary.json.
+            Directory containing SegTraQ point statistics results including
+            point_statistics.json.
           pattern: "segtraq_qc/*/"
   - versions:
       type: file

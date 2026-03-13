@@ -92,7 +92,7 @@ def main():
     segtraq_version = [l for l in version.splitlines() if l.startswith("Version:")][0].split(": ")[1]
 
     with open("versions.yml", "w") as f:
-        f.write(f'"{task.process}":\n')
+        f.write('"${task.process}":\n')
         f.write(f'  segtraq: "{segtraq_version}"\n')
         f.write(f'  spatialdata: "{sd.__version__}"\n')
     print("[FINISH] SegTraQ Point Statistics QC")
