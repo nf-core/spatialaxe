@@ -36,7 +36,7 @@
                 },
                 "method": {
                     "type": "string",
-                    "enum": ["cellpose", "xeniumranger", "baysor", "proseg", "segger", "ficture"],
+                    "enum": ["cellpose", "xeniumranger", "baysor", "scportrait", "proseg", "segger", "ficture"],
                     "description": "Segmentation method to run."
                 },
                 "gene_panel": {
@@ -174,7 +174,7 @@
                     "type": "array",
                     "items": {
                         "type": "string",
-                        "enum": ["cellpose", "xeniumranger", "baysor"]
+                        "enum": ["cellpose", "xeniumranger", "baysor", "scportrait"]
                     },
                     "description": "List of image-based segmentation methods."
                 },

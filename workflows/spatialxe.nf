@@ -28,6 +28,7 @@ include { BAYSOR_RUN_TRANSCRIPTS_PARQUET                   } from '../subworkflo
 include { BAYSOR_RUN_PRIOR_SEGMENTATION_MASK               } from '../subworkflows/local/baysor_run_prior_segmentation_mask/main'
 include { CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF             } from '../subworkflows/local/cellpose_resolift_morphology_ome_tif/main'
 include { CELLPOSE_BAYSOR_IMPORT_SEGMENTATION              } from '../subworkflows/local/cellpose_baysor_import_segmentation/main'
+include { SCPORTRAIT_RESOLIFT_MORPHOLOGY_OME_TIF           } from '../subworkflows/local/scportrait_resolift_morphology_ome_tif/main'
 include { XENIUMRANGER_RESEGMENT_MORPHOLOGY_OME_TIF        } from '../subworkflows/local/xeniumranger_resegment_morphology_ome_tif/main'
 
 // segmentation-free subworkflows
@@ -369,6 +370,15 @@ workflow SPATIALXE {
             )
             ch_redefined_bundle = CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF.out.redefined_bundle
             ch_coordinate_space = CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF.out.coordinate_space
+        }
+
+        if (params.method == 'scportrait') {
+            SCPORTRAIT_RESOLIFT_MORPHOLOGY_OME_TIF(
+                ch_morphology_image,
+                ch_bundle_path,
+            )
+            ch_redefined_bundle = SCPORTRAIT_RESOLIFT_MORPHOLOGY_OME_TIF.out.redefined_bundle
+            ch_coordinate_space = SCPORTRAIT_RESOLIFT_MORPHOLOGY_OME_TIF.out.coordinate_space
         }
     }
 
