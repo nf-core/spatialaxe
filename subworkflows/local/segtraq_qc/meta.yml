@@ -9,6 +9,7 @@ keywords:
   - spatial transcriptomics
 components:
   - segtraq/baseline
+  - segtraq/clustering_stability
 input:
   - ch_spatialdata:
       type: directory

@@ -1,4 +1,4 @@
-process SEGTRAQ_BASELINE {
+process SEGTRAQ_CLUSTERING_STABILITY {
     tag "${meta.id}"
     label 'process_medium'
 
@@ -22,19 +22,19 @@ process SEGTRAQ_BASELINE {
 
     prefix = task.ext.prefix ?: "${meta.id}"
 
-    template('baseline.py')
+    template('clustering_stability.py')
 
     stub:
     // Exit if running this module with -profile conda / -profile mamba
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
-        error("SEGTRAQ_BASELINE module does not support Conda. Please use Docker / Singularity / Podman instead.")
+        error("SEGTRAQ_CLUSTERING_STABILITY module does not support Conda. Please use Docker / Singularity / Podman instead.")
     }
 
     prefix = task.ext.prefix ?: "${meta.id}"
 
     """
     mkdir -p "segtraq_qc/${prefix}"
-    touch "segtraq_qc/${prefix}/baseline_summary.json"
+    touch "segtraq_qc/${prefix}/clustering_stability_summary.json"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
