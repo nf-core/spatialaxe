@@ -87,7 +87,7 @@
                 "transcripts.parquet:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "versions.yml:md5,4054f048e726d8faf84c982f8180a9e0",
                 "fake_file.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
-                "versions.yml:md5,7e76e3dce07f8df00a8628e74c2e6157"
+                "versions.yml:md5,a65b627a1324c7f6255ed5e47fef71a4"
             ]
         ],
         "meta": {
