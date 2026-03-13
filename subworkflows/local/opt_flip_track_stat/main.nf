@@ -11,8 +11,8 @@ workflow OPT_FLIP_TRACK_STAT {
 
     main:
 
-    ch_versions = channel.empty()
-    ch_summary = channel.empty()
+    ch_versions = Channel.empty()
+    ch_summary = Channel.empty()
 
     // correct probes that are aligning to opposite strand with `flip`
     OPT_FLIP(ch_probe_fasta, ch_references)
