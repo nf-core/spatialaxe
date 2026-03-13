@@ -36,7 +36,7 @@ def main():
 
     print(f"[INFO] Computing baseline QC metrics")
     summary = {}
-    
+
     #number of cells
     n_cells = st.bl.num_cells()
     summary["num_cells"] = int(n_cells)
