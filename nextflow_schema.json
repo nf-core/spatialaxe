@@ -299,6 +299,11 @@
                     "type": "string",
                     "description": "Key for y centroid in SpatialData tables, used by SegTraQ.",
                     "default": "y_centroid"
+                },
+                "segtraq_modules": {
+                    "type": "string",
+                    "description": "Key for which modules to run, used by SegTraQ.",
+                    "default": "all"
                 }
             }
         },

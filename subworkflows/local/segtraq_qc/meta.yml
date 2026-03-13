@@ -10,6 +10,7 @@ keywords:
 components:
   - segtraq/baseline
   - segtraq/clustering_stability
+  - segtraq/region_similarity
 input:
   - ch_spatialdata:
       type: directory

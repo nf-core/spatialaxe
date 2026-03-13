@@ -1,4 +1,4 @@
-process SEGTRAQ_CLUSTERING_STABILITY {
+process SEGTRAQ_REGION_SIMILARITY {
     tag "${meta.id}"
     label 'process_medium'
 
@@ -17,7 +17,7 @@ process SEGTRAQ_CLUSTERING_STABILITY {
     script:
     // Exit if running this module with -profile conda / -profile mamba
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
-        error("SEGTRAQ_CLUSTERING_STABILITY module does not support Conda. Please use Docker / Singularity / Podman instead.")
+        error("SEGTRAQ_REGION_SIMILARITY module does not support Conda. Please use Docker / Singularity / Podman instead.")
     }
 
     prefix = task.ext.prefix ?: "${meta.id}"
@@ -27,7 +27,7 @@ process SEGTRAQ_CLUSTERING_STABILITY {
     stub:
     // Exit if running this module with -profile conda / -profile mamba
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
-        error("SEGTRAQ_CLUSTERING_STABILITY module does not support Conda. Please use Docker / Singularity / Podman instead.")
+        error("SEGTRAQ_REGION_SIMILARITY module does not support Conda. Please use Docker / Singularity / Podman instead.")
     }
 
     prefix = task.ext.prefix ?: "${meta.id}"
