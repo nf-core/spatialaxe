@@ -387,7 +387,6 @@ workflow SPATIALXE {
             SCS_PREPARE_MORPHOLOGY(
                 ch_morphology_image,
                 ch_transcripts_parquet,
-                ch_experiment_xenium,
             )
             // TODO: Add SCS segment module here when ready
             // For now, just preparing inputs

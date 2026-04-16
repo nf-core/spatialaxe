@@ -5,12 +5,11 @@ process XENIUM2SCS {
     container "khersameesh24/spatialdata:0.2.6"
 
     input:
-    tuple val(meta), path(transcripts_parquet), path(morphology_image), path(experiment_xenium)
+    tuple val(meta), path(transcripts_parquet), path(morphology_image)
 
     output:
     tuple val(meta), path("${prefix}/scs_input_bgi.tsv"), emit: scs_input_bgi_tsv
     tuple val(meta), path("${prefix}/morph2d.tif"), emit: morph2d_tif
-    tuple val(meta), path("${prefix}/xenium2scs_metrics.tsv"), emit: metrics
     path ("versions.yml"), emit: versions
 
     when:
@@ -37,15 +36,7 @@ process XENIUM2SCS {
     """
     mkdir -p ${prefix}
 
-    cat <<'EOF' > ${prefix}/scs_input.tsv
-    geneID\trow\tcolumn\tcounts
-    TEST\t0\t0\t1
-    EOF
-
-    cat <<'EOF' > ${prefix}/scs_input_bgi.tsv
-    geneID\tx\ty\tMIDCounts
-    TEST\t0\t0\t1
-    EOF
+    printf 'geneID\tx\ty\tMIDCounts\nTEST\t0\t0\t1\n' > ${prefix}/scs_input_bgi.tsv
 
     python - <<'PY'
 import numpy as np
@@ -55,14 +46,6 @@ img = np.zeros((16, 16), dtype=np.uint16)
 tifffile.imwrite('${prefix}/morph2d.tif', img)
 PY
 
-    cat <<'EOF' > ${prefix}/xenium2scs_metrics.tsv
-    metric\tvalue
-    n_rows\t1
-    EOF
-
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        xenium2scs: "1.0.0"
-    END_VERSIONS
+    printf '"${task.process}":\n    xenium2scs: "1.0.0"\n' > versions.yml
     """
 }
