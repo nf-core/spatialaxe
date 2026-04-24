@@ -40,6 +40,7 @@ RUN mamba env create -f /app/SCS/environment.yml && \
 SHELL ["conda", "run", "-n", "SCS", "/bin/bash", "-c"]
 
 RUN pip install --no-cache-dir spateo-release==1.1.0 scikit-misc==0.3.1
+RUN pip install --no-cache-dir pandas numpy tifffile pyarrow
 
 ENV CONDA_DEFAULT_ENV=SCS \
     PATH=/opt/conda/envs/SCS/bin:$PATH \

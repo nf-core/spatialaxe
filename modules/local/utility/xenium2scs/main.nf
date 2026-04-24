@@ -2,7 +2,7 @@ process XENIUM2SCS {
     tag "$meta.id"
     label 'process_low'
 
-    container "khersameesh24/spatialdata:0.2.6"
+    container "katwre/scs-segment:latest"
 
     input:
     tuple val(meta), path(transcripts_parquet), path(morphology_image)
