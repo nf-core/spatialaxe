@@ -2,7 +2,7 @@ process SCS_SEGMENT {
     tag "${meta.id}"
     label 'process_high'
 
-    container 'katwre/scs-segment:latest'
+    container 'ghcr.io/katwre/scs-segment:latest'
 
     input:
     tuple val(meta), path(scs_input_bgi_tsv), path(morph2d_tif)

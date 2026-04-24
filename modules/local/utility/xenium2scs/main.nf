@@ -2,7 +2,7 @@ process XENIUM2SCS {
     tag "$meta.id"
     label 'process_low'
 
-    container "katwre/scs-segment:latest"
+    container "ghcr.io/katwre/scs-segment:latest"
 
     input:
     tuple val(meta), path(transcripts_parquet), path(morphology_image)
