@@ -30,6 +30,7 @@ include { CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF             } from '../subworkflo
 include { CELLPOSE_BAYSOR_IMPORT_SEGMENTATION              } from '../subworkflows/local/cellpose_baysor_import_segmentation/main'
 include { XENIUMRANGER_RESEGMENT_MORPHOLOGY_OME_TIF        } from '../subworkflows/local/xeniumranger_resegment_morphology_ome_tif/main'
 include { SCS_PREPARE_MORPHOLOGY                            } from '../subworkflows/local/scs_prepare_morphology/main'
+include { SCS_SEGMENT                                       } from '../modules/local/scs/main'
 
 // segmentation-free subworkflows
 include { BAYSOR_GENERATE_SEGFREE                          } from '../subworkflows/local/baysor_generate_segfree/main'
@@ -388,8 +389,12 @@ workflow SPATIALXE {
                 ch_morphology_image,
                 ch_transcripts_parquet,
             )
-            // TODO: Add SCS segment module here when ready
-            // For now, just preparing inputs
+
+            ch_scs_in = SCS_PREPARE_MORPHOLOGY.out.scs_input_bgi_tsv
+                .join(SCS_PREPARE_MORPHOLOGY.out.morphology_2d, by: 0)
+
+            SCS_SEGMENT(ch_scs_in)
+
             ch_redefined_bundle = ch_bundle_path
             ch_coordinate_space = Channel.value("microns")
         }
