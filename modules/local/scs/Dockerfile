@@ -1,3 +1,4 @@
+
 # Dockerfile to create container for SCS
 # SCS: cell segmentation on spatial transcriptomics + morphology
 
@@ -37,10 +38,13 @@ RUN pip config set global.timeout 300 && pip config set global.retries 20
 RUN mamba env create -f /app/SCS/environment.yml && \
     mamba clean --all -f -y
 
+# Ensure all pip installs are in the SCS conda environment
 SHELL ["conda", "run", "-n", "SCS", "/bin/bash", "-c"]
-
 RUN pip install --no-cache-dir spateo-release==1.1.0 scikit-misc==0.3.1
 RUN pip install --no-cache-dir pandas numpy tifffile pyarrow
+RUN pip install --no-cache-dir alphashape
+
+## fastpd install removed: repo does not exist and is not required
 
 ENV CONDA_DEFAULT_ENV=SCS \
     PATH=/opt/conda/envs/SCS/bin:$PATH \
