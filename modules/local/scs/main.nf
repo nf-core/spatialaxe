@@ -31,7 +31,8 @@ process SCS_SEGMENT {
     def val_ratio = task.ext.val_ratio ?: 0.0625
     def prealigned = task.ext.prealigned != null ? task.ext.prealigned : false
     def align = task.ext.align != null ? task.ext.align : "None"
-    def patch_size = task.ext.patch_size ?: 0
+    def patch_size = task.ext.patch_size ?: 1200
+    def stain_bg_percentile = task.ext.stain_bg_percentile ?: 10
     def prealigned_py = prealigned ? "True" : "False"
     def align_py = align == "None" ? "None" : "'${align.toString().replace("'", "\\'")}'"
 
@@ -58,6 +59,7 @@ scs.segment_cells(
     n_neighbor=${n_neighbor},
     r_estimate=${r_estimate},
     val_ratio=${val_ratio},
+    stain_bg_percentile=${stain_bg_percentile},
 )
 PY
 
