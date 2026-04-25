@@ -129,6 +129,26 @@
                     "type": "boolean",
                     "description": "Whether to only run nucleus segmentation."
                 },
+                "scs_patch_size": {
+                    "type": "integer",
+                    "default": 1200,
+                    "description": "Patch size for SCS segmentation processing. Larger patches improve contextual information but increase memory usage."
+                },
+                "scs_stain_bg_percentile": {
+                    "type": "integer",
+                    "default": 10,
+                    "description": "Background stain percentile threshold for SCS segmentation. Controls stain background removal sensitivity."
+                },
+                "scs_epochs": {
+                    "type": "integer",
+                    "default": 100,
+                    "description": "Number of training epochs for SCS segmentation model."
+                },
+                "scs_n_neighbor": {
+                    "type": "integer",
+                    "default": 50,
+                    "description": "Number of neighbors to use in SCS segmentation."
+                },
                 "expansion_distance": {
                     "type": "integer",
                     "default": 5,
