@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxrender1 \
     && rm -rf /var/lib/apt/lists/*
 
-ARG SCS_COMMIT=eccc45049c7d5ca4fb9717abe913af75e3325173
+ARG SCS_COMMIT=596a921eddad22d8ef8af633e0b38c1cd3dcc272
 RUN git clone https://github.com/katwre/SCS.git /app/SCS && \
     cd /app/SCS && \
     git checkout ${SCS_COMMIT}
