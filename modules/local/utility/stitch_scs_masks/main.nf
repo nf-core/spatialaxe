@@ -2,7 +2,7 @@ process STITCH_SCS_MASKS {
     tag "${meta.id}"
     label 'process_medium'
 
-    container "python:3.10-slim"
+    container "docker.io/library/python:3.10.12"
 
     input:
     tuple val(meta), path(mask_patches)
