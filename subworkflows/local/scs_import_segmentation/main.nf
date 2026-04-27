@@ -41,28 +41,31 @@ workflow SCS_IMPORT_SEGMENTATION {
     )
     ch_versions = ch_versions.mix(STITCH_SCS_MASKS.out.versions)
 
-    // Prepare inputs for xeniumranger import-segmentation
-    ch_scs_imp_seg_inputs = ch_bundle_path
-        .combine(STITCH_SCS_MASKS.out.stitched_mask, by: 0)
-        .map { meta, bundle, stitched_mask ->
+    // Import SCS segmentation into Xenium bundle via xeniumranger
+    // Combine bundle path with stitched masks output
+    ch_bundle_masks = ch_bundle_path
+        .join(STITCH_SCS_MASKS.out.segmentation_csv, by: 0)
+        .join(STITCH_SCS_MASKS.out.polygons, by: 0)
+        .map { meta, bundle, segmentation_csv, polygons_geojson ->
             tuple(
                 meta,
                 bundle,
                 [],
                 [],
                 [],
-                stitched_mask,
-                [],
+                segmentation_csv,
+                polygons_geojson,
                 ch_coordinate_space.val,
             )
         }
 
-    // Run xeniumranger import-segmentation with stitched SCS mask
-    XENIUMRANGER_IMPORT_SEGMENTATION(ch_scs_imp_seg_inputs)
+    XENIUMRANGER_IMPORT_SEGMENTATION(ch_bundle_masks)
     ch_versions = ch_versions.mix(XENIUMRANGER_IMPORT_SEGMENTATION.out.versions)
+
+    ch_redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.bundle
 
     emit:
     coordinate_space = ch_coordinate_space                         // channel: [ val("microns") or val("pixels") ]
-    redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.bundle // channel: [ val(meta), ["xenium-bundle-with-scs"] ]
+    redefined_bundle = ch_redefined_bundle                         // channel: [ val(meta), ["xenium-bundle"] ]
     versions = ch_versions                                         // channel: [ versions.yml ]
 }

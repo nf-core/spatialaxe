@@ -149,6 +149,31 @@
                     "default": 50,
                     "description": "Number of neighbors to use in SCS segmentation."
                 },
+                "scs_bin_size": {
+                    "type": "integer",
+                    "default": 3,
+                    "description": "Spatial binning size for SCS segmentation. Controls the resolution of spatial binning."
+                },
+                "scs_r_estimate": {
+                    "type": "integer",
+                    "default": 15,
+                    "description": "Cell radius estimation parameter for SCS segmentation."
+                },
+                "scs_val_ratio": {
+                    "type": "number",
+                    "default": 0.0625,
+                    "description": "Validation data ratio for SCS model training."
+                },
+                "scs_prealigned": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether the SCS input data is already aligned."
+                },
+                "scs_align": {
+                    "type": "string",
+                    "default": "None",
+                    "description": "Alignment method for SCS segmentation. Options: 'None' or alignment algorithm name."
+                },
                 "expansion_distance": {
                     "type": "integer",
                     "default": 5,
