@@ -25,7 +25,7 @@ process RECONSTRUCT_PATCHES {
 
     for i in "${!ids[@]}"; do
         pid="${ids[$i]}"
-        
+
         mkdir -p "patches/${pid}"
         cp "${csvs[$i]}" "patches/${pid}/segmentation.csv"
         cp "${geos[$i]}" "patches/${pid}/segmentation_polygons.json"
