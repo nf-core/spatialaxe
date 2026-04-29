@@ -19,16 +19,21 @@ process RECONSTRUCT_PATCHES {
     def ids = patch_ids instanceof List ? patch_ids : [patch_ids]
     def csvs = csv_files instanceof List ? csv_files : [csv_files]
     def geos = geojson_files instanceof List ? geojson_files : [geojson_files]
+
+
+    def reconstruct_script = ids.withIndex().collect { pid, idx ->
+        """
+        mkdir -p patches/${pid}
+        cp '${csvs[idx]}' patches/${pid}/segmentation.csv
+        cp '${geos[idx]}' patches/${pid}/segmentation_polygons.json
+        """
+    }.join('\n')
+
     """
     mkdir -p patches
-    cp ${grid_json} patches/patch_grid.json
+    cp '${grid_json}' patches/patch_grid.json
 
-    for i in "${!ids[@]}"; do
-        pid="${ids[$i]}"
-
-        mkdir -p "patches/${pid}"
-        cp "${csvs[$i]}" "patches/${pid}/segmentation.csv"
-        cp "${geos[$i]}" "patches/${pid}/segmentation_polygons.json"
-    done
+    ${reconstruct_script}
     """
+
 }
