@@ -15,6 +15,7 @@ include { BAYSOR_RUN                       } from '../../../modules/local/baysor
 include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
 include { XENIUM_PATCH_STITCH              } from '../../../modules/local/xenium_patch/stitch/main'
 include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
+include { RECONSTRUCT_PATCHES }              from '../../../modules/local/utility/reconstruct_patches/main'
 
 
 workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
@@ -155,42 +156,4 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
     redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs
     coordinate_space = ch_coordinate_space
     versions         = ch_versions
-}
-
-
-/*
- * RECONSTRUCT_PATCHES: Reconstruct the patches directory structure from
- * individually staged patch files for stitch_transcripts.py.
- */
-process RECONSTRUCT_PATCHES {
-    tag "$meta.id"
-    label 'process_single'
-
-    input:
-    tuple val(meta), path(grid_json), val(patch_ids), path(csv_files, stageAs: 'csv_?/*'), path(geojson_files, stageAs: 'geo_?/*')
-
-    output:
-    tuple val(meta), path("patches") , emit: patches_dir
-
-    when:
-    task.ext.when == null || task.ext.when
-
-    script:
-    def ids = patch_ids instanceof List ? patch_ids : [patch_ids]
-    def csvs = csv_files instanceof List ? csv_files : [csv_files]
-    def geos = geojson_files instanceof List ? geojson_files : [geojson_files]
-    def reconstruct_cmds = []
-    for (int i = 0; i < ids.size(); i++) {
-        def pid = ids[i]
-        reconstruct_cmds << "mkdir -p patches/${pid}"
-        reconstruct_cmds << "cp '${csvs[i]}' patches/${pid}/segmentation.csv"
-        reconstruct_cmds << "cp '${geos[i]}' patches/${pid}/segmentation_polygons.json"
-    }
-    def reconstruct_script = reconstruct_cmds.join('\n    ')
-    """
-    mkdir -p patches
-    cp ${grid_json} patches/patch_grid.json
-
-    ${reconstruct_script}
-    """
 }
