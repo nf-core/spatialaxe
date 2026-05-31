@@ -1,4 +1,5 @@
 lint:
+  actions_ci: false
   files_exist:
     - .github/workflows/awsfulltest.yml
     - .github/workflows/awstest.yml
@@ -8,14 +9,16 @@ lint:
     - docs/images/nf-core-spatialxe_logo_dark.png
     - docs/images/nf-core-spatialxe_logo_light.png
     - .github/PULL_REQUEST_TEMPLATE.md
-nf_core_version: 4.0.2
+nf_core_version: 3.5.2
 repository_type: pipeline
 template:
-  author: Sameesh Kher, Florian Heyl
+  author: Sameesh Kher, Dongze He, Florian Heyl
   description: A pipeline for spatialomics Xenium In Situ data.
   force: false
   is_nfcore: true
   name: spatialxe
   org: nf-core
   outdir: .
+  skip_features:
+    - igenomes
   version: 1.0.0

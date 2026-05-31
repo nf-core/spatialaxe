@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://raw.githubusercontent.com/nf-core/spatialxe/master/nextflow_schema.json",
     "title": "nf-core/spatialxe pipeline parameters",
-    "description": "A pipeline for spatialomics Xenium In Situ data.",
+    "description": "A pipeline for spatialomics 10x Xenium In Situ data.",
     "type": "object",
     "$defs": {
         "input_output_options": {
@@ -10,7 +10,7 @@
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
-            "required": ["input", "outdir"],
+            "required": ["input", "outdir", "mode"],
             "properties": {
                 "input": {
                     "type": "string",
@@ -19,8 +19,8 @@
                     "schema": "assets/schema_input.json",
                     "mimetype": "text/csv",
                     "pattern": "^\\S+\\.csv$",
-                    "description": "Path to comma-separated file containing information about the samples in the experiment.",
-                    "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row. See [usage docs](https://nf-co.re/spatialxe/usage#samplesheet-input).",
+                    "description": "Path to comma-separated file containing information about the Xenium experiment. (eg; meta,path-to-xenium-bundle,path-to-morphology.ome.tif))",
+                    "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row.",
                     "fa_icon": "fas fa-file-csv"
                 },
                 "outdir": {
@@ -28,6 +28,79 @@
                     "format": "directory-path",
                     "description": "The output directory where the results will be saved. You have to use absolute paths to storage on Cloud infrastructure.",
                     "fa_icon": "fas fa-folder-open"
+                },
+                "mode": {
+                    "type": "string",
+                    "description": "Mode in which the pipeline is to be run. Either image-based segmentation, coordinate-based segmentation, segmentation-free analysis or data preview.",
+                    "enum": ["image", "coordinate", "segfree", "preview", "qc"]
+                },
+                "method": {
+                    "type": "string",
+                    "enum": ["cellpose", "xeniumranger", "baysor", "proseg", "segger", "ficture", "stardist"],
+                    "description": "Segmentation method to run."
+                },
+                "gene_panel": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to gene panel JSON file to use for relabeling transcripts with the correct gene."
+                },
+                "qupath_polygons": {
+                    "type": "string",
+                    "description": "Path to qupath segmentation file in GeoJSON format.",
+                    "format": "file-path"
+                },
+                "alignment_csv": {
+                    "type": "string",
+                    "description": "Image alignment file containing similarity transform matrix. (e.g., the _imagealignment.csv file exported from Xenium Explorer)",
+                    "format": "file-path"
+                },
+                "cellpose_model": {
+                    "type": "string",
+                    "description": "Model to use for running or starting training.",
+                    "format": "file-path"
+                },
+                "stardist_model": {
+                    "type": "string",
+                    "default": "2D_versatile_fluo",
+                    "description": "StarDist pretrained model for cell segmentation (e.g., '2D_versatile_fluo', '2D_versatile_he')."
+                },
+                "stardist_nuclei_model": {
+                    "type": "string",
+                    "default": "2D_versatile_fluo",
+                    "description": "StarDist pretrained model for nuclei segmentation."
+                },
+                "stardist_prob_thresh": {
+                    "type": "number",
+                    "description": "StarDist object probability threshold. Lower values detect more objects."
+                },
+                "stardist_nms_thresh": {
+                    "type": "number",
+                    "description": "StarDist non-maximum suppression threshold. Lower values reduce overlapping detections."
+                },
+                "stardist_n_tiles": {
+                    "type": "string",
+                    "default": "8 8",
+                    "description": "StarDist tiling for large images (e.g., '4 4'). Reduces memory usage."
+                },
+                "segmentation_mask": {
+                    "type": "string",
+                    "description": "Prior segmentation mask from other segmentation methods.",
+                    "format": "file-path"
+                },
+                "probes_fasta": {
+                    "type": "string",
+                    "description": "Fasta file for the probe sequences used in the xenium experiment.",
+                    "format": "file-path"
+                },
+                "reference_annotations": {
+                    "type": "string",
+                    "description": "Path to the directory containing genomic features (.gff) and fasta (.fa) files used as reference annotations.",
+                    "format": "file-path"
+                },
+                "gene_synonyms": {
+                    "type": "string",
+                    "description": "Gene synonyms that may have been counted as off-targets but simply differ in name.",
+                    "format": "file-path"
                 },
                 "email": {
                     "type": "string",
@@ -43,41 +116,313 @@
                 }
             }
         },
-        "reference_genome_options": {
-            "title": "Reference genome options",
+        "segmentation_options": {
+            "title": "Segmentation options",
             "type": "object",
-            "fa_icon": "fas fa-dna",
-            "description": "Reference genome related files and options required for the workflow.",
+            "description": "Options for the segmentation layer of the spatialxe pipeline",
+            "default": "",
             "properties": {
-                "genome": {
-                    "type": "string",
-                    "description": "Name of iGenomes reference.",
-                    "fa_icon": "fas fa-book",
-                    "help_text": "If using a reference genome configured in the pipeline using iGenomes, use this parameter to give the ID for the reference. This is then used to build the full paths for all required reference genome files e.g. `--genome GRCh38`. \n\nSee the [nf-core website docs](https://nf-co.re/usage/reference_genomes) for more details."
+                "run_qc": {
+                    "type": "boolean",
+                    "description": "Whether to run the qc layer in the pipeline.",
+                    "default": true
                 },
-                "fasta": {
+                "offtarget_probe_tracking": {
+                    "type": "boolean",
+                    "description": "Whether to run the off-target probe tracking.",
+                    "default": false
+                },
+                "segmentation_refinement": {
+                    "type": "boolean",
+                    "description": "Whether to run refinement on the image-based segmentation methods. Runs coordinate-based methods after the initial image-based segmentation run."
+                },
+                "relabel_genes": {
+                    "type": "boolean",
+                    "description": "Whether to relabel genes with gene_panel.json file. True when gene_panel is provided."
+                },
+                "xeniumranger_only": {
+                    "type": "boolean",
+                    "description": "Whether to run vanilla xeniumranger workflow."
+                },
+                "cell_segmentation_only": {
+                    "type": "boolean",
+                    "description": "Whether to only run nucleus segmentation."
+                },
+                "nucleus_segmentation_only": {
+                    "type": "boolean",
+                    "description": "Whether to only run nucleus segmentation."
+                },
+                "expansion_distance": {
+                    "type": "integer",
+                    "default": 5,
+                    "description": "Nuclei boundary expansion distance in µm. Default: 5 (Min: 0, Max: 15 if either boundary-stain or interior-stain are enabled and 100 if nucleus-expansion only)"
+                },
+                "dapi_filter": {
+                    "type": "integer",
+                    "default": 100,
+                    "description": "Minimum intensity in photoelectrons (pe) to filter nuclei. Default: 100. (appropriate range of values is 0 to 99th percentile of image stack or 1000, whichever is larger)"
+                },
+                "interior_stain": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Specify the name of the interior stain to use or disable. Supported for cell segmentation staining workflow output bundles. Possible options are: \\\"18S\\\" (default) or \\\"disable\\\""
+                },
+                "boundary_stain": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Specify the name of the boundary stain to use or disable. Supported for cell segmentation staining workflow output bundles. Possible options are: \\\"ATP1A1/CD45/E-Cadherin\\\" (default) or \\\"disable\\\""
+                },
+                "use_gpu": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable GPU acceleration (set automatically by the gpu profile)."
+                },
+                "gpu_queue": {
+                    "type": "string",
+                    "description": "AWS Batch queue for GPU tasks (e.g., Segger, ProSeg)."
+                },
+                "cellpose_queue": {
+                    "type": "string",
+                    "description": "AWS Batch queue for Cellpose (single large GPU)."
+                },
+                "cellpose_downscale": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Pre-downscale morphology image to avoid Cellpose OOM on large images."
+                },
+                "sharpen_tiff": {
+                    "type": "boolean",
+                    "description": "Whether to enhance the morphology.ome.tif file."
+                },
+                "segger_accelerator": {
+                    "type": "string",
+                    "default": "cpu",
+                    "enum": ["cpu", "cuda"],
+                    "description": "Device used for training. (e.g., cuda for GPU or cpu)"
+                },
+                "segger_knn_method": {
+                    "type": "string",
+                    "default": "kd_tree",
+                    "enum": ["kd_tree", "cuda"],
+                    "description": "Method for KNN computation. (e.g., cuda for GPU-based computation)"
+                },
+                "segger_num_workers": {
+                    "type": "integer",
+                    "default": 4,
+                    "description": "Number of data-loader workers for Segger."
+                },
+                "segger_model": {
                     "type": "string",
                     "format": "file-path",
-                    "exists": true,
-                    "mimetype": "text/plain",
-                    "pattern": "^\\S+\\.fn?a(sta)?(\\.gz)?$",
-                    "description": "Path to FASTA genome file.",
-                    "help_text": "This parameter is *mandatory* if `--genome` is not specified. If you don't have a BWA index available this will be generated for you automatically. Combine with `--save_reference` to save BWA index for future runs.",
-                    "fa_icon": "far fa-file-code"
+                    "description": "Path to a pre-trained Segger model checkpoint."
                 },
-                "igenomes_ignore": {
-                    "type": "boolean",
-                    "description": "Do not load the iGenomes reference config.",
-                    "fa_icon": "fas fa-ban",
-                    "hidden": true,
-                    "help_text": "Do not load `igenomes.config` when running the pipeline. You may choose this option if you observe clashes between custom parameters and those supplied in `igenomes.config`."
-                },
-                "igenomes_base": {
+                "format": {
                     "type": "string",
-                    "description": "The base path to the igenomes reference files",
-                    "fa_icon": "fas fa-ban",
-                    "hidden": true,
-                    "default": "s3://ngi-igenomes/igenomes/"
+                    "default": "xenium",
+                    "description": "Preset value for the proseg segmentation method."
+                },
+                "image_seg_methods": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": ["cellpose", "xeniumranger", "baysor", "stardist"]
+                    },
+                    "description": "List of image-based segmentation methods."
+                },
+                "transcript_seg_methods": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": ["proseg", "segger", "baysor"]
+                    },
+                    "description": "List of transcript-based segmentation methods."
+                },
+                "segfree_methods": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": ["ficture", "baysor"]
+                    },
+                    "description": "List of segmentation-free methods."
+                },
+                "negative_control_regex": {
+                    "type": "string",
+                    "description": "Regex used to identify or match negative control samples in a dataset."
+                },
+                "features": {
+                    "type": "string",
+                    "description": "List of features to be passed to the ficture method. (eg: TP53,OCIAD1,BCAS3,SOX)"
+                },
+                "filter_transcripts": {
+                    "type": "boolean",
+                    "description": "Whether to filter the transcripts.parquet file before running Baysor segmentation.",
+                    "default": false
+                },
+                "baysor_scale": {
+                    "type": "integer",
+                    "default": 30,
+                    "description": "Baysor --scale parameter for non-tiled runs."
+                },
+                "baysor_config": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to Baysor config TOML file (optional)."
+                },
+                "baysor_tiling": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable tiled Baysor segmentation (divide transcripts into patches, run Baysor per patch, stitch results)."
+                },
+                "baysor_tiling_micron": {
+                    "type": "integer",
+                    "default": 1200,
+                    "description": "Tile width in microns for Baysor tiling."
+                },
+                "baysor_tiling_overlap": {
+                    "type": "integer",
+                    "default": 200,
+                    "description": "Overlap between Baysor patches in microns."
+                },
+                "baysor_tiling_balanced": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Balance transcripts across tiles by merging sparse tiles."
+                },
+                "baysor_tiling_scale": {
+                    "type": "integer",
+                    "default": 39,
+                    "description": "Baysor --scale for tiled runs (larger to compensate for EM on smaller tiles)."
+                },
+                "baysor_tiling_min_mols_per_cell": {
+                    "type": "integer",
+                    "default": 120,
+                    "description": "Minimum molecules per cell (--min-molecules-per-cell) for tiled Baysor."
+                },
+                "baysor_tiling_min_transcripts_per_cell": {
+                    "type": "integer",
+                    "default": 50,
+                    "description": "Post-stitch cell filtering threshold: minimum transcripts per cell."
+                },
+                "baysor_prior": {
+                    "type": "string",
+                    "enum": ["cells", "cellpose"],
+                    "description": "Prior segmentation type for Baysor. 'cells' uses Xenium bundle cell_id column; 'cellpose' uses Cellpose mask as image prior."
+                },
+                "baysor_prior_confidence": {
+                    "type": "number",
+                    "default": 0.2,
+                    "description": "Baysor prior-segmentation-confidence (0-1)."
+                },
+                "min_qv": {
+                    "type": "number",
+                    "default": 20,
+                    "description": "Minimum Q-Score to pass filtering."
+                },
+                "min_x": {
+                    "type": "number",
+                    "description": "only keep transcripts whose x-coordinate is greater than specified limit, if no limit is specified, the default minimum value will be 0.0"
+                },
+                "max_x": {
+                    "type": "number",
+                    "description": "only keep transcripts whose x-coordinate is less than specified limit, if no limit is specified, the default value will retain all transcripts since Xenium slide is <24000 microns in x and y (default: 24000.0)"
+                },
+                "min_y": {
+                    "type": "number",
+                    "description": "only keep transcripts whose y-coordinate is greater than specified limit, if no limit is specified, the default minimum value will be 0.0"
+                },
+                "max_y": {
+                    "type": "number",
+                    "description": "only keep transcripts whose y-coordinate is less than specified limit, if no limit is specified, the default value will retain all transcripts since Xenium slide is <24000 microns in x and y (default: 24000.0)"
+                },
+                "tiling": {
+                    "type": "boolean",
+                    "description": "Enable tiled segmentation for large datasets. Divides transcripts into overlapping patches, runs segmentation in parallel per patch, then stitches results.",
+                    "default": false
+                },
+                "patch_grid": {
+                    "type": "string",
+                    "description": "Grid layout for tiling (rows x cols), e.g. '3x3', '4x4'.",
+                    "default": "3x3"
+                },
+                "patch_overlap": {
+                    "type": "integer",
+                    "description": "Overlap between adjacent patches in microns.",
+                    "default": 50
+                },
+                "patch_filter_method": {
+                    "type": "string",
+                    "description": "Post-stitch cell size filtering method. Options: 'empirical' (IQR-based), 'distribution' (z-score), 'both', or null to disable.",
+                    "enum": ["empirical", "distribution", "both"]
+                },
+                "patch_filter_iqr_multiplier": {
+                    "type": "number",
+                    "description": "IQR multiplier for empirical cell size filtering during stitching.",
+                    "default": 3.0
+                },
+                "patch_filter_z_threshold": {
+                    "type": "number",
+                    "description": "Z-score threshold for distribution-based cell size filtering during stitching.",
+                    "default": 4.0
+                },
+                "csplit_x_bins": {
+                    "type": "integer",
+                    "default": 2,
+                    "description": "Number of tiles along the x axis for cell-type separability."
+                },
+                "csplit_y_bins": {
+                    "type": "integer",
+                    "default": 2,
+                    "description": "Number of tiles along the y axis for cell-type separability."
+                },
+                "tile_width": {
+                    "type": "integer",
+                    "description": "Width of the tiles in pixels",
+                    "default": 120
+                },
+                "tile_height": {
+                    "type": "integer",
+                    "description": "Height of the tiles in pixels",
+                    "default": 120
+                },
+                "batch_size_train": {
+                    "type": "integer",
+                    "description": "Number of samples to process per training batch",
+                    "default": 4
+                },
+                "devices": {
+                    "type": "integer",
+                    "description": "Number of devices (GPUs) to use during training",
+                    "default": 4
+                },
+                "max_epochs": {
+                    "type": "integer",
+                    "description": "Number of training epochs",
+                    "default": 200
+                },
+                "batch_size_predict": {
+                    "type": "integer",
+                    "description": "Number of samples to process per batch during prediction",
+                    "default": 1
+                },
+                "cc_analysis": {
+                    "type": "boolean",
+                    "description": "Whether to use connected components for grouping transcripts without direct nucleus association",
+                    "default": false
+                },
+                "buffer_samples": {
+                    "type": "boolean",
+                    "description": "Process only one sample at a time from a multi-sample samplesheet.",
+                    "default": false
+                },
+                "buffer_size": {
+                    "type": "integer",
+                    "description": "Number of sample(s) to process at a time from a multi-sample samplesheet. Works if buffered_samples is true.",
+                    "default": 1
+                },
+                "restrict_concurrency": {
+                    "type": "boolean",
+                    "description": "Restrict parallelizing a process. Eg. restrict running cellpose cell and nuclei segmentation together if the resources are limited.",
+                    "default": false
                 }
             }
         },
@@ -126,6 +471,11 @@
                     "description": "Institutional config URL link.",
                     "hidden": true,
                     "fa_icon": "fas fa-users-cog"
+                },
+                "test_data_base": {
+                    "type": "string",
+                    "default": "https://raw.githubusercontent.com/nf-core/test-datasets/spatialxe",
+                    "description": "Base path / URL for data used in the test profiles."
                 }
             }
         },
@@ -136,6 +486,12 @@
             "description": "Less common options for the pipeline, typically set in a config file.",
             "help_text": "These options are common to all nf-core pipelines and allow you to customise some of the core preferences for how the pipeline runs.\n\nTypically these options would be set in a Nextflow config file loaded for all pipeline runs, such as `~/.nextflow/config`.",
             "properties": {
+                "help": {
+                    "type": "boolean",
+                    "description": "Display help text.",
+                    "fa_icon": "fas fa-question-circle",
+                    "hidden": true
+                },
                 "version": {
                     "type": "boolean",
                     "description": "Display version and exit.",
@@ -179,6 +535,13 @@
                     "fa_icon": "fas fa-palette",
                     "hidden": true
                 },
+                "hook_url": {
+                    "type": "string",
+                    "description": "Incoming hook URL for messaging service",
+                    "fa_icon": "fas fa-people-group",
+                    "help_text": "Incoming hook URL for messaging service. Currently, MS Teams and Slack are supported.",
+                    "hidden": true
+                },
                 "multiqc_config": {
                     "type": "string",
                     "format": "file-path",
@@ -204,22 +567,22 @@
                     "fa_icon": "fas fa-check-square",
                     "hidden": true
                 },
+                "monochromeLogs": {
+                    "type": "boolean",
+                    "description": "Do not use coloured log outputs",
+                    "hidden": true
+                },
                 "pipelines_testdata_base_path": {
                     "type": "string",
-                    "fa_icon": "far fa-check-circle",
-                    "description": "Base URL or local path to location of pipeline test dataset files",
                     "default": "https://raw.githubusercontent.com/nf-core/test-datasets/",
+                    "description": "Base URL or local path to location of pipeline test dataset files",
                     "hidden": true
                 },
                 "trace_report_suffix": {
                     "type": "string",
                     "fa_icon": "far calendar",
-                    "description": "Suffix to add to the trace report filename. Default is the date and time in the format yyyy-MM-dd_HH-mm-ss.",
+                    "description": "Suffix to add to the trace report filename. Default is the date and time in the format yyyy-MM-dd_HH-mm-ss",
                     "hidden": true
-                },
-                "help": {
-                    "type": ["boolean", "string"],
-                    "description": "Display the help message."
                 },
                 "help_full": {
                     "type": "boolean",
@@ -237,7 +600,7 @@
             "$ref": "#/$defs/input_output_options"
         },
         {
-            "$ref": "#/$defs/reference_genome_options"
+            "$ref": "#/$defs/segmentation_options"
         },
         {
             "$ref": "#/$defs/institutional_config_options"

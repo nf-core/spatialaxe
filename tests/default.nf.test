@@ -1,10 +1,13 @@
 nextflow_pipeline {
 
-    name "Test pipeline"
+    name "Test pipeline - runs the default pipeline tests (coordinate mode)"
     script "../main.nf"
     tag "pipeline"
+    config "../conf/test.config"
 
-    test("-profile test") {
+    test("-profile test stub") {
+
+        options "-stub"
 
         when {
             params {

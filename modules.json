@@ -5,15 +5,70 @@
         "https://github.com/nf-core/modules.git": {
             "modules": {
                 "nf-core": {
-                    "fastqc": {
+                    "cellpose": {
                         "branch": "master",
-                        "git_sha": "6d46786420b4d7bc88eba026eb389c0c5535d120",
-                        "installed_by": ["modules"]
+                        "git_sha": "0780b963d3ab087e861a4b74e9d0e404115e5352",
+                        "installed_by": ["modules"],
+                        "patch": "modules/nf-core/cellpose/cellpose.diff"
                     },
                     "multiqc": {
                         "branch": "master",
-                        "git_sha": "008f9d3e61209bf995edac3ba531f54e269e1215",
+                        "git_sha": "cb9f4bec379866ca560f7f79d9a9a06bea8c9b51",
+                        "installed_by": ["modules"],
+                        "patch": "modules/nf-core/multiqc/multiqc.diff"
+                    },
+                    "opt/flip": {
+                        "branch": "master",
+                        "git_sha": "7d3e5c9d3d44",
+                        "installed_by": ["modules"],
+                        "patch": "modules/nf-core/opt/flip/opt-flip.diff"
+                    },
+                    "opt/stat": {
+                        "branch": "master",
+                        "git_sha": "7d3e5c9d3d44",
+                        "installed_by": ["modules"],
+                        "patch": "modules/nf-core/opt/stat/opt-stat.diff"
+                    },
+                    "opt/track": {
+                        "branch": "master",
+                        "git_sha": "7d3e5c9d3d44",
+                        "installed_by": ["modules"],
+                        "patch": "modules/nf-core/opt/track/opt-track.diff"
+                    },
+                    "stardist": {
+                        "branch": "master",
+                        "git_sha": "4e783502ab661bed13f15189401b73c93966831f",
+                        "installed_by": ["modules"],
+                        "patch": "modules/nf-core/stardist/stardist.diff"
+                    },
+                    "untar": {
+                        "branch": "master",
+                        "git_sha": "447f7bc0fa41dfc2400c8cad4c0291880dc060cf",
+                        "installed_by": ["modules"],
+                        "patch": "modules/nf-core/untar/untar.diff"
+                    },
+                    "unzip": {
+                        "branch": "master",
+                        "git_sha": "4dd9d8439a429c7ee566e0e2347f76ddeef27e66",
+                        "installed_by": ["modules"],
+                        "patch": "modules/nf-core/unzip/unzip.diff"
+                    },
+                    "xeniumranger/import-segmentation": {
+                        "branch": "master",
+                        "git_sha": "39365e944e936511e33b993cdd978e0f12adac9a",
+                        "installed_by": ["modules"],
+                        "patch": "modules/nf-core/xeniumranger/import-segmentation/xeniumranger-import-segmentation.diff"
+                    },
+                    "xeniumranger/relabel": {
+                        "branch": "master",
+                        "git_sha": "39365e944e936511e33b993cdd978e0f12adac9a",
                         "installed_by": ["modules"]
+                    },
+                    "xeniumranger/resegment": {
+                        "branch": "master",
+                        "git_sha": "39365e944e936511e33b993cdd978e0f12adac9a",
+                        "installed_by": ["modules"],
+                        "patch": "modules/nf-core/xeniumranger/resegment/xeniumranger-resegment.diff"
                     }
                 }
             },
@@ -26,12 +81,12 @@
                     },
                     "utils_nfcore_pipeline": {
                         "branch": "master",
-                        "git_sha": "a3fb7351b1fdb2b1de282b765816bbea190e86a8",
+                        "git_sha": "05954dab2ff481bcb999f24455da29a5828af08d",
                         "installed_by": ["subworkflows"]
                     },
                     "utils_nfschema_plugin": {
                         "branch": "master",
-                        "git_sha": "fdc08b8b1ae74f56686ce21f7ea11ad11990ce57",
+                        "git_sha": "4b406a74dc0449c0401ed87d5bfff4252fd277fd",
                         "installed_by": ["subworkflows"]
                     }
                 }

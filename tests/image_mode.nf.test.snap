@@ -1,0 +1,130 @@
+{
+    "-profile test stub": {
+        "content": [
+            {
+                "BAYSOR_PREPROCESS_TRANSCRIPTS": {
+                    "python": "3.14.4"
+                },
+                "BAYSOR_RUN": {
+                    "baysor": "0.7.1"
+                },
+                "CELLPOSE_CELLS": {
+                    "torch": "2.10.0+cu128"
+                },
+                "RESIZE_TIF": {
+                    "tifffile": "2026.2.24"
+                },
+                "SPATIALDATA_MERGE_RAW_REDEFINED": {
+                    "spatialdata": "0.7.2"
+                },
+                "SPATIALDATA_META": {
+                    "spatialdata": "0.7.2"
+                },
+                "SPATIALDATA_WRITE_RAW_BUNDLE": {
+                    "spatialdata": "0.7.2"
+                },
+                "SPATIALDATA_WRITE_REDEFINED_BUNDLE": {
+                    "spatialdata": "0.7.2"
+                },
+                "UNTAR": {
+                    "untar": 1.34
+                },
+                "Workflow": {
+                    "nf-core/spatialxe": "v1.0.0"
+                },
+                "XENIUMRANGER_IMPORT_SEGMENTATION": {
+                    "xeniumranger": "4.0.1.1"
+                }
+            },
+            [
+                "coordinate",
+                "coordinate/xeniumranger",
+                "coordinate/xeniumranger/import_segementation",
+                "coordinate/xeniumranger/import_segementation/test_run",
+                "coordinate/xeniumranger/import_segementation/test_run/experiment.xenium",
+                "image",
+                "image/baysor",
+                "image/baysor/preprocess",
+                "image/baysor/preprocess/test_run",
+                "image/baysor/preprocess/test_run/filtered_transcripts.csv",
+                "image/baysor/run",
+                "image/baysor/run/test_run",
+                "image/baysor/run/test_run/segmentation.csv",
+                "image/baysor/run/test_run/segmentation_polygons_2d.json",
+                "image/cellpose_cells",
+                "image/cellpose_cells/test_run",
+                "image/cellpose_cells/test_run/morphology.ome_cp_masks.tif",
+                "image/multiqc",
+                "image/multiqc/raw_bundle",
+                "image/multiqc/raw_bundle/multiqc_data",
+                "image/multiqc/raw_bundle/multiqc_data/.stub",
+                "image/multiqc/raw_bundle/multiqc_plots",
+                "image/multiqc/raw_bundle/multiqc_plots/.stub",
+                "image/multiqc/raw_bundle/multiqc_report.html",
+                "image/multiqc/redefined_bundle",
+                "image/multiqc/redefined_bundle/multiqc_data",
+                "image/multiqc/redefined_bundle/multiqc_data/.stub",
+                "image/multiqc/redefined_bundle/multiqc_plots",
+                "image/multiqc/redefined_bundle/multiqc_plots/.stub",
+                "image/multiqc/redefined_bundle/multiqc_report.html",
+                "image/spatialdata",
+                "image/spatialdata/merge",
+                "image/spatialdata/merge/spatialdata",
+                "image/spatialdata/merge/spatialdata/test_run",
+                "image/spatialdata/merge/spatialdata/test_run/merged_bundle",
+                "image/spatialdata/merge/spatialdata/test_run/merged_bundle/fake_file.txt",
+                "image/spatialdata/meta",
+                "image/spatialdata/meta/spatialdata",
+                "image/spatialdata/meta/spatialdata/test_run",
+                "image/spatialdata/meta/spatialdata/test_run/metadata",
+                "image/spatialdata/meta/spatialdata/test_run/metadata/fake_file.txt",
+                "image/spatialdata/write",
+                "image/spatialdata/write/spatialdata",
+                "image/spatialdata/write/spatialdata/test_run",
+                "image/spatialdata/write/spatialdata/test_run/raw_bundle",
+                "image/spatialdata/write/spatialdata/test_run/raw_bundle/fake_file.txt",
+                "image/spatialdata/write/spatialdata/test_run/redefined_bundle",
+                "image/spatialdata/write/spatialdata/test_run/redefined_bundle/fake_file.txt",
+                "image/untar",
+                "image/untar/test_run",
+                "image/untar/test_run/experiment.xenium",
+                "image/untar/test_run/gene_panel.json",
+                "image/untar/test_run/morphology.ome.tif",
+                "image/untar/test_run/transcripts.parquet",
+                "image/utility",
+                "image/utility/resize_tif",
+                "image/utility/resize_tif/test_run",
+                "image/utility/resize_tif/test_run/resized_morphology.ome_cp_masks.tif.tif",
+                "pipeline_info",
+                "pipeline_info/nf_core_spatialxe_software_mqc_versions.yml"
+            ],
+            [
+                "experiment.xenium:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "filtered_transcripts.csv:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "segmentation.csv:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "segmentation_polygons_2d.json:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "morphology.ome_cp_masks.tif:md5,d41d8cd98f00b204e9800998ecf8427e",
+                ".stub:md5,d41d8cd98f00b204e9800998ecf8427e",
+                ".stub:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "multiqc_report.html:md5,d41d8cd98f00b204e9800998ecf8427e",
+                ".stub:md5,d41d8cd98f00b204e9800998ecf8427e",
+                ".stub:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "multiqc_report.html:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "fake_file.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "fake_file.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "fake_file.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "fake_file.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "experiment.xenium:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "gene_panel.json:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "morphology.ome.tif:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "transcripts.parquet:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "resized_morphology.ome_cp_masks.tif.tif:md5,d41d8cd98f00b204e9800998ecf8427e"
+            ]
+        ],
+        "timestamp": "2026-04-29T19:30:52.537301132",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "25.10.4"
+        }
+    }
+}

@@ -1,0 +1,58 @@
+name: "segger_predict"
+description: Predict cell segmentation on new data using a trained Segger model.
+keywords:
+  - segmentation
+  - xenium
+  - imaging
+  - prediction
+tools:
+  - "segger":
+      description: "Segger uses graph neural networks and heterogeneous graphs to offer efficient cell segmentation at unmatched precision and accuracy."
+      homepage: "https://github.com/EliHei2/segger_dev"
+      documentation: "https://elihei2.github.io/segger_dev/user_guide/"
+      tool_dev_url: "https://github.com/EliHei2/segger_dev"
+      doi: "tbd"
+      licence: ["MIT"]
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. `[ id:'segger_run_id' ]`
+    - segger_dataset:
+        type: file
+        description: |
+          File or directory with input data to run predictions on.
+  - - models_dir:
+        type: directory
+        description: |
+          Directory containing the trained model for inference.
+  - - transcripts_file:
+        type: file
+        description: |
+          Path to the transcripts.parquet file.
+  - - benchmarks_dir:
+        type: directory
+        description: |
+          Directory to save the prediction outputs.
+output:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. `[ id:'segger_run_id' ]`
+    - benchmarks_dir:
+        description: |
+          Directory to save the segmentation results, including cell boundaries and associations.
+  - - versions:
+        type: file
+        description: File containing software versions
+        pattern: "versions.yml"
+
+authors:
+  - "@tobiaspk"
+  - "@khersameesh24"
+maintainers:
+  - "@tobiaspk"
+  - "@khersameesh24"

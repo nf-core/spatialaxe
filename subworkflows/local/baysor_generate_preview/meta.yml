@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "baysor_generate_preview"
+description: quick preview to get meaning from the data and to get some guesses about the parameters of the full baysor run
+keywords:
+  - baysor
+  - preview
+  - transcripts
+  - report
+  - preview_html
+  - html_report
+  - visualization
+components:
+  - baysor/preview
+  - baysor/create/dataset
+  - parquet/to/csv
+  - extract/preview/data
+input:
+  - ch_transcripts_parquet:
+      description: |
+        input parquet file from the xenium bundle
+        Structure: [ val(meta), path("path-to-transcripts.parquet") ]
+  - ch_config:
+      description: |
+        config file for the xenium baysor run (stored in assets/config/xenium.toml)
+        Structure: [ path("path-to-xenium.toml") ]
+output:
+  - preview_html:
+      description: |
+        Preview html file generated with the baysor preview command
+        Structure: [ val(meta), path("path-to-preview.html") ]
+  - versions:
+      description: |
+        Files containing software versions
+        Structure: [ path(versions.yml) ]
+authors:
+  - "@khersameesh24"
+maintainers:
+  - "@khersameesh24"

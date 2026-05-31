@@ -1,0 +1,53 @@
+name: ficture_preprocessing
+description: FICTURE is a software tool that performs segmentation-free analysis of submicron-resolution analysis of spatial transcriptomics data.
+keywords:
+  - spatial
+  - segmentation free
+  - imaging
+  - preprocessing
+tools:
+  - ficture:
+      description: |
+        FICTURE is a software tool that performs segmentation-free analysis of submicron-resolution
+        analysis of spatial transcriptomics data. This tool executes ficture itself.
+      homepage: "https://seqscope.github.io/ficture/"
+      documentation: "https://seqscope.github.io/ficture/"
+      tool_dev_url: "https://github.com/seqscope/ficture"
+      licence:
+        - "Attribution-NonCommercial 4.0 International"
+      identifier: ""
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing run information
+          e.g. [id:'sample']
+    - transcripts:
+        type: file
+        description: One file contains the molecular or pixel level information, the required columns are X, Y, gene, and Count. (There could be other columns in the file which would be ignored.)
+  - - features:
+        type: file
+        description: Another txt file that contains the (unique) names of genes that should be used in analysis. If your data contain negative control probes or if you would like to remove certain genes this is where you can specify. Just list the genes. One gene per line. No header.
+output:
+  - transcripts:
+      type: file
+      description: Transcirpt file used for FICTURE
+      pattern: "processed_transcripts.tsv.gz"
+  - coordinate_minmax:
+      type: file
+      description: Listing the min and max of the coordinates used for FICTURE
+      pattern: "coordinate_minmax.tsv"
+  - features:
+      type: file
+      description: Another file contains the (unique) names of genes that should be used for FICUTRE
+      pattern: "feature.clean.tsv.gz"
+  - versions:
+      type: file
+      description: File containing software versions
+      pattern: "versions.yml"
+authors:
+  - "@khersameesh24"
+  - "@heylf"
+maintainers:
+  - "@khersameesh24"
+  - "@heylf"

@@ -1,0 +1,30 @@
+Changes in component 'nf-core/xeniumranger/resegment'
+'modules/nf-core/xeniumranger/resegment/meta.yml' is unchanged
+Changes in 'xeniumranger/resegment/main.nf':
+--- modules/nf-core/xeniumranger/resegment/main.nf
++++ modules/nf-core/xeniumranger/resegment/main.nf
+@@ -24,10 +24,24 @@
+     prefix = task.ext.prefix ?: "${meta.id}"
+     def args = task.ext.args ?: ""
+
++    // Do not use boundary stain in analysis, but keep default interior stain and DAPI
++    def boundary_stain = params.boundary_stain ? "" : "--boundary-stain=disable"
++    // Do not use interior stain in analysis, but keep default boundary stain and DAPI
++    def interior_stain = params.interior_stain ? "" : "--interior-stain=disable"
++
+     """
+     xeniumranger resegment \\
+         --id="XENIUMRANGER_RESEGMENT" \\
+         --xenium-bundle="${xenium_bundle}" \\
++        --expansion-distance=${params.expansion_distance} \\
++        --dapi-filter=${params.dapi_filter} \\
++        ${boundary_stain} \\
++        ${interior_stain} \\
+         --localcores=${task.cpus} \\
+         --localmem=${task.memory.toGiga()} \\
+         ${args}
+'modules/nf-core/xeniumranger/resegment/tests/main.nf.test.snap' is unchanged
+'modules/nf-core/xeniumranger/resegment/tests/tags.yml' is unchanged
+'modules/nf-core/xeniumranger/resegment/tests/nextflow.config' is unchanged
+'modules/nf-core/xeniumranger/resegment/tests/main.nf.test' is unchanged
+************************************************************

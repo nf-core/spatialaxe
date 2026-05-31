@@ -1,0 +1,34 @@
+{
+    "versions_stub": {
+        "content": [
+            [
+                [
+                    "BAYSOR_CREATE_DATASET",
+                    "python",
+                    "3.11.2"
+                ]
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.3",
+            "nextflow": "25.10.2"
+        },
+        "timestamp": "2026-03-21T03:57:19.078934192"
+    },
+    "versions": {
+        "content": [
+            [
+                [
+                    "BAYSOR_CREATE_DATASET",
+                    "python",
+                    "3.11.2"
+                ]
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.3",
+            "nextflow": "25.10.2"
+        },
+        "timestamp": "2026-03-21T05:05:40.700569871"
+    }
+}

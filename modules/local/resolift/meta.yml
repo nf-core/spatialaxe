@@ -1,0 +1,46 @@
+name: "resolift"
+description: Upscale large TIFFs using chunk-based image processing and sharpening.
+keywords:
+  - segmentation
+  - spatialomics
+  - image based segmentation
+tools:
+  - "resolift":
+      description: "Upscale large TIFFs using chunk-based image processing and sharpening."
+      homepage: "https://github.com/khersameesh24/ResoLift"
+      documentation: "https://github.com/khersameesh24/ResoLift"
+      tool_dev_url: "https://github.com/khersameesh24/ResoLift"
+      doi: ""
+      licence: ["GNU Public License"]
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing run information
+          e.g. `[ id:'run_id']`
+    - input:
+        type: file
+        description: |
+          Path to the input TIFF file.
+        pattern: ".tiff"
+
+output:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing run information
+          e.g. `[ id:'run_id']`
+    - output:
+        type: file
+        description: Path to save the upscaled TIFF file.
+        pattern: ".tiff"
+  - - versions:
+      type: file
+      description: File containing software versions
+      pattern: "versions.yml"
+
+authors:
+  - "@kubranarci"
+maintainers:
+  - "@kubranarci"

@@ -1,0 +1,20 @@
+Changes in component 'nf-core/untar'
+Upstream git_sha: 447f7bc0fa41dfc2400c8cad4c0291880dc060cf
+'modules/nf-core/untar/meta.yml' is unchanged
+Changes in 'untar/main.nf':
+--- modules/nf-core/untar/main.nf
++++ modules/nf-core/untar/main.nf
+@@ -49,6 +49,10 @@
+     prefix = task.ext.prefix ?: (meta.id ? "${meta.id}" : archive.toString().replaceFirst(/\.[^\.]+(.gz)?$/, ""))
+     """
+     mkdir ${prefix}
++    touch ${prefix}/morphology.ome.tif
++    touch ${prefix}/transcripts.parquet
++    touch ${prefix}/gene_panel.json
++    touch ${prefix}/experiment.xenium
+
+     ## Dry-run untaring the archive to get the files and place all in prefix
+     if [[ \$(tar -taf ${archive} | grep -o -P "^.*?\\/" | uniq | wc -l) -eq 1 ]]; then
+
+'modules/nf-core/untar/environment.yml' is unchanged
+************************************************************

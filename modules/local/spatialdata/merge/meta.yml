@@ -1,0 +1,44 @@
+name: spatialdata_merge
+description: Merge several SpatialData bundles together.
+keywords:
+  - data
+  - spatialomics
+tools:
+  - custom:
+      description: An open and universal framework for processing spatial omics data
+      homepage: https://github.com/scverse/spatialdata
+      documentation: https://spatialdata.scverse.org/en/latest/
+      licence: ["BSD 3-Clause"]
+input:
+  - meta:
+      type: map
+      description: |
+        Groovy Map containing sample information
+        e.g. [ id:'sample' ]
+  - ref_bundle:
+      type: folder
+      description: |
+        Path to reference (raw) spatialdata bundle.
+  - add_bundle:
+      type: folder
+      description: |
+        Path to spatialdata bundle that should be added.
+
+output:
+  - spatialxe_bundle:
+      - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'sample' ]
+      - "spatialdata_spatialxe":
+          type: folder
+          description: Spatialdata folder
+          pattern: "${meta.id}/spatialdata_spatialxe/*"
+  - versions:
+      type: file
+      description: File containing software versions
+      pattern: "versions.yml"
+
+authors:
+  - "@heylf"

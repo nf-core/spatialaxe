@@ -1,0 +1,83 @@
+{
+    "-profile test stub": {
+        "content": [
+            {
+                "BAYSOR_CREATE_DATASET": {
+                    "python": "3.11.2"
+                },
+                "BAYSOR_PREVIEW": {
+                    "baysor": "0.7.1"
+                },
+                "EXTRACT_PREVIEW_DATA": {
+                    "python": "3.14.4"
+                },
+                "PARQUET_TO_CSV": {
+                    "pyarrow": "24.0.0"
+                },
+                "UNTAR": {
+                    "untar": 1.34
+                },
+                "Workflow": {
+                    "nf-core/spatialxe": "v1.0.0"
+                }
+            },
+            [
+                "pipeline_info",
+                "pipeline_info/nf_core_spatialxe_software_mqc_versions.yml",
+                "preview",
+                "preview/baysor",
+                "preview/baysor/create_dataset",
+                "preview/baysor/create_dataset/test_run",
+                "preview/baysor/create_dataset/test_run/sampled_transcripts.csv",
+                "preview/baysor/preview",
+                "preview/baysor/preview/test_run",
+                "preview/baysor/preview/test_run/preview.html",
+                "preview/multiqc",
+                "preview/multiqc/multiqc_data",
+                "preview/multiqc/multiqc_data/.stub",
+                "preview/multiqc/multiqc_plots",
+                "preview/multiqc/multiqc_plots/.stub",
+                "preview/multiqc/multiqc_report.html",
+                "preview/untar",
+                "preview/untar/test_run",
+                "preview/untar/test_run/experiment.xenium",
+                "preview/untar/test_run/gene_panel.json",
+                "preview/untar/test_run/morphology.ome.tif",
+                "preview/untar/test_run/transcripts.parquet",
+                "preview/utility",
+                "preview/utility/parquet_to_csv",
+                "preview/utility/parquet_to_csv/test_run",
+                "preview/utility/parquet_to_csv/test_run/transcripts.parquet.csv",
+                "preview/utility/preview_data",
+                "preview/utility/preview_data/test_run",
+                "preview/utility/preview_data/test_run/gene_structure_mqc.tsv",
+                "preview/utility/preview_data/test_run/noise_distribution_mqc.tsv",
+                "preview/utility/preview_data/test_run/noise_level_mqc.png",
+                "preview/utility/preview_data/test_run/transcript_plots_mqc.png",
+                "preview/utility/preview_data/test_run/umap_mqc.tsv"
+            ],
+            [
+                "sampled_transcripts.csv:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "preview.html:md5,d41d8cd98f00b204e9800998ecf8427e",
+                ".stub:md5,d41d8cd98f00b204e9800998ecf8427e",
+                ".stub:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "multiqc_report.html:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "experiment.xenium:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "gene_panel.json:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "morphology.ome.tif:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "transcripts.parquet:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "transcripts.parquet.csv:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "gene_structure_mqc.tsv:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "noise_distribution_mqc.tsv:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "noise_level_mqc.png:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "transcript_plots_mqc.png:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "umap_mqc.tsv:md5,d41d8cd98f00b204e9800998ecf8427e"
+            ]
+        ],
+        "timestamp": "2026-04-30T19:00:29.84624323",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.0"
+        }
+    }
+}

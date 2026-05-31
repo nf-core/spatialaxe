@@ -1,0 +1,44 @@
+name: spatialdata_meta
+description: Add metadata to a SpatialData bundle.
+keywords:
+  - data
+  - spatialomics
+tools:
+  - custom:
+      description: An open and universal framework for processing spatial omics data
+      homepage: https://github.com/scverse/spatialdata
+      documentation: https://spatialdata.scverse.org/en/latest/
+      licence: ["BSD 3-Clause"]
+input:
+  - meta:
+      type: map
+      description: |
+        Groovy Map containing sample information
+        e.g. [ id:'sample' ]
+  - spatialdata_bundle:
+      type: folder
+      description: |
+        Path to spatialdata bundle.
+  - xenium_bundle:
+      type: folder
+      description: |
+        Path to Xeniumranger bundle.
+
+output:
+  - spatialxe_bundle:
+      - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'sample' ]
+      - "spatialdata_spatialxe_final":
+          type: folder
+          description: Spatialdata folder
+          pattern: "${meta.id}/spatialdata_spatialxe_final/*"
+  - versions:
+      type: file
+      description: File containing software versions
+      pattern: "versions.yml"
+
+authors:
+  - "@heylf"
