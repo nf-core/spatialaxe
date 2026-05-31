@@ -30,8 +30,8 @@ process DOWNSCALE_MORPHOLOGY {
     tuple val(meta), path("${prefix}/downscaled.tif"), emit: downscaled
     tuple val(meta), path("${prefix}/scale_info.json"), emit: scale_info
     tuple val("${task.process}"), val('python'), eval("python3 --version | sed 's/Python //'"), topic: versions, emit: versions_python
-    tuple val("${task.process}"), val('tifffile'), eval('python3 -c "import tifffile; print(tifffile.__version__)"'), topic: versions, emit: versions_tifffile
-    tuple val("${task.process}"), val('scikit-image'), eval('python3 -c "import skimage; print(skimage.__version__)"'), topic: versions, emit: versions_skimage
+    tuple val("${task.process}"), val('tifffile'), eval("pip show tifffile 2>/dev/null | sed -n 's/^Version: //p'"), topic: versions, emit: versions_tifffile
+    tuple val("${task.process}"), val('scikit-image'), eval("pip show scikit-image 2>/dev/null | sed -n 's/^Version: //p'"), topic: versions, emit: versions_skimage
 
     when:
     task.ext.when == null || task.ext.when

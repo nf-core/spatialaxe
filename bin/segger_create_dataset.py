@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Run segger create_dataset with spatialxe-specific preprocessing and workarounds.
+Run segger create_dataset with spatialaxe-specific preprocessing and workarounds.
 
 Wraps segger's create_dataset_fast.py with:
   - bundle_local symlink prep (handles read-only S3/Fusion mounts)

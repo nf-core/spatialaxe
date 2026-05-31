@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Run segger predict with spatialxe-specific preprocessing.
+Run segger predict with spatialaxe-specific preprocessing.
 
 Wraps segger's predict_fast.py with:
   - GPU enumeration (replaces inline python3 -c torch check)

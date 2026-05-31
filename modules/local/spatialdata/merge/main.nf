@@ -12,7 +12,7 @@ process SPATIALDATA_MERGE {
 
     output:
     tuple val(meta), path("spatialdata/${prefix}/${outputfolder}"), emit: merged_bundle
-    tuple val("${task.process}"), val('spatialdata'), eval('python3 -c "import spatialdata; print(spatialdata.__version__)"'), topic: versions, emit: versions_spatialdata
+    tuple val("${task.process}"), val('spatialdata'), eval("pip show spatialdata | sed -n 's/^Version: //p'"), topic: versions, emit: versions_spatialdata
 
     when:
     task.ext.when == null || task.ext.when
@@ -20,7 +20,7 @@ process SPATIALDATA_MERGE {
     script:
     // Exit if running this module with -profile conda / -profile mamba
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
-        exit(1, "SPATIALDATA_MERGE module does not support Conda. Please use Docker / Singularity / Podman instead.")
+        error("SPATIALDATA_MERGE module does not support Conda. Please use Docker / Singularity / Podman instead.")
     }
 
     prefix = task.ext.prefix ?: "${meta.id}"
@@ -36,7 +36,7 @@ process SPATIALDATA_MERGE {
     stub:
     // Exit if running this module with -profile conda / -profile mamba
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
-        exit(1, "SPATIALDATA_MERGE module does not support Conda. Please use Docker / Singularity / Podman instead.")
+        error("SPATIALDATA_MERGE module does not support Conda. Please use Docker / Singularity / Podman instead.")
     }
 
     prefix = task.ext.prefix ?: "${meta.id}"

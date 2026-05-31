@@ -12,7 +12,7 @@ process PARQUET_TO_CSV {
 
     output:
     tuple val(meta), path("${prefix}/*.csv*"), emit: transcripts_csv
-    tuple val("${task.process}"), val('pyarrow'), eval('python3 -c "import pyarrow; print(pyarrow.__version__)"'), topic: versions, emit: versions_pyarrow
+    tuple val("${task.process}"), val('pyarrow'), eval("pip show pyarrow 2>/dev/null | sed -n 's/^Version: //p'"), topic: versions, emit: versions_pyarrow
 
     when:
     task.ext.when == null || task.ext.when

@@ -12,7 +12,7 @@ process RESIZE_TIF {
     output:
     tuple val(meta), path("${meta.id}/resized_*.tif"), emit: resized_mask
     tuple val("${task.process}"), val('python'), eval("python3 --version | sed 's/Python //'"), topic: versions, emit: versions_python
-    tuple val("${task.process}"), val('tifffile'), eval('python3 -c "import tifffile; print(tifffile.__version__)"'), topic: versions, emit: versions_tifffile
+    tuple val("${task.process}"), val('tifffile'), eval("pip show tifffile 2>/dev/null | sed -n 's/^Version: //p'"), topic: versions, emit: versions_tifffile
 
     when:
     task.ext.when == null || task.ext.when

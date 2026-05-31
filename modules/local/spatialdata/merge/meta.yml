@@ -25,16 +25,16 @@ input:
         Path to spatialdata bundle that should be added.
 
 output:
-  - spatialxe_bundle:
+  - spatialaxe_bundle:
       - meta:
         type: map
         description: |
           Groovy Map containing sample information
           e.g. [ id:'sample' ]
-      - "spatialdata_spatialxe":
+      - "spatialdata_spatialaxe":
           type: folder
           description: Spatialdata folder
-          pattern: "${meta.id}/spatialdata_spatialxe/*"
+          pattern: "${meta.id}/spatialdata_spatialaxe/*"
   - versions:
       type: file
       description: File containing software versions

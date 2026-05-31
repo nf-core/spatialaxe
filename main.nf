@@ -1,11 +1,11 @@
 #!/usr/bin/env nextflow
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    nf-core/spatialxe
+    nf-core/spatialaxe
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Github : https://github.com/nf-core/spatialxe
-    Website: https://nf-co.re/spatialxe
-    Slack  : https://nfcore.slack.com/channels/spatialxe
+    Github : https://github.com/nf-core/spatialaxe
+    Website: https://nf-co.re/spatialaxe
+    Slack  : https://nfcore.slack.com/channels/spatialaxe
 ----------------------------------------------------------------------------------------
 */
 
@@ -15,9 +15,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { SPATIALXE               } from './workflows/spatialxe.nf'
-include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_spatialxe_pipeline'
-include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_spatialxe_pipeline'
+include { SPATIALAXE               } from './workflows/spatialaxe.nf'
+include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_spatialaxe_pipeline'
+include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_spatialaxe_pipeline'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -28,7 +28,7 @@ include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_spat
 //
 // WORKFLOW: Run main analysis pipeline depending on type of input
 //
-workflow NFCORE_SPATIALXE {
+workflow NFCORE_SPATIALAXE {
 
     take:
     samplesheet // channel: samplesheet read in from --input
@@ -38,7 +38,7 @@ workflow NFCORE_SPATIALXE {
     //
     // WORKFLOW: Run pipeline
     //
-    SPATIALXE (
+    SPATIALAXE (
         samplesheet,
         params.alignment_csv,
         params.baysor_config,
@@ -81,7 +81,7 @@ workflow NFCORE_SPATIALXE {
         params.xeniumranger_only,
     )
     emit:
-    multiqc_report = SPATIALXE.out.multiqc_report // channel: /path/to/multiqc_report.html
+    multiqc_report = SPATIALAXE.out.multiqc_report // channel: /path/to/multiqc_report.html
 }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -105,6 +105,7 @@ workflow {
         params.help,
         params.help_full,
         params.show_hidden,
+        params.format,
         params.gene_panel,
         params.gene_synonyms,
         params.image_seg_methods,
@@ -122,7 +123,7 @@ workflow {
     //
     // WORKFLOW: Run main workflow
     //
-    NFCORE_SPATIALXE (
+    NFCORE_SPATIALAXE (
         PIPELINE_INITIALISATION.out.samplesheet
     )
     //
@@ -135,7 +136,7 @@ workflow {
         params.outdir,
         params.monochrome_logs,
         params.hook_url,
-        NFCORE_SPATIALXE.out.multiqc_report
+        NFCORE_SPATIALAXE.out.multiqc_report
     )
 }
 

@@ -1,4 +1,4 @@
-# nf-core/spatialxe: Citations
+# nf-core/spatialaxe: Citations
 
 ## [nf-core](https://pubmed.ncbi.nlm.nih.gov/32055031/)
 

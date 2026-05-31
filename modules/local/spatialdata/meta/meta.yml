@@ -25,16 +25,16 @@ input:
         Path to Xeniumranger bundle.
 
 output:
-  - spatialxe_bundle:
+  - spatialaxe_bundle:
       - meta:
         type: map
         description: |
           Groovy Map containing sample information
           e.g. [ id:'sample' ]
-      - "spatialdata_spatialxe_final":
+      - "spatialdata_spatialaxe_final":
           type: folder
           description: Spatialdata folder
-          pattern: "${meta.id}/spatialdata_spatialxe_final/*"
+          pattern: "${meta.id}/spatialdata_spatialaxe_final/*"
   - versions:
       type: file
       description: File containing software versions

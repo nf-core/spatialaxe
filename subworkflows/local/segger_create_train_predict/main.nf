@@ -16,7 +16,7 @@ workflow SEGGER_CREATE_TRAIN_PREDICT {
 
     main:
 
-    // Note: spatialxe uses "pixels" but per 10x docs, transcript-based segmentation
+    // Note: spatialaxe uses "pixels" but per 10x docs, transcript-based segmentation
     // (like Baysor/Segger) must use "microns" since Xenium coordinates are in microns
     ch_coordinate_space = channel.value("microns")
 

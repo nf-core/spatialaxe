@@ -26,7 +26,7 @@ process EXTRACT_PREVIEW_DATA {
     prefix = task.ext.prefix ?: "${meta.id}"
 
     """
-    utility_extract_data.py \\
+    utility_extract_preview_data.py \\
         --preview-html ${preview_html} \\
         --prefix ${prefix}
     """

@@ -1,8 +1,8 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com/nf-core/spatialxe/master/nextflow_schema.json",
-    "title": "nf-core/spatialxe pipeline parameters",
-    "description": "A pipeline for spatialomics 10x Xenium In Situ data.",
+    "$id": "https://raw.githubusercontent.com/nf-core/spatialaxe/master/nextflow_schema.json",
+    "title": "nf-core/spatialaxe pipeline parameters",
+    "description": "A pipeline to process spatialomics data from 10x Xenium In Situ or 10x Atera.",
     "type": "object",
     "$defs": {
         "input_output_options": {
@@ -119,7 +119,7 @@
         "segmentation_options": {
             "title": "Segmentation options",
             "type": "object",
-            "description": "Options for the segmentation layer of the spatialxe pipeline",
+            "description": "Options for the segmentation layer of the spatialaxe pipeline",
             "default": "",
             "properties": {
                 "run_qc": {
@@ -219,7 +219,8 @@
                 "format": {
                     "type": "string",
                     "default": "xenium",
-                    "description": "Preset value for the proseg segmentation method."
+                    "enum": ["xenium", "cosmx", "merscope"],
+                    "description": "Input data platform. Used by proseg, segger, and spatialdata modules."
                 },
                 "image_seg_methods": {
                     "type": "array",
@@ -418,11 +419,6 @@
                     "type": "integer",
                     "description": "Number of sample(s) to process at a time from a multi-sample samplesheet. Works if buffered_samples is true.",
                     "default": 1
-                },
-                "restrict_concurrency": {
-                    "type": "boolean",
-                    "description": "Restrict parallelizing a process. Eg. restrict running cellpose cell and nuclei segmentation together if the resources are limited.",
-                    "default": false
                 }
             }
         },
@@ -474,7 +470,7 @@
                 },
                 "test_data_base": {
                     "type": "string",
-                    "default": "https://raw.githubusercontent.com/nf-core/test-datasets/spatialxe",
+                    "default": "https://raw.githubusercontent.com/nf-core/test-datasets/spatialaxe",
                     "description": "Base path / URL for data used in the test profiles."
                 }
             }

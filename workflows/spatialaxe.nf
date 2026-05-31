@@ -12,7 +12,7 @@ include { paramsSummaryMultiqc                             } from '../subworkflo
 
 // nf-core functionality
 include { softwareVersionsToYAML                           } from '../subworkflows/nf-core/utils_nfcore_pipeline'
-include { methodsDescriptionText                           } from '../subworkflows/local/utils_nfcore_spatialxe_pipeline'
+include { methodsDescriptionText                           } from '../subworkflows/local/utils_nfcore_spatialaxe_pipeline'
 include { paramsSummaryMap                                 } from 'plugin/nf-schema'
 
 // nf-core modules
@@ -52,7 +52,7 @@ include { OPT_FLIP_TRACK_STAT                              } from '../subworkflo
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow SPATIALXE {
+workflow SPATIALAXE {
     take:
     ch_samplesheet                       // channel: samplesheet read in from --input
     alignment_csv
@@ -99,7 +99,7 @@ workflow SPATIALXE {
 
     /*
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        SPATIALXE - GENERATE INPUT CHANNELS
+        SPATIALAXE - GENERATE INPUT CHANNELS
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     */
 
@@ -130,7 +130,7 @@ workflow SPATIALXE {
 
     /*
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        SPATIALXE - DATA STAGING
+        SPATIALAXE - DATA STAGING
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     */
 
@@ -171,14 +171,51 @@ workflow SPATIALXE {
         }
     }
 
+    // validate xenium bundle POST-staging — works uniformly for production
+    // directories and for tarball inputs that the UNTAR step has just extracted
+    def bundle_required_files = [
+        "cell_boundaries.csv.gz",
+        "cell_boundaries.parquet",
+        "cell_feature_matrix.h5",
+        "cell_feature_matrix.zarr.zip",
+        "cells.csv.gz",
+        "cells.parquet",
+        "cells.zarr.zip",
+        "experiment.xenium",
+        "gene_panel.json",
+        "metrics_summary.csv",
+        "morphology.ome.tif",
+        "morphology_focus/",
+        "nucleus_boundaries.csv.gz",
+        "nucleus_boundaries.parquet",
+        "transcripts.parquet",
+        "transcripts.zarr.zip",
+    ]
+    def bundle_optional_files = [
+        "analysis.tar.gz",
+        "analysis.zarr.zip",
+        "analysis_summary.html",
+    ]
+
     // path to bundle input
     ch_bundle_path = ch_input.map { meta, bundle, _image ->
 
         def bundle_path = file(bundle)
         if( !bundle_path.exists() ) {
-            log.error("❌ Check if the path to the xenium bundle exists.")
-            exit(1)
+            error("❌ Xenium bundle does not exist: ${bundle}")
         }
+
+        def missing_required = bundle_required_files.findAll { check -> !file("${bundle_path}/${check}").exists() }
+        if (missing_required) {
+            error("❌ Missing required file(s) in xenium bundle '${bundle}': ${missing_required}")
+        }
+
+        def missing_optional = bundle_optional_files.findAll { check -> !file("${bundle_path}/${check}").exists() }
+        if (missing_optional) {
+            log.warn("⚠️ Missing optional file(s) in xenium bundle '${bundle}': ${missing_optional}")
+        }
+
+        log.info("✅ Xenium bundle validated: ${bundle}")
         return [meta, bundle]
     }
 
@@ -251,7 +288,7 @@ workflow SPATIALXE {
 
     // get custom cellpose model if provided with the --cellpose_model for the cellpose method
     if (cellpose_model) {
-        ch_cellpose_model = channel.fromPath(
+        cellpose_model = channel.fromPath(
                 cellpose_model,
                 checkIfExists: true
             )
@@ -317,7 +354,7 @@ workflow SPATIALXE {
 
     /*
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        SPATIALXE - RELABEL GENES
+        SPATIALAXE - RELABEL GENES
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     */
 
@@ -336,7 +373,7 @@ workflow SPATIALXE {
 
     /*
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        SPATIALXE - DATA PREVIEW
+        SPATIALAXE - DATA PREVIEW
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     */
     // run baysor preview if `generate_preview ` is true
@@ -351,7 +388,7 @@ workflow SPATIALXE {
 
     /*
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        SPATIALXE - XENIUMRANGER LAYER
+        SPATIALAXE - XENIUMRANGER LAYER
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     */
     // run only xeniumranger import segmentation with changes xr specific params
@@ -371,7 +408,7 @@ workflow SPATIALXE {
 
     /*
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        SPATIALXE - IMAGE-BASED SEGMENTATION LAYER
+        SPATIALAXE - IMAGE-BASED SEGMENTATION LAYER
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     */
     if (mode == 'image') {
@@ -463,7 +500,7 @@ workflow SPATIALXE {
 
     /*
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        SPATIALXE - TRANSCRIPT-BASED SEGMENTATION LAYER
+        SPATIALAXE - TRANSCRIPT-BASED SEGMENTATION LAYER
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     */
     if (mode == 'coordinate') {
@@ -536,7 +573,7 @@ workflow SPATIALXE {
 
     /*
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        SPATIALXE - SPATIALDATA / METADATA LAYER
+        SPATIALAXE - SPATIALDATA / METADATA LAYER
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     */
 
@@ -555,7 +592,7 @@ workflow SPATIALXE {
 
     /*
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        SPATIALXE - QC LAYER
+        SPATIALAXE - QC LAYER
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     */
 
@@ -576,7 +613,7 @@ workflow SPATIALXE {
 
     /*
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        SPATIALXE - SEGMENTATION-FREE LAYER
+        SPATIALAXE - SEGMENTATION-FREE LAYER
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     */
     if (mode == 'segfree') {
@@ -610,7 +647,7 @@ workflow SPATIALXE {
 
     /*
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        SPATIALXE - COLLATE & SAVE SOFTWARE VERSIONS
+        SPATIALAXE - COLLATE & SAVE SOFTWARE VERSIONS
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     */
     // Collect versions published via topic channels (local modules)
@@ -622,7 +659,7 @@ workflow SPATIALXE {
     softwareVersionsToYAML(ch_versions.mix(ch_topic_versions))
         .collectFile(
             storeDir: "${outdir}/pipeline_info",
-            name: 'nf_core_' + 'spatialxe_software_' + 'mqc_' + 'versions.yml',
+            name: 'nf_core_' + 'spatialaxe_software_' + 'mqc_' + 'versions.yml',
             sort: true,
             newLine: true,
         )
@@ -630,7 +667,7 @@ workflow SPATIALXE {
 
     /*
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        SPATIALXE - MultiQC
+        SPATIALAXE - MultiQC
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     */
     ch_multiqc_config = channel.fromPath(
@@ -685,9 +722,9 @@ workflow SPATIALXE {
         )
 
         MULTIQC_PRE_XR_RUN (
-            ch_multiqc_files.collect().map { [it] }
-                .combine(ch_multiqc_configs.map { [it] })
-                .combine(ch_multiqc_logo.toList().map { [it] })
+            ch_multiqc_files.collect().map { mqc_files -> [mqc_files] }
+                .combine(ch_multiqc_configs.map { mqc_configs -> [mqc_configs] })
+                .combine(ch_multiqc_logo.toList().map { mqc_logo -> [mqc_logo] })
                 .map { files, configs, logo ->
                     [ [id: 'multiqc_pre_xr'], files, configs, logo ? logo[0] : [], [], [] ]
                 }
@@ -700,9 +737,9 @@ workflow SPATIALXE {
         )
 
         MULTIQC_POST_XR_RUN (
-            ch_multiqc_files.collect().map { [it] }
-                .combine(ch_multiqc_configs.map { [it] })
-                .combine(ch_multiqc_logo.toList().map { [it] })
+            ch_multiqc_files.collect().map { mqc_files -> [mqc_files] }
+                .combine(ch_multiqc_configs.map { mqc_configs -> [mqc_configs] })
+                .combine(ch_multiqc_logo.toList().map { mqc_logo -> [mqc_logo] })
                 .map { files, configs, logo ->
                     [ [id: 'multiqc_post_xr'], files, configs, logo ? logo[0] : [], [], [] ]
                 }
@@ -738,9 +775,9 @@ workflow SPATIALXE {
 
 
         MULTIQC (
-            ch_multiqc_files.collect().map { [it] }
-                .combine(ch_multiqc_configs.map { [it] })
-                .combine(ch_multiqc_logo.toList().map { [it] })
+            ch_multiqc_files.collect().map { mqc_files -> [mqc_files] }
+                .combine(ch_multiqc_configs.map { mqc_configs -> [mqc_configs] })
+                .combine(ch_multiqc_logo.toList().map { mqc_logo -> [mqc_logo] })
                 .map { files, configs, logo ->
                     [ [id: 'multiqc'], files, configs, logo ? logo[0] : [], [], [] ]
                 }

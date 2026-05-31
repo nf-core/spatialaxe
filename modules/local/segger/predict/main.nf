@@ -32,9 +32,6 @@ process SEGGER_PREDICT {
         --segger-data-dir ${segger_dataset} \\
         --transcripts-file ${transcripts} \\
         --benchmarks-dir benchmarks_dir \\
-        --batch-size ${params.batch_size_predict} \\
-        --use-cc ${params.cc_analysis} \\
-        --knn-method ${params.segger_knn_method} \\
         --num-workers ${task.cpus} \\
         ${args}
     """

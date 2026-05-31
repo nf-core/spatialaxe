@@ -1,5 +1,5 @@
 //
-// generate spatialdata object from the spatialxe layers
+// generate spatialdata object from the spatialaxe layers
 //
 
 include { SPATIALDATA_META                                        } from '../../../modules/local/spatialdata/meta/main'

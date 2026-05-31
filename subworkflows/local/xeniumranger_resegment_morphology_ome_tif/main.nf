@@ -31,7 +31,7 @@ workflow XENIUMRANGER_RESEGMENT_MORPHOLOGY_OME_TIF {
         def ch_imp_seg_inputs = ch_bundle_path
             .join(XENIUMRANGER_RESEGMENT.out.outs, by: 0)
             .join(cells, by: 0)
-            .map { meta, bundle, reseg_bundle, cells_zarr ->
+            .map { meta, bundle, _reseg_bundle, cells_zarr ->
                 tuple(
                     meta,
                     bundle,

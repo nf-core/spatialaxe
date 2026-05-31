@@ -41,7 +41,7 @@ process BAYSOR_RUN {
         "--plot",
         "--polygon-format=GeometryCollectionLegacy",
         args
-    ].findAll { it }
+    ].findAll { cmd -> cmd }
 
     """
     export JULIA_NUM_THREADS=${task.cpus}

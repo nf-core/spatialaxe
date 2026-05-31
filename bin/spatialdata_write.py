@@ -5,7 +5,6 @@ import argparse
 import sys
 
 import pandas as pd
-import spatialdata
 from spatialdata_io import xenium
 
 # Fix zarr v3 + anndata + numcodecs incompatibility:

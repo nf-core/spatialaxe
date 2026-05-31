@@ -6,8 +6,6 @@ import json
 import os
 import shutil
 
-import spatialdata
-
 
 def parse_args():
     """Parse command-line arguments."""

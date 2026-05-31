@@ -1,4 +1,4 @@
-# nf-core/spatialxe: Output
+# nf-core/spatialaxe: Output
 
 ## Introduction
 
@@ -16,7 +16,7 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
   - [segfree mode](#segfree-mode)
   - [qc mode](#qc-mode) (or using `--run_qc`)
   - [preview mode](#preview-mode)
-- [Additional functionality of spatialxe](#additional-functionality):
+- [Additional functionality of spatialaxe](#additional-functionality):
   - [SpatialData](#spatialdata)
   - [Xenium Ranger import segmentation](#xenium-ranger-import-segmentation)
   - [MultiQC](#multiqc) - Aggregate report describing results and QC from the whole pipeline
@@ -157,7 +157,7 @@ The pipeline create spatialdata objects (data bundles) on various stages (see me
 
 - `spatialdata/`
   - `write/${meta.id}/spatialdata/` spatialdata bundle of the raw data
-  - `meta/${meta.id}/spatialdata_spatialxe_final/` spatialdata bundle of the final data with metadata
+  - `meta/${meta.id}/spatialdata_spatialaxe_final/` spatialdata bundle of the final data with metadata
     - `sdata['raw_table'].uns['spatialdata_attrs']` provenance metadata
     - `sdata['raw_table'].uns['experiment_xenium']` experimental metadata
     - `sdata['raw_table'].uns['gene_panel']` gene panel metadata

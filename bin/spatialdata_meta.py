@@ -7,7 +7,6 @@ import sys
 
 import pandas as pd
 import spatialdata as sd
-import zarr
 
 # Fix zarr v3 + anndata + numcodecs incompatibility:
 # anndata's string writer passes numcodecs.VLenUTF8 to zarr.Group.create_array,

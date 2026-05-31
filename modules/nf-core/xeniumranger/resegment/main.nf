@@ -24,19 +24,10 @@ process XENIUMRANGER_RESEGMENT {
     prefix = task.ext.prefix ?: "${meta.id}"
     def args = task.ext.args ?: ""
 
-    // Do not use boundary stain in analysis, but keep default interior stain and DAPI
-    def boundary_stain = params.boundary_stain ? "" : "--boundary-stain=disable"
-    // Do not use interior stain in analysis, but keep default boundary stain and DAPI
-    def interior_stain = params.interior_stain ? "" : "--interior-stain=disable"
-
     """
     xeniumranger resegment \\
         --id="XENIUMRANGER_RESEGMENT" \\
         --xenium-bundle="${xenium_bundle}" \\
-        --expansion-distance=${params.expansion_distance} \\
-        --dapi-filter=${params.dapi_filter} \\
-        ${boundary_stain} \\
-        ${interior_stain} \\
         --localcores=${task.cpus} \\
         --localmem=${task.memory.toGiga()} \\
         ${args}

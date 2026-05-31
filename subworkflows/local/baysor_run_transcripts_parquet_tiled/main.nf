@@ -66,10 +66,10 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET_TILED {
         }
         .groupTuple(by: 0)
         .map { sample_id, patch_data ->
-            def sorted = patch_data.sort { it[0] }
-            def patch_ids = sorted.collect { it[0] }
-            def csvs = sorted.collect { it[1] }
-            def geojsons = sorted.collect { it[2] }
+            def sorted = patch_data.sort { it -> it[0] }
+            def patch_ids = sorted.collect { it -> it[0] }
+            def csvs = sorted.collect { it -> it[1] }
+            def geojsons = sorted.collect { it -> it[2] }
             tuple(sample_id, patch_ids, csvs, geojsons)
         }
 

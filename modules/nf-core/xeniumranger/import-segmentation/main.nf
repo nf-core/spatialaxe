@@ -36,7 +36,6 @@ process XENIUMRANGER_IMPORT_SEGMENTATION {
     if (cells) { assembled_args << "--cells=\"${cells}\"" }
     if (transcript_assignment) { assembled_args << "--transcript-assignment=\"${transcript_assignment}\"" }
     if (viz_polygons) { assembled_args << "--viz-polygons=\"${viz_polygons}\"" }
-    if (nuclei) { assembled_args << "--expansion-distance=${params.expansion_distance}" }
     if (coordinate_transform) {
         assembled_args << "--coordinate-transform=\"${coordinate_transform}\""
         // if coordinate_transform is provided, units must be microns

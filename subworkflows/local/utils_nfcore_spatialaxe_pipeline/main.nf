@@ -1,5 +1,5 @@
 //
-// Subworkflow with functionality specific to the nf-core/spatialxe pipeline
+// Subworkflow with functionality specific to the nf-core/spatialaxe pipeline
 //
 
 /*
@@ -34,6 +34,7 @@ workflow PIPELINE_INITIALISATION {
     help                       // boolean: Display help message and exit
     help_full                  // boolean: Show the full help message
     show_hidden                // boolean: Show hidden parameters in the help message
+    format                     // string: input data platform (xenium | cosmx | merscope)
     gene_panel                 // string: path to gene panel
     gene_synonyms              // string: path to gene synonyms
     image_seg_methods          // list: valid image-mode segmentation methods
@@ -69,7 +70,7 @@ workflow PIPELINE_INITIALISATION {
 \033[0;34m  |\\ | |__  __ /  ` /  \\ |__) |__         \033[0;33m}  {\033[0m
 \033[0;34m  | \\| |       \\__, \\__/ |  \\ |___     \033[0;32m\\`-._,-`-,\033[0m
                                         \033[0;32m`._,._,\'\033[0m
-\033[0;35m  nf-core/spatialxe ${workflow.manifest.version}\033[0m
+\033[0;35m  nf-core/spatialaxe ${workflow.manifest.version}\033[0m
 -\033[2m----------------------------------------------------\033[0m-
 """
     after_text = """${workflow.manifest.doi ? "\n* The pipeline\n" : ""}${workflow.manifest.doi.tokenize(",").collect { "    https://doi.org/${it.trim().replace('https://doi.org/', '')}" }.join("\n")}${workflow.manifest.doi ? "\n" : ""}
@@ -77,7 +78,7 @@ workflow PIPELINE_INITIALISATION {
     https://doi.org/10.1038/s41587-020-0439-x
 
 * Software dependencies
-    https://github.com/nf-core/spatialxe/blob/master/CITATIONS.md
+    https://github.com/nf-core/spatialaxe/blob/master/CITATIONS.md
 """
     command = "nextflow run ${workflow.manifest.name} -profile <docker/singularity/.../institute> --input samplesheet.csv --mode <MODE> --outdir <OUTDIR>"
 
@@ -107,6 +108,7 @@ workflow PIPELINE_INITIALISATION {
         input,
         mode,
         method,
+        format,
         image_seg_methods,
         transcript_seg_methods,
         relabel_genes,
@@ -135,17 +137,13 @@ workflow PIPELINE_INITIALISATION {
     }
     catch (Exception e) {
 
-        log.error("❌ Samplesheet validation failed: ${e.message}")
-        exit(1)
+        error("❌ Samplesheet validation failed: ${e.message}")
     }
 
 
-    //
-    // Check and validate xenium bundle
-    //
-    if (!workflow.profile.contains('test')) {
-        validateXeniumBundle(ch_samplesheet)
-    }
+    // Xenium bundle file-presence validation now runs in the main workflow
+    // (workflows/spatialaxe.nf) AFTER UNTAR staging, so it works uniformly for
+    // both directory inputs and tarball inputs.
 
     emit:
     samplesheet = ch_samplesheet
@@ -194,7 +192,7 @@ workflow PIPELINE_COMPLETION {
     }
 
     workflow.onError {
-        log.error("❌ Pipeline failed. Please refer to troubleshooting docs: https://nf-co.re/docs/usage/troubleshooting")
+        error("❌ Pipeline failed. Please refer to troubleshooting docs: https://nf-co.re/docs/usage/troubleshooting")
     }
 }
 
@@ -210,6 +208,7 @@ def validateInputParameters(
     input,
     mode,
     method,
+    format,
     image_seg_methods,
     transcript_seg_methods,
     relabel_genes,
@@ -224,29 +223,35 @@ def validateInputParameters(
 
     // check if conda profile is provided
     if (workflow.profile.contains('conda')) {
-        log.error("❌ Error: `nf-core/spatialxe` does not support running the pipeline with profile: conda ")
-        exit(1)
+        error("❌ Error: `nf-core/spatialaxe` does not support running the pipeline with profile: conda ")
     }
 
     // check if the samplesheet provided with the test config is assets/samplesheet.csv
     if (workflow.profile.contains('test') && !"${input}".endsWith("assets/samplesheet.csv")) {
-        log.error("❌ Error: Use the samplesheet at: ${projectDir}/assets/samplesheet.csv with `--input` when running the pipeline in test profile.")
-        exit(1)
+        error("❌ Error: Use the samplesheet at: ${projectDir}/assets/samplesheet.csv with `--input` when running the pipeline in test profile.")
     }
 
     // check if the segmentation method provided is valid for a mode
     if (mode == 'image' && method) {
         if (!image_seg_methods.contains(method)) {
-            log.error("❌ Error: Invalid segmentation method: ${method} provided for the `image` based mode. Options: ${image_seg_methods}")
-            exit(1)
+            error("❌ Error: Invalid segmentation method: ${method} provided for the `image` based mode. Options: ${image_seg_methods}")
         }
     }
 
     if (mode == 'coordinate' && method) {
         if (!transcript_seg_methods.contains(method)) {
-            log.error("❌ Error: Invalid segmentation method: `${method}` provided for the `coordinate` based mode. Options: ${transcript_seg_methods}")
-            exit(1)
+            error("❌ Error: Invalid segmentation method: `${method}` provided for the `coordinate` based mode. Options: ${transcript_seg_methods}")
         }
+    }
+
+    // check method-format compatibility (schema enum constrains the universe; this enforces the method-specific subset)
+    def valid_segger_formats = ['xenium']
+    def valid_proseg_formats = ['xenium', 'cosmx', 'merscope']
+    if (method == 'segger' && !(format in valid_segger_formats)) {
+        error("❌ Error: Invalid --format '${format}' for segger. Valid: ${valid_segger_formats}")
+    }
+    if (method == 'proseg' && !(format in valid_proseg_formats)) {
+        error("❌ Error: Invalid --format '${format}' for proseg. Valid: ${valid_proseg_formats}")
     }
 
     // check if --relabel_genes is true but --gene_panel is not provided
@@ -275,92 +280,9 @@ def validateInputParameters(
     // check if required arguments are provided for off-target probe tracking
     if (!mode && offtarget_probe_tracking) {
         if(!probes_fasta || !reference_annotations || !gene_synonyms) {
-            log.error("❌ Error: Missing required param(s) for off-target-proebe detection.")
-            exit(1)
+            error("❌ Error: Missing required param(s) for off-target-proebe detection.")
         }
-        log.error("❌ Error: Use --mode qc and --offtraget_probe_tracking to run off-target probe tracking.")
-        exit(1)
-    }
-}
-
-//
-// Check and validate xenium bundle
-//
-def validateXeniumBundle(ch_samplesheet) {
-
-    // define xenium bundle directory structure - required files
-    def bundle_required_files = [
-        "cell_boundaries.csv.gz",
-        "cell_boundaries.parquet",
-        "cell_feature_matrix.h5",
-        "cell_feature_matrix.zarr.zip",
-        "cells.csv.gz",
-        "cells.parquet",
-        "cells.zarr.zip",
-        "experiment.xenium",
-        "gene_panel.json",
-        "metrics_summary.csv",
-        "morphology.ome.tif",
-        "morphology_focus/",
-        "nucleus_boundaries.csv.gz",
-        "nucleus_boundaries.parquet",
-        "transcripts.parquet",
-        "transcripts.zarr.zip",
-    ]
-
-    // bundle optional files
-    def bundle_optional_files = [
-        "analysis.tar.gz",
-        "analysis.zarr.zip",
-        "analysis_summary.html"
-    ]
-
-    // get bundle path (keep raw string for remote-path detection)
-    def ch_bundle_info = ch_samplesheet.map { _meta, bundle, _image ->
-        def rawPath = bundle.toString().replaceFirst(/\/$/, '')
-        def bundle_path = file(rawPath)
-        return [rawPath, bundle_path]
-    }
-
-    // Skip file-level validation for remote paths (S3, GS, AZ) because
-    // file().exists() is unreliable on cloud storage during initialization
-    // (Fusion mounts s3://bucket as /bucket, breaking startsWith checks).
-    // Files will be validated at task staging time instead.
-    ch_bundle_info.map { rawPath, path ->
-        if (rawPath.startsWith('s3://') || rawPath.startsWith('gs://') || rawPath.startsWith('az://')) {
-            log.info("Skipping bundle file validation for remote path: ${rawPath}")
-            return
-        }
-
-        def missing_required_files = []
-        def missing_optional_files = []
-
-        def requiredExist = bundle_required_files.every { filename ->
-            def fullPath = file("${path}/${filename}")
-            if (!fullPath.exists()) {
-                missing_required_files.add(filename)
-                return false
-            }
-            return true
-        }
-        if (!requiredExist) {
-            log.error("❌ Missing file(s) at bundle path provided in the samplesheet: ${missing_required_files}")
-            exit(1)
-        }
-
-        def optionalExist = bundle_optional_files.every { filename ->
-            def fullPath = file("${path}/${filename}")
-            if (!fullPath.exists()) {
-                missing_optional_files.add(filename)
-                return false
-            }
-            return true
-        }
-        if (!optionalExist) {
-            log.warn("⚠️ Missing optional file(s) at bundle path provided in the samplesheet: ${missing_optional_files}")
-        }
-
-        log.info("✅ Xenium bundle validated.\n")
+        error("❌ Error: Use --mode qc and --offtraget_probe_tracking to run off-target probe tracking.")
     }
 }
 
