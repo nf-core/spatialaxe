@@ -53,14 +53,14 @@ output:
           description: Subsampled transcripts CSV used as Baysor input dataset.
           pattern: "*/sampled_transcripts.csv"
           ontologies: []
-  versions_python:
+  versions_baysor:
     - - ${task.process}:
           type: string
           description: The process the versions were collected from
       - python:
           type: string
           description: The tool name
-      - "python3 --version | sed 's/Python //'":
+      - "baysor --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown":
           type: eval
           description: The expression to obtain the version of the tool
 
@@ -69,10 +69,10 @@ topics:
     - - ${task.process}:
           type: string
           description: The process the versions were collected from
-      - python:
+      - baysor:
           type: string
           description: The tool name
-      - "python3 --version | sed 's/Python //'":
+      - "baysor --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown":
           type: eval
           description: The expression to obtain the version of the tool
 

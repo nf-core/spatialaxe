@@ -28,10 +28,6 @@ output:
       description: |
         Preview html file generated with the baysor preview command
         Structure: [ val(meta), path("path-to-preview.html") ]
-  - versions:
-      description: |
-        Files containing software versions
-        Structure: [ path(versions.yml) ]
 authors:
   - "@khersameesh24"
 maintainers:

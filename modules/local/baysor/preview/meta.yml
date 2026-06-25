@@ -31,22 +31,38 @@ input:
 
 ## segmentation results
 output:
-  - preview_html:
-      - meta:
-        type: map
-        description: |
-          Groovy Map containing sample information
-          e.g. [ id:'test' ]
-      - "preview.html":
+  preview_html:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test' ]
+    - "preview.html":
         type: file
         description: segmentation preview
         pattern: "preview.html"
+  versions_baysor:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "baysor --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown":
+          type: eval
+          description: The expression to obtain the version of the tool
 
-  - preview_log:
-    type: file
-    description: |
-      Log file with summary statistics of preview
-    pattern: "preview_preview_log.log"
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - baysor:
+          type: string
+          description: The tool name
+      - "baysor --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown":
+          type: eval
+          description: The expression to obtain the version of the tool
 
 authors:
   - "@sebgoti8"

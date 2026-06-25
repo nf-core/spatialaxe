@@ -53,10 +53,6 @@ output:
       description: |
         the redefined xenium bundle generated with the segmentation results from baysor
         Structure: [ val(meta), ["redefined-xenium-bundle"] ]
-  - versions:
-      description: |
-        Files containing software versions
-        Structure: [ path(versions.yml) ]
 authors:
   - "@khersameesh24"
 maintainers:

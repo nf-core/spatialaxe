@@ -4,7 +4,7 @@ keywords:
   - segmentation
   - xenium
   - imaging
-  - model-training
+  - model_training
 tools:
   - "segger":
       description: "Segger uses graph neural networks and heterogeneous graphs to offer efficient cell segmentation at unmatched precision and accuracy."
@@ -25,19 +25,37 @@ input:
         description: |
           Directory to segger created dataset(s).
 output:
-  - - meta:
-      type: map
-      description: |
-        Groovy Map containing sample information
-        e.g. `[ id:'segger_run_id' ]`
-    - trained_models:
-        type: directory
+  trained_models:
+    - - meta:
+        type: map
         description: |
-          Directory to save the trained model and checkpoints.
-  - - versions:
-        type: file
-        description: File containing software versions
-        pattern: "versions.yml"
+          Groovy Map containing sample information
+          e.g. `[ id:'segger_run_id' ]`
+      - "trained_models":
+          type: directory
+          description: |
+            Directory to save the trained model and checkpoints.
+  versions_segger:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "pip show segger | sed -n 's/^Version: //p'":
+          type: eval
+          description: The expression to obtain the version of the tool
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "pip show segger | sed -n 's/^Version: //p'":
+          type: eval
+          description: The expression to obtain the version of the tool
 
 authors:
   - "@tobiaspk"

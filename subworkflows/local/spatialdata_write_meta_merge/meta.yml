@@ -44,10 +44,6 @@ output:
       description: |
         spatialdata object containing the metadata info.
         Structure: [ path(transcripts.parquet) ]
-  - versions:
-      description: |
-        Files containing software versions
-        Structure: [ path(versions.yml) ]
 authors:
   - "@khersameesh24"
 maintainers:

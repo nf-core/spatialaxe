@@ -75,10 +75,28 @@ output:
       Statistics of segmented cells
     pattern: "segmentation_cell_stats.csv"
 
-  - versions:
-    type: file
-    description: File containing software versions
-    pattern: "versions.yml"
+  - versions_baysor:
+      - - ${task.process}:
+            type: string
+            description: The process the versions were collected from
+        - python:
+            type: string
+            description: The tool name
+        - "baysor --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown":
+            type: eval
+            description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "baysor --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown":
+          type: eval
+          description: The expression to obtain the version of the tool
 
 authors:
   - "@sebgoti8"

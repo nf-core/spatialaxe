@@ -10,7 +10,7 @@ process BAYSOR_CREATE_DATASET {
 
     output:
     tuple val(meta), path("${prefix}/sampled_transcripts.csv"), emit: sampled_transcripts
-    tuple val("${task.process}"), val('python'), eval("python3 --version | sed 's/Python //'"), topic: versions, emit: versions_python
+    tuple val("${task.process}"), val('baysor'), eval("baysor --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown"), topic: versions, emit: versions_baysor
 
     when:
     task.ext.when == null || task.ext.when

@@ -37,18 +37,46 @@ input:
         description: |
           Directory to save the prediction outputs.
 output:
-  - - meta:
-        type: map
-        description: |
-          Groovy Map containing sample information
-          e.g. `[ id:'segger_run_id' ]`
-    - benchmarks_dir:
-        description: |
-          Directory to save the segmentation results, including cell boundaries and associations.
-  - - versions:
+  benchmarks:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. `[ id:'segger_run_id' ]`
+      - "benchmarks_dir":
+          description: |
+            Directory to save the segmentation results, including cell boundaries and associations.
+  transcripts:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. `[ id:'segger_run_id' ]`
+    - "benchmarks_dir/*/segger_transcripts.parquet":
         type: file
-        description: File containing software versions
-        pattern: "versions.yml"
+        description: |
+          Path to the transcripts.parquet file.
+  versions_segger:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "pip show segger | sed -n 's/^Version: //p'":
+          type: eval
+          description: The expression to obtain the version of the tool
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "pip show segger | sed -n 's/^Version: //p'":
+          type: eval
+          description: The expression to obtain the version of the tool
 
 authors:
   - "@tobiaspk"

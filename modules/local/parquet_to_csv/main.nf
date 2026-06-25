@@ -1,14 +1,3 @@
-/*
- * PARQUET_TO_CSV: Convert parquet file to CSV for tools with old Parquet readers.
- *
- * Input:
- *   - meta: Sample metadata map
- *   - parquet: Parquet file to convert
- *
- * Output:
- *   - csv: Converted CSV file
- *   - versions: Software versions
- */
 process PARQUET_TO_CSV {
     tag "$meta.id"
     label 'process_low'

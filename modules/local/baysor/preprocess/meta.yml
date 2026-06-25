@@ -48,21 +48,39 @@ input:
         if no limit is specified, the default minimum value will be 0.0
 
 output:
-  - - transcripts_parquet:
-        - meta:
+  transcripts_file:
+    - - meta:
           type: map
           description: |
             Groovy Map containing sample information
             e.g. [ id:'test' ]
-        - "*.csv":
+      - "*.csv":
           type: file
           description: filtered transcripts CSV (for Baysor 0.7.1 Parquet.jl compatibility)
           pattern: "filtered_transcripts.csv"
 
-  - - versions_python:
-      type: tuple
-      description: Python version emitted via topic channel
-      pattern: "topic: versions"
+  versions_python:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "python3 --version | sed 's/Python //'":
+          type: eval
+          description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "python3 --version | sed 's/Python //'":
+          type: eval
+          description: The expression to obtain the version of the tool
 
 authors:
   - "@khersameesh24"

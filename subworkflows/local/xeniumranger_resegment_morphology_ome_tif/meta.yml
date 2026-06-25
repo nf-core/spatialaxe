@@ -27,10 +27,6 @@ output:
       description: |
         the coordinate space in which xeniumranger import-segmentation was run
         Structure: [ val("pixels") ]
-  - versions:
-      description: |
-        Files containing software versions
-        Structure: [ path(versions.yml) ]
 authors:
   - "@khersameesh24"
 maintainers:

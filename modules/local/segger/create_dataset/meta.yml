@@ -24,18 +24,36 @@ input:
         description: |
           Directory containing the raw dataset (e.g., transcripts, boundaries).
 output:
-  - - meta:
-        type: map
-        description: |
-          Groovy Map containing sample information
-          e.g. `[ id:'segger_run_id' ]`
-    - datasetdir:
-        description: |
-          Directory to save the processed Segger dataset (in PyTorch Geometric format).
-  - - versions:
-        type: file
-        description: File containing software versions
-        pattern: "versions.yml"
+  datasetdir:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. `[ id:'segger_run_id' ]`
+      - "${prefix}/":
+          description: |
+            Directory to save the processed Segger dataset (in PyTorch Geometric format).
+  versions_segger:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "pip show segger | sed -n 's/^Version: //p'":
+          type: eval
+          description: The expression to obtain the version of the tool
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "pip show segger | sed -n 's/^Version: //p'":
+          type: eval
+          description: The expression to obtain the version of the tool
 
 authors:
   - "@tobiaspk"

@@ -39,12 +39,6 @@ output:
         Groovy Map containing summary of the forward oriented probes generated with the panel sequences opt flip and track
         Structure: [ val(meta), path("collapsed_summary.tsv") ]
       pattern: "*.tsv"
-  - versions:
-      type: file
-      description: |
-        File containing software versions
-        Structure: [ path(versions.yml) ]
-      pattern: "versions.yml"
 authors:
   - "@khersameesh24"
 maintainers:

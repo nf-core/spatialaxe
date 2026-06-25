@@ -26,19 +26,37 @@ input:
         pattern: ".tiff"
 
 output:
-  - - meta:
-        type: map
-        description: |
-          Groovy Map containing run information
-          e.g. `[ id:'run_id']`
-    - output:
-        type: file
-        description: Path to save the upscaled TIFF file.
-        pattern: ".tiff"
-  - - versions:
-      type: file
-      description: File containing software versions
-      pattern: "versions.yml"
+  enhanced_tiff:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing run information
+            e.g. `[ id:'run_id']`
+      - "${prefix}/morphology.ome.enhanced.tiff":
+          type: file
+          description: Path to save the upscaled TIFF file.
+          pattern: ".tiff"
+  versions_resolift:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "pip show resolift | sed -n 's/^Version: //p'":
+          type: eval
+          description: The expression to obtain the version of the tool
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "pip show resolift | sed -n 's/^Version: //p'":
+          type: eval
+          description: The expression to obtain the version of the tool
 
 authors:
   - "@kubranarci"
