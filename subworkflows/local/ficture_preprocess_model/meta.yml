@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "ficture_preprocess_model"
+description: Scalable segmentation-free analysis of sub-micron resolution spatial transcriptomics
+keywords:
+  - ficture
+  - ficture preprocess
+  - segmentation-free analysis
+  - pixel level factor analysis
+components:
+  - ficture/preprocess
+  - ficture
+  - parquet/to/csv
+input:
+  - ch_transcripts_parquet:
+      description: |
+        file containing the molecular or pixel level information, the required columns are X, Y, gene, and Count
+        Structure: [ val(meta), path("transcripts.parquet") ]
+  - ch_features:
+      description: |
+        unique names of genes that should be used in analysis
+        Structure: [ [gene1,gene2,gene3,gene4] ]
+output:
+  - transcripts:
+      description: xyz
+  - coordinate_minmax:
+      description: xyz
+  - features:
+      description: xyz
+  - results:
+      description: xyz
+authors:
+  - "@khersameesh24"
+maintainers:
+  - "@khersameesh24"

@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "spatialdata_write_meta_merge"
+description: |
+  SpatialData is a data framework that comprises a FAIR storage format and a collection of python libraries for
+  performant access, alignment, and processing of uni- and multi-modal spatial omics datasets
+keywords:
+  - spatialdata
+  - xenium
+  - xeniumranger import-segmentation
+  - spatialdata object
+  - metadata
+  - merge spatialdata objects
+components:
+  - spatialdata/write
+  - spatialdata/meta
+  - spatialdata/merge
+input:
+  - ch_bundle_path:
+      description: |
+        Directory containing the raw dataset
+        Structure: [ val(meta), path("path-to-xenium-bundle") ]
+  - ch_redefined_bundle:
+      description: |
+        Directory containing the redefined xenium bundle after running xeniumranger import-segmentation
+        Structure: [ val(meta), path("redefined-xenium-bundle") ]
+  - ch_coordinate_space:
+      description: |
+        the coordinate space in which xeniumranger import-segmentation was run
+        Structure: [ val("pixels" or "microns") ]
+output:
+  - sd_raw_bundle:
+      description: |
+        spatialdata object generated from the raw xenium bundle
+        Structure: [ val(meta), path(spatialdata_raw) ]
+  - sd_redefined_bundle:
+      description: |
+        spatialdata object generated from the redefined xenium bundle
+        Structure: [ val(meta), path(spatialdata_redefined) ]
+  - sd_merged_bundle:
+      description: |
+        spatialdata object generated from merging the spatialdata objects from raw and redefined xenium bundles
+        Structure: [ val(meta), path(spatialdata_merged) ]
+  - sd_metadata:
+      description: |
+        spatialdata object containing the metadata info.
+        Structure: [ path(transcripts.parquet) ]
+authors:
+  - "@khersameesh24"
+maintainers:
+  - "@khersameesh24"
