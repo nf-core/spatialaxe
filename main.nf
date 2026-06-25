@@ -1,11 +1,11 @@
 #!/usr/bin/env nextflow
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    nf-core/spatialaxe
+    nf-core/spatialxe
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Github : https://github.com/nf-core/spatialaxe
-    Website: https://nf-co.re/spatialaxe
-    Slack  : https://nfcore.slack.com/channels/spatialaxe
+    Github : https://github.com/nf-core/spatialxe
+    Website: https://nf-co.re/spatialxe
+    Slack  : https://nfcore.slack.com/channels/spatialxe
 ----------------------------------------------------------------------------------------
 */
 
@@ -15,9 +15,21 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { SPATIALAXE               } from './workflows/spatialaxe.nf'
-include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_spatialaxe_pipeline'
-include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_spatialaxe_pipeline'
+include { SPATIALXE  } from './workflows/spatialxe'
+include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_spatialxe_pipeline'
+include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_spatialxe_pipeline'
+include { getGenomeAttribute      } from './subworkflows/local/utils_nfcore_spatialxe_pipeline'
+
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    GENOME PARAMETER VALUES
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+
+// TODO nf-core: Remove this line if you don't need a FASTA file
+//   This is an example of how to use getGenomeAttribute() to fetch parameters
+//   from igenomes.config using `--genome`
+params.fasta = getGenomeAttribute('fasta')
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -28,7 +40,7 @@ include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_spat
 //
 // WORKFLOW: Run main analysis pipeline depending on type of input
 //
-workflow NFCORE_SPATIALAXE {
+workflow NFCORE_SPATIALXE {
 
     take:
     samplesheet // channel: samplesheet read in from --input
@@ -38,50 +50,15 @@ workflow NFCORE_SPATIALAXE {
     //
     // WORKFLOW: Run pipeline
     //
-    SPATIALAXE (
+    SPATIALXE (
         samplesheet,
-        params.alignment_csv,
-        params.baysor_config,
-        params.baysor_prior,
-        params.baysor_scale,
-        params.baysor_tiling,
-        params.baysor_tiling_scale,
-        params.buffer_samples,
-        params.buffer_size,
-        params.cell_segmentation_only,
-        params.cellpose_downscale,
-        params.cellpose_model,
-        params.expansion_distance,
-        params.features,
-        params.gene_panel,
-        params.gene_synonyms,
-        params.max_x,
-        params.max_y,
-        params.method,
-        params.min_qv,
-        params.min_x,
-        params.min_y,
-        params.mode,
         params.multiqc_config,
         params.multiqc_logo,
         params.multiqc_methods_description,
-        params.nucleus_segmentation_only,
-        params.offtarget_probe_tracking,
         params.outdir,
-        params.probes_fasta,
-        params.qupath_polygons,
-        params.reference_annotations,
-        params.relabel_genes,
-        params.run_qc,
-        params.segger_model,
-        params.segmentation_mask,
-        params.sharpen_tiff,
-        params.stardist_nuclei_model,
-        params.tiling,
-        params.xeniumranger_only,
     )
     emit:
-    multiqc_report = SPATIALAXE.out.multiqc_report // channel: /path/to/multiqc_report.html
+    multiqc_report = SPATIALXE.out.multiqc_report // channel: /path/to/multiqc_report.html
 }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -104,26 +81,13 @@ workflow {
         params.input,
         params.help,
         params.help_full,
-        params.show_hidden,
-        params.format,
-        params.gene_panel,
-        params.gene_synonyms,
-        params.image_seg_methods,
-        params.method,
-        params.mode,
-        params.nucleus_segmentation_only,
-        params.offtarget_probe_tracking,
-        params.probes_fasta,
-        params.reference_annotations,
-        params.relabel_genes,
-        params.segmentation_mask,
-        params.transcript_seg_methods,
+        params.show_hidden
     )
 
     //
     // WORKFLOW: Run main workflow
     //
-    NFCORE_SPATIALAXE (
+    NFCORE_SPATIALXE (
         PIPELINE_INITIALISATION.out.samplesheet
     )
     //
@@ -135,8 +99,7 @@ workflow {
         params.plaintext_email,
         params.outdir,
         params.monochrome_logs,
-        params.hook_url,
-        NFCORE_SPATIALAXE.out.multiqc_report
+        NFCORE_SPATIALXE.out.multiqc_report
     )
 }
 
