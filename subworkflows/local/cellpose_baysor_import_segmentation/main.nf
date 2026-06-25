@@ -10,14 +10,14 @@ include { STARDIST as STARDIST_NUCLEI      } from '../../../modules/nf-core/star
 include { CONVERT_MASK_UINT32              } from '../../../modules/local/utility/convert_mask_uint32/main'
 include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
 include { RESIZE_TIF                       } from '../../../modules/local/utility/resize_tif/main'
-include { GET_TRANSCRIPTS_COORDINATES      } from '../../../modules/local/utility/get_coordinates/main'
+// include { GET_TRANSCRIPTS_COORDINATES      } from '../../../modules/local/utility/get_coordinates/main'
 include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
 
 workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     take:
     ch_morphology_image          // channel: [ val(meta), ["path-to-morphology.ome.tif"] ]
     ch_bundle_path               // channel: [ val(meta), ["path-to-xenium-bundle"] ]
-    ch_transcripts_file       // channel: [ val(meta), ["path-to-transcripts.parquet"] ]
+    ch_transcripts_file          // channel: [ val(meta), ["path-to-transcripts.parquet"] ]
     ch_experiment_metadata       // channel: [ val(meta), ["path-to-experiment.xenium"] ]
     ch_config                    // channel: ["path-to-xenium.toml"]
     cell_segmentation_only       // value: bool
@@ -186,6 +186,6 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     XENIUMRANGER_IMPORT_SEGMENTATION(ch_imp_seg_inputs)
 
     emit:
-    coordinate_space = ch_coordinate_space                         // channel: [ val("microns") ]
+    coordinate_space = ch_coordinate_space                       // channel: [ val("microns") ]
     redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs // channel: [ val(meta), ["redefined-xenium-bundle"] ]
 }

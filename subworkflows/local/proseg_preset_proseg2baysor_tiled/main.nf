@@ -12,14 +12,14 @@ workflow PROSEG_PRESET_PROSEG2BAYSOR_TILED {
 
     take:
     ch_bundle_path         // channel: [ val(meta), ["path-to-xenium-bundle"] ]
-    ch_transcripts_file // channel: [ val(meta), [ "transcripts.parquet" ] ]
+    ch_transcripts_parquet // channel: [ val(meta), [ "transcripts.parquet" ] ]
 
     main:
 
     ch_coordinate_space = channel.value("microns")
 
     // Step 1: Divide transcripts into overlapping patches
-    XENIUM_PATCH_DIVIDE ( ch_transcripts_file )
+    XENIUM_PATCH_DIVIDE ( ch_transcripts_parquet )
 
     // Step 2: Fan out patches for parallel processing
     // transpose() emits one item per patch file: [meta, parquet_path]

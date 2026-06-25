@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
-name: "baysor_run_transcripts_parquet"
-description: to run the `baysor run` command with the transcripts.parquet file as a coordinate-based segmentation run
+name: "baysor_run_transcripts_parquet_tiled"
+description: to run the `baysor run` command with the transcripts.parquet file as a coordinate-based segmentation run in a tiled manner
 keywords:
   - baysor
   - baysor run
@@ -9,13 +9,11 @@ keywords:
   - coordinate-based segmentation
   - transcript filtering
   - polygons
+  - xenium-patch-stitch
 components:
   - baysor/preprocess/transcripts
   - baysor/run
   - xeniumranger/import/segmentation
-  - split/transcripts
-  - parquet/to/csv
-  - reconstruct/patches
   - xenium/patch/divide
   - xenium/patch/stitch
 input:
@@ -31,19 +29,23 @@ input:
       description: |
         config file for the xenium baysor run (stored in assets/config/xenium.toml)
         Structure: [ path("path-to-xenium.toml") ]
+  - max_x:
+      description: |
+        upper x bound for spatial filtering of transcripts.parquet file
+        Structure: [ val(int) ]
+  - max_y:
+      description: |
+        upper y bound for spatial filtering of transcripts.parquet file
+        Structure: [ val(int) ]
+  - min_x:
+      description: |
+        lower x bound for spatial filtering of transcripts.parquet file
+        Structure: [ val(int) ]
+  - min_y:
+      description: |
+        lower y bound for spatial filtering of transcripts.parquet file
+        Structure: [ val(int) ]
 output:
-  - segmentation:
-      description: |
-        the segmentation.csv file generated from the baysor run command
-        Structure: [ val(meta), path("segmentation.csv") ]
-  - polygons2d:
-      description: |
-        the segmentation_polygons_2d.json file generated from the baysor run command
-        Structure: [ val(meta), path("segmentation_polygons_2d.json") ]
-  - htmls:
-      description: |
-        the html files generated from the baysor run command
-        Structure: [ val(meta), path("*.html") ]
   - coordinate_space:
       description: |
         the coordinate space in which xeniumranger import-segmentation was run
