@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com/nf-core/spatialaxe/master/assets/schema_input.json",
-    "title": "nf-core/spatialaxe pipeline - params.input schema",
+    "$id": "https://raw.githubusercontent.com/nf-core/spatialxe/master/assets/schema_input.json",
+    "title": "nf-core/spatialxe pipeline - params.input schema",
     "description": "Schema for the file provided with params.input",
     "type": "array",
     "items": {
@@ -13,17 +13,21 @@
                 "errorMessage": "Sample name must be provided and cannot contain spaces",
                 "meta": ["id"]
             },
-            "bundle": {
+            "fastq_1": {
                 "type": "string",
-                "pattern": "^\\S+$",
-                "errorMessage": "Please provide a bundle as input data"
+                "format": "file-path",
+                "exists": true,
+                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.f(ast)?q\\.gz$",
+                "errorMessage": "FastQ file for reads 1 must be provided, cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
             },
-            "image": {
+            "fastq_2": {
                 "type": "string",
-                "pattern": "^\\S+$",
-                "errorMessage": "You can provide an image. If you do not then please leave the field empty."
+                "format": "file-path",
+                "exists": true,
+                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.f(ast)?q\\.gz$",
+                "errorMessage": "FastQ file for reads 2 cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
             }
         },
-        "required": ["sample", "bundle"]
+        "required": ["sample", "fastq_1"]
     }
 }
