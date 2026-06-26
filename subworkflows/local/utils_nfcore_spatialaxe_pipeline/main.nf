@@ -73,16 +73,20 @@ workflow PIPELINE_INITIALISATION {
 \033[0;35m  nf-core/spatialaxe ${workflow.manifest.version}\033[0m
 -\033[2m----------------------------------------------------\033[0m-
 """
-    after_text = """${workflow.manifest.doi ? "\n* The pipeline\n" : ""}${workflow.manifest.doi.tokenize(",").collect { "    https://doi.org/${it.trim().replace('https://doi.org/', '')}" }.join("\n")}${workflow.manifest.doi ? "\n" : ""}
+    after_text = """${workflow.manifest.doi ? "\n* The pipeline\n" : ""}${workflow.manifest.doi.tokenize(",").collect { doi -> "    https://doi.org/${doi.trim().replace('https://doi.org/','')}"}.join("\n")}${workflow.manifest.doi ? "\n" : ""}
 * The nf-core framework
     https://doi.org/10.1038/s41587-020-0439-x
 
 * Software dependencies
     https://github.com/nf-core/spatialaxe/blob/master/CITATIONS.md
 """
-    command = "nextflow run ${workflow.manifest.name} -profile <docker/singularity/.../institute> --input samplesheet.csv --mode <MODE> --outdir <OUTDIR>"
+    if (monochrome_logs) {
+        before_text = before_text.replaceAll(/\033\[[0-9;]*m/, '')
+    }
 
-    UTILS_NFSCHEMA_PLUGIN(
+    command = "nextflow run ${workflow.manifest.name} -profile <docker/singularity/.../institute> --input samplesheet.csv --outdir <OUTDIR>"
+
+    UTILS_NFSCHEMA_PLUGIN (
         workflow,
         validate_params,
         null,
@@ -91,13 +95,13 @@ workflow PIPELINE_INITIALISATION {
         show_hidden,
         before_text,
         after_text,
-        command,
+        command
     )
 
     //
     // Check config provided to the pipeline
     //
-    UTILS_NFCORE_PIPELINE(
+    UTILS_NFCORE_PIPELINE (
         nextflow_cli_args
     )
 
@@ -328,23 +332,21 @@ def methodsDescriptionText(mqc_methods_yaml) {
             temp_doi_ref += "(doi: <a href=\'https://doi.org/${doi_ref.replace("https://doi.org/", "").replace(" ", "")}\'>${doi_ref.replace("https://doi.org/", "").replace(" ", "")}</a>), "
         }
         meta["doi_text"] = temp_doi_ref.substring(0, temp_doi_ref.length() - 2)
-    }
-    else {
-        meta["doi_text"] = ""
-    }
+    } else meta["doi_text"] = ""
     meta["nodoi_text"] = meta.manifest_map.doi ? "" : "<li>If available, make sure to update the text to include the Zenodo DOI of version of the pipeline used. </li>"
 
     // Tool references
     meta["tool_citations"] = ""
     meta["tool_bibliography"] = ""
 
-    // Only uncomment below if logic in toolCitationText/toolBibliographyText has been filled!
+    // TODO nf-core: Only uncomment below if logic in toolCitationText/toolBibliographyText has been filled!
     // meta["tool_citations"] = toolCitationText().replaceAll(", \\.", ".").replaceAll("\\. \\.", ".").replaceAll(", \\.", ".")
     // meta["tool_bibliography"] = toolBibliographyText()
 
+
     def methods_text = mqc_methods_yaml.text
 
-    def engine = new groovy.text.SimpleTemplateEngine()
+    def engine =  new groovy.text.SimpleTemplateEngine()
     def description_html = engine.createTemplate(methods_text).make(meta)
 
     return description_html.toString()
