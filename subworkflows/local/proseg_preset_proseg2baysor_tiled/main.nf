@@ -2,11 +2,12 @@
 // Runs proseg with tiling: divide transcripts -> proseg per patch -> proseg2baysor -> stitch -> xeniumranger
 //
 
-include { XENIUM_PATCH_DIVIDE              } from '../../../modules/local/xenium_patch/divide/main'
-include { PROSEG                           } from '../../../modules/local/proseg/preset/main'
-include { PROSEG2BAYSOR                    } from '../../../modules/local/proseg/proseg2baysor/main'
-include { XENIUM_PATCH_STITCH              } from '../../../modules/local/xenium_patch/stitch/main'
+include { PROSEG                           } from '../../../modules/nf-core/proseg/proseg/main'
+include { PROSEG2BAYSOR                    } from '../../../modules/nf-core/proseg/proseg2baysor/main'
 include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
+
+include { XENIUM_PATCH_STITCH              } from '../../../modules/local/xenium_patch/stitch/main'
+include { XENIUM_PATCH_DIVIDE              } from '../../../modules/local/xenium_patch/divide/main'
 
 workflow PROSEG_PRESET_PROSEG2BAYSOR_TILED {
 
@@ -17,6 +18,8 @@ workflow PROSEG_PRESET_PROSEG2BAYSOR_TILED {
     main:
 
     ch_coordinate_space = channel.value("microns")
+    ch_proseg_mode = channel.value("xenium")
+    ch_expected_fmt = channel.value(["csv.gz", "csv.gz", "csv.gz"])
 
     // Step 1: Divide transcripts into overlapping patches
     XENIUM_PATCH_DIVIDE ( ch_transcripts_parquet )
@@ -35,14 +38,14 @@ workflow PROSEG_PRESET_PROSEG2BAYSOR_TILED {
         }
 
     // Step 3: Run proseg on each patch independently
-    PROSEG ( ch_patches )
+    PROSEG(ch_patches, ch_proseg_mode, ch_expected_fmt)
 
     // Step 4: Convert proseg output to baysor format per patch
     PROSEG2BAYSOR ( PROSEG.out.zarr )
 
     // Step 5: Gather patch results per sample for stitching
-    ch_for_stitch = PROSEG2BAYSOR.out.xr_polygons
-        .join(PROSEG2BAYSOR.out.xr_metadata, by: 0)
+    ch_for_stitch = PROSEG2BAYSOR.out.cell_polygons
+        .join(PROSEG2BAYSOR.out.transcript_metadata, by: 0)
         .map { patch_meta, geojson, csv ->
             tuple(patch_meta.sample_id, [patch_meta.patch_id, csv, geojson])
         }
@@ -81,6 +84,7 @@ workflow PROSEG_PRESET_PROSEG2BAYSOR_TILED {
     XENIUMRANGER_IMPORT_SEGMENTATION ( ch_xr )
 
     emit:
+
     coordinate_space = ch_coordinate_space                          // channel: [ "microns" ]
     redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs    // channel: [ val(meta), ["redefined-xenium-bundle"] ]
 }

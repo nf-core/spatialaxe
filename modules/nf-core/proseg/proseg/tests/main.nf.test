@@ -20,6 +20,8 @@ nextflow_process {
                     [id: "test_run_proseg"],
                     file(params.modules_testdata_base_path + "spatial_omics/xenium/homo_sapiens/spatial_gene_expression.csv", checkIfExists: true)
                 ]
+                input[1] = 'xenium'
+                input[2] = ['csv.gz', 'csv.gz', 'csv.gz']
                 """
             }
         }
@@ -27,11 +29,19 @@ nextflow_process {
         then {
             assertAll(
                 { assert process.success },
-                { assert file(process.out.seg_outs[0][1]).exists() },
-                { assert file(process.out.seg_outs[0][1]).name == "cell-polygons.geojson.gz" },
-                { assert file(process.out.seg_outs[0][2]).exists() },
-                { assert file(process.out.seg_outs[0][2]).name == "transcript-metadata.csv.gz" },
-                { assert snapshot(process.out.versions_proseg).match("versions") }
+                { assert snapshot(sanitizeOutput(
+                                    process.out,
+                                    unstableKeys: [
+                                        "zarr",
+                                        "cell_polygons",
+                                        "transcript_metadata",
+                                        "cell_metadata",
+                                        "cell_polygons_layers",
+                                        "expected_counts",
+                                        "union_cell_polygons"
+                                    ]
+                                )).match()
+                }
             )
         }
     }
@@ -47,6 +57,8 @@ nextflow_process {
                     [id: "test_run_proseg"],
                     file(params.modules_testdata_base_path + "spatial_omics/xenium/homo_sapiens/spatial_gene_expression.csv", checkIfExists: true)
                 ]
+                input[1] = 'xenium'
+                input[2] = ['csv.gz', 'csv.gz', 'csv.gz']
                 """
             }
         }
@@ -54,7 +66,7 @@ nextflow_process {
         then {
             assertAll(
                 { assert process.success },
-                { assert snapshot(process.out.versions_proseg).match("versions_stub") }
+                { assert snapshot(sanitizeOutput(process.out)).match() }
             )
         }
     }

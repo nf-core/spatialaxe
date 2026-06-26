@@ -47,6 +47,16 @@
                         "git_sha": "f0ce9f694b4d372a663199a810de933651465987",
                         "installed_by": ["modules", "opt_flip_track_stat"]
                     },
+                    "proseg/proseg": {
+                        "branch": "master",
+                        "git_sha": "d8c5b9b8d5de1b7d468199f09421e4e18c9b176c",
+                        "installed_by": ["modules"]
+                    },
+                    "proseg/proseg2baysor": {
+                        "branch": "master",
+                        "git_sha": "d8c5b9b8d5de1b7d468199f09421e4e18c9b176c",
+                        "installed_by": ["modules"]
+                    },
                     "stardist": {
                         "branch": "master",
                         "git_sha": "4e783502ab661bed13f15189401b73c93966831f",
