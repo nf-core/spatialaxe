@@ -1,6 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
-name: "baysor_run_transcripts_parquet"
-description: to run the `baysor run` command with the transcripts.parquet file as a coordinate-based segmentation run
+name: "baysor_run_transcripts_parquet_tiled"
+description:
+  to run the `baysor run` command with the transcripts.parquet file as a coordinate-based segmentation run in a tiled manner,
+  where the input transcripts.parquet file is divided into smaller tiles and processed in parallel
 keywords:
   - baysor
   - baysor run
@@ -31,19 +33,23 @@ input:
       description: |
         config file for the xenium baysor run (stored in assets/config/xenium.toml)
         Structure: [ path("path-to-xenium.toml") ]
+  - max_x:
+      description: |
+        maximum x coordinate for spatial filtering of transcripts
+        Structure: [ val("max-x-coordinate") ]
+  - max_y:
+      description: |
+        maximum y coordinate for spatial filtering of transcripts
+        Structure: [ val("max-y-coordinate") ]
+  - min_x:
+      description: |
+        minimum x coordinate for spatial filtering of transcripts
+        Structure: [ val("min-x-coordinate") ]
+  - min_y:
+      description: |
+        minimum y coordinate for spatial filtering of transcripts
+        Structure: [ val("min-y-coordinate") ]
 output:
-  - segmentation:
-      description: |
-        the segmentation.csv file generated from the baysor run command
-        Structure: [ val(meta), path("segmentation.csv") ]
-  - polygons2d:
-      description: |
-        the segmentation_polygons_2d.json file generated from the baysor run command
-        Structure: [ val(meta), path("segmentation_polygons_2d.json") ]
-  - htmls:
-      description: |
-        the html files generated from the baysor run command
-        Structure: [ val(meta), path("*.html") ]
   - coordinate_space:
       description: |
         the coordinate space in which xeniumranger import-segmentation was run
