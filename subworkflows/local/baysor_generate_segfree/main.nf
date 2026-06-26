@@ -2,9 +2,10 @@
 // Run baysor segfree
 //
 
+include { BAYSOR_SEGFREE                } from '../../../modules/nf-core/baysor/segfree/main'
+
 include { BAYSOR_PREPROCESS_TRANSCRIPTS } from '../../../modules/local/baysor/preprocess/main'
-include { BAYSOR_SEGFREE                } from '../../../modules/local/baysor/segfree/main'
-// include a module to process the output loom file with scapny or anndata
+// TODO - should we include a module to process the output loom file with scapny or anndata?
 
 workflow BAYSOR_GENERATE_SEGFREE {
     take:
@@ -48,5 +49,6 @@ workflow BAYSOR_GENERATE_SEGFREE {
     )
 
     emit:
+
     ncvs     = BAYSOR_SEGFREE.out.ncvs // channel: [ val(meta), ["ncvs.loom"] ]
 }

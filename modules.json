@@ -5,6 +5,21 @@
         "https://github.com/nf-core/modules.git": {
             "modules": {
                 "nf-core": {
+                    "baysor/preview": {
+                        "branch": "master",
+                        "git_sha": "e20c391087fc926b5b7d7b59bbb7b7744d744049",
+                        "installed_by": ["modules"]
+                    },
+                    "baysor/run": {
+                        "branch": "master",
+                        "git_sha": "e20c391087fc926b5b7d7b59bbb7b7744d744049",
+                        "installed_by": ["modules"]
+                    },
+                    "baysor/segfree": {
+                        "branch": "master",
+                        "git_sha": "e20c391087fc926b5b7d7b59bbb7b7744d744049",
+                        "installed_by": ["modules"]
+                    },
                     "cellpose": {
                         "branch": "master",
                         "git_sha": "0780b963d3ab087e861a4b74e9d0e404115e5352",

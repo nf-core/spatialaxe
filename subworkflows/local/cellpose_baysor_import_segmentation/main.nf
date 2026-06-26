@@ -2,16 +2,16 @@
 // Run the cellpose, baysor and import-segmentation flow
 //
 
-include { RESOLIFT                         } from '../../../modules/local/resolift/main'
-include { BAYSOR_RUN                       } from '../../../modules/local/baysor/run/main'
+include { BAYSOR_RUN                       } from '../../../modules/nf-core/baysor/run/main'
 include { CELLPOSE as CELLPOSE_CELLS       } from '../../../modules/nf-core/cellpose/main'
-include { EXTRACT_DAPI                     } from '../../../modules/local/utility/extract_dapi/main'
 include { STARDIST as STARDIST_NUCLEI      } from '../../../modules/nf-core/stardist/main'
+include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
+
+include { RESOLIFT                         } from '../../../modules/local/resolift/main'
+include { EXTRACT_DAPI                     } from '../../../modules/local/utility/extract_dapi/main'
 include { CONVERT_MASK_UINT32              } from '../../../modules/local/utility/convert_mask_uint32/main'
 include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
 include { RESIZE_TIF                       } from '../../../modules/local/utility/resize_tif/main'
-// include { GET_TRANSCRIPTS_COORDINATES      } from '../../../modules/local/utility/get_coordinates/main'
-include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
 
 workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     take:
@@ -36,6 +36,7 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     ch_transcripts = channel.empty()
     ch_imp_seg_inputs = channel.empty()
     ch_coordinate_space = channel.value("microns")
+    ch_polygon_format = channel.value("GeometryCollectionLegacy")
 
 
     // Use empty list when no model is provided; path input for official cellpose module
@@ -116,7 +117,7 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
                     30,
                 )
             }
-        BAYSOR_RUN(ch_baysor_input)
+        BAYSOR_RUN(ch_baysor_input, [], [], ch_polygon_format)
     }
     else if (cell_segmentation_only) {
 
@@ -147,7 +148,7 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
                     30,
                 )
             }
-        BAYSOR_RUN(ch_baysor_input)
+        BAYSOR_RUN(ch_baysor_input, [], [], ch_polygon_format)
     }
     else {
 
@@ -163,7 +164,7 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
                     30,
                 )
             }
-        BAYSOR_RUN(ch_baysor_input)
+        BAYSOR_RUN(ch_baysor_input, [], [], ch_polygon_format)
     }
 
 
@@ -186,6 +187,7 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     XENIUMRANGER_IMPORT_SEGMENTATION(ch_imp_seg_inputs)
 
     emit:
-    coordinate_space = ch_coordinate_space                         // channel: [ val("microns") ]
+
+    coordinate_space = ch_coordinate_space                       // channel: [ val("microns") ]
     redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs // channel: [ val(meta), ["redefined-xenium-bundle"] ]
 }

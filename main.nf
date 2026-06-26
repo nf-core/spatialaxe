@@ -15,7 +15,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { SPATIALAXE               } from './workflows/spatialaxe.nf'
+include { SPATIALAXE              } from './workflows/spatialaxe.nf'
 include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_spatialaxe_pipeline'
 include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_spatialaxe_pipeline'
 
@@ -46,6 +46,7 @@ workflow NFCORE_SPATIALAXE {
         params.baysor_scale,
         params.baysor_tiling,
         params.baysor_tiling_scale,
+        params.baysor_prior_confidence,
         params.buffer_samples,
         params.buffer_size,
         params.cell_segmentation_only,
@@ -81,6 +82,7 @@ workflow NFCORE_SPATIALAXE {
         params.xeniumranger_only,
     )
     emit:
+
     multiqc_report = SPATIALAXE.out.multiqc_report // channel: /path/to/multiqc_report.html
 }
 /*

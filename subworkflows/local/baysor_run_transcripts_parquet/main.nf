@@ -9,24 +9,24 @@
 //   Image-based (cellpose): non-tiled only (mask passed to Baysor)
 //
 
+include { BAYSOR_RUN                       } from '../../../modules/nf-core/baysor/run/main'
+include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
+
 include { XENIUM_PATCH_DIVIDE              } from '../../../modules/local/xenium_patch/divide/main'
 include { PARQUET_TO_CSV                   } from '../../../modules/local/parquet_to_csv/main'
-include { BAYSOR_RUN                       } from '../../../modules/local/baysor/run/main'
 include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
 include { XENIUM_PATCH_STITCH              } from '../../../modules/local/xenium_patch/stitch/main'
 include { RECONSTRUCT_PATCHES              } from '../../../modules/local/utility/reconstruct_patches/main'
-include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
 
 
 workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
 
     take:
     ch_bundle_path         // channel: [ val(meta), ["path-to-xenium-bundle"] ]
-    ch_transcripts_file // channel: [ val(meta), ["transcripts.parquet"] ]
+    ch_transcripts_parquet // channel: [ val(meta), ["transcripts.parquet"] ]
     ch_morphology_image    // channel: [ val(meta), ["morphology_focus.ome.tif"] ]
     ch_config              // channel: ["path-to-xenium.toml"]
     ch_prior_mask          // channel: [ val(meta), ["resized_mask.tif"] ] or empty (cellpose)
-    baysor_config          // value: path to baysor config TOML (or null)
     baysor_scale           // value: Baysor --scale for non-tiled runs
     baysor_tiling          // value: bool — enable tiling
     baysor_tiling_scale    // value: Baysor --scale for tiled runs
@@ -39,13 +39,14 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
     main:
 
     ch_coordinate_space = channel.value("microns")
+    ch_polygon_format   = channel.value("GeometryCollectionLegacy")
 
     if ( baysor_tiling ) {
 
         // ── TILED PATH ──────────────────────────────────────────────────
 
         // Step 1: Divide transcripts into overlapping patches
-        ch_divide_input = ch_transcripts_file
+        ch_divide_input = ch_transcripts_parquet
             .join(ch_morphology_image, by: 0)
 
         XENIUM_PATCH_DIVIDE ( ch_divide_input )
@@ -68,11 +69,12 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
         // Step 3: Run Baysor on each patch independently
         // Use baysor_tiling_scale (larger than baysor_scale) to compensate for EM
         // convergence producing smaller cells on tile-sized datasets.
-        BAYSOR_RUN (
-            PARQUET_TO_CSV.out.csv.map { meta, transcripts ->
-                tuple(meta, transcripts, [], baysor_config ? file(baysor_config) : [], baysor_tiling_scale)
+        ch_baysor_input = PARQUET_TO_CSV.out.csv
+            .combine(ch_config)
+            .map { meta, transcripts, config ->
+                tuple(meta, transcripts, [], config ? file(config) : [], baysor_tiling_scale)
             }
-        )
+        BAYSOR_RUN (ch_baysor_input, [], [], ch_polygon_format)
 
         // Step 4: Gather patch results per sample and reconstruct patches directory
         ch_baysor_results = BAYSOR_RUN.out.segmentation
@@ -124,7 +126,7 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
 
         // Preprocess: parquet → CSV with optional spatial/QV filtering
         BAYSOR_PREPROCESS_TRANSCRIPTS(
-            ch_transcripts_file,
+            ch_transcripts_parquet,
             min_qv,
             max_x,
             min_x,
@@ -143,7 +145,7 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
             .map { meta, transcripts, mask, config ->
                 tuple(meta, transcripts, mask, config, baysor_scale)
             }
-        BAYSOR_RUN(ch_baysor_input)
+        BAYSOR_RUN(ch_baysor_input, [], [], ch_polygon_format)
 
         // xeniumranger import-segmentation (non-tiled)
         // spatialaxe signature: meta, bundle, transcript_assignment, viz_polygons, nuclei, cells, coordinate_transform, units
@@ -156,11 +158,11 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
                     [], [], [],
                     ch_coordinate_space.val)
             }
-
         XENIUMRANGER_IMPORT_SEGMENTATION(ch_xr)
     }
 
     emit:
+
     redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs
     coordinate_space = ch_coordinate_space
 }

@@ -49,6 +49,10 @@ input:
       description: |
         minimum y coordinate for spatial filtering of transcripts
         Structure: [ val("min-y-coordinate") ]
+  - ch_polygon_format:
+      description: |
+        the polygon format to use for the baysor segmentation output
+        Structure: [ val("GeometryCollectionLegacy") ]
 output:
   - coordinate_space:
       description: |

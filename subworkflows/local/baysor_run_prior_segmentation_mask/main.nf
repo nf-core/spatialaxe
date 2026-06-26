@@ -2,15 +2,15 @@
 // Run baysor run & import-segmentation
 //
 
-include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
-include { BAYSOR_RUN                       } from '../../../modules/local/baysor/run/main'
+include { BAYSOR_RUN                       } from '../../../modules/nf-core/baysor/run/main'
 include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
 
+include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
 
 workflow BAYSOR_RUN_PRIOR_SEGMENTATION_MASK {
     take:
     ch_bundle_path         // channel: [ val(meta), ["path-to-xenium-bundle"] ]
-    ch_transcripts_file // channel: [ val(meta), ["path-to-transcripts.parquet"] ]
+    ch_transcripts_parquet // channel: [ val(meta), ["path-to-transcripts.parquet"] ]
     ch_segmentation_mask   // channel: [ ["path-to-prior-segmentation-mask"] ]
     ch_config              // channel: [ "path-to-xenium.toml" ]
     max_x                  // value: spatial filter upper x bound
@@ -18,19 +18,21 @@ workflow BAYSOR_RUN_PRIOR_SEGMENTATION_MASK {
     min_qv                 // value: minimum transcript QV
     min_x                  // value: spatial filter lower x bound
     min_y                  // value: spatial filter lower y bound
+    ch_prior_column        // channel: [val("cell_id")]
+    ch_prior_confidence    // channel: [val(prior_confidence) ]
 
     main:
 
-    ch_transcripts = channel.empty()
-
+    ch_transcripts      = channel.empty()
     ch_redefined_bundle = channel.empty()
     ch_coordinate_space = channel.value("pixels")
+    ch_polygon_format   = channel.value("GeometryCollectionLegacy")
 
     // Always preprocess transcripts.parquet to CSV for Baysor 0.7.1 compatibility.
     // Baysor's Julia Parquet.jl cannot read zstd-compressed parquet files from Xenium bundles.
     // Also applies optional spatial/QV filtering when filter_transcripts is true.
     BAYSOR_PREPROCESS_TRANSCRIPTS(
-        ch_transcripts_file,
+        ch_transcripts_parquet,
         min_qv,
         max_x,
         min_x,
@@ -53,7 +55,7 @@ workflow BAYSOR_RUN_PRIOR_SEGMENTATION_MASK {
                 30,
             )
         }
-    BAYSOR_RUN(ch_baysor_input)
+    BAYSOR_RUN(ch_baysor_input, ch_prior_column, ch_prior_confidence, ch_polygon_format)
 
 
     // run import-segmentation with baysor outs
@@ -74,10 +76,10 @@ workflow BAYSOR_RUN_PRIOR_SEGMENTATION_MASK {
     XENIUMRANGER_IMPORT_SEGMENTATION(
         ch_imp_seg_inputs
     )
-
     ch_redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs
 
     emit:
+
     coordinate_space = ch_coordinate_space // channel: [ "pixels" ]
     redefined_bundle = ch_redefined_bundle // channel: [ val(meta), ["redefined-xenium-bundle"] ]
 }

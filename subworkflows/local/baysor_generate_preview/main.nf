@@ -2,7 +2,8 @@
 // Run baysor create_dataset & preview
 //
 
-include { BAYSOR_PREVIEW        } from '../../../modules/local/baysor/preview/main'
+include { BAYSOR_PREVIEW        } from '../../../modules/nf-core/baysor/preview/main'
+
 include { BAYSOR_CREATE_DATASET } from '../../../modules/local/baysor/create_dataset/main'
 include { EXTRACT_PREVIEW_DATA  } from '../../../modules/local/utility/extract_preview_data/main'
 include { PARQUET_TO_CSV        } from '../../../modules/local/utility/parquet_to_csv/main'
@@ -44,6 +45,7 @@ workflow BAYSOR_GENERATE_PREVIEW {
     ch_preview_mqc_png  = EXTRACT_PREVIEW_DATA.out.mqc_img
 
     emit:
+
     preview_html = ch_preview_mqc_html // channel: [ val(meta), ["*_mqc.tsv"] ]
     preview_img  = ch_preview_mqc_png  // channel: [ val(meta), ["*_mqc.png"] ]
 }
