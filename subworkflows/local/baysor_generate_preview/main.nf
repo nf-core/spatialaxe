@@ -39,7 +39,7 @@ workflow BAYSOR_GENERATE_PREVIEW {
     BAYSOR_PREVIEW(ch_baysor_preview_input)
 
     // clean the preview html file generated
-    EXTRACT_PREVIEW_DATA(BAYSOR_PREVIEW.out.preview_html)
+    EXTRACT_PREVIEW_DATA(BAYSOR_PREVIEW.out.html)
 
     ch_preview_mqc_html = EXTRACT_PREVIEW_DATA.out.mqc_data
     ch_preview_mqc_png  = EXTRACT_PREVIEW_DATA.out.mqc_img
