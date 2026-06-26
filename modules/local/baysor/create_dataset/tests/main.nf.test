@@ -1,0 +1,60 @@
+nextflow_process {
+
+    name "Test Process BAYSOR CREATE_DATASET"
+    script "../main.nf"
+    process "BAYSOR_CREATE_DATASET"
+    config "./nextflow.config"
+
+    tag "modules"
+    tag "modules_local"
+    tag "baysor"
+    tag "baysor/create_dataset"
+
+    test("baysor create dataset - transcripts.parquet") {
+
+        when {
+            process {
+                """
+                input[0] = channel.of([
+                                [id: "test_run_baysor"],
+                                file(params.modules_testdata_base_path + "spatial_omics/xenium/homo_sapiens/spatial_gene_expression.csv", checkIfExists: true)
+                            ])
+                input[1] = 0.3
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.sampled_transcripts[0][1]).exists() },
+                { assert file(process.out.sampled_transcripts[0][1]).name == "sampled_transcripts.csv" },
+                { assert snapshot(process.out.versions_baysor).match("versions") }
+            )
+        }
+    }
+
+    test("baysor create dataset stub") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = channel.of([
+                                [id: "test_run_baysor"],
+                                file(params.modules_testdata_base_path + "spatial_omics/xenium/homo_sapiens/spatial_gene_expression.csv", checkIfExists: true)
+                            ])
+                input[1] = 0.3
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert snapshot(process.out.versions_baysor).match("versions_stub") }
+            )
+        }
+    }
+}

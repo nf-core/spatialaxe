@@ -1,63 +1,155 @@
-# nf-core/spatialxe: Usage
+# nf-core/spatialaxe: Usage
 
-## :warning: Please read this documentation on the nf-core website: [https://nf-co.re/spatialxe/usage](https://nf-co.re/spatialxe/usage)
+## :warning: Please read this documentation on the nf-core website: [https://nf-co.re/spatialaxe/usage](https://nf-co.re/spatialaxe/usage)
 
 > _Documentation of pipeline parameters is generated automatically from the pipeline schema and can no longer be found in markdown files._
 
 ## Introduction
 
-<!-- TODO nf-core: Add documentation about anything specific to running your pipeline. For general topics, please point to (and add to) the main nf-core website. -->
-
 ## Samplesheet input
 
-You will need to create a samplesheet with information about the samples you would like to analyse before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row as shown in the examples below.
+You will need to create a samplesheet with information about the sample you would like to analyse before running the pipeline. It has to be a comma-separated file with 3 columns, and a header row as shown in the examples below.
+
+```csv title="samplesheet.csv"
+sample,bundle,image
+breast_cancer,/path/to/xenium/bundle,/path/to/morphology.ome.tif
+```
+
+| Column   | Description                                                                                                                                                            |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sample` | `Required`. Custom sample name. It is recommended to follow the same name from the output of the Xenium Onboard Analysis (XOA). Avoid using spaces in the sample name. |
+| `bundle` | `Required`. Full path to the Xenium bundle, output of the Xenium Onboard Analysis.                                                                                     |
+| `image`  | `Optional`. Full path to morphology.ome.tif. If not provided, the morphology.ome.tif from the bundle is considered.                                                    |
+
+An [example samplesheet](../assets/example_samplesheet.csv) has been provided with the pipeline.
+
+#### Using the samplesheet
 
 ```bash
 --input '[path to samplesheet file]'
 ```
 
-### Multiple runs of the same sample
-
-The `sample` identifiers have to be the same when you have re-sequenced the same sample more than once e.g. to increase sequencing depth. The pipeline will concatenate the raw reads before performing any downstream analysis. Below is an example for the same sample sequenced across 3 lanes:
-
-```csv title="samplesheet.csv"
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
-CONTROL_REP1,AEG588A1_S1_L003_R1_001.fastq.gz,AEG588A1_S1_L003_R2_001.fastq.gz
-CONTROL_REP1,AEG588A1_S1_L004_R1_001.fastq.gz,AEG588A1_S1_L004_R2_001.fastq.gz
-```
-
-### Full samplesheet
-
-The pipeline will auto-detect whether a sample is single- or paired-end using the information provided in the samplesheet. The samplesheet can have as many columns as you desire, however, there is a strict requirement for the first 3 columns to match those defined in the table below.
-
-A final samplesheet file consisting of both single- and paired-end data may look something like the one below. This is for 6 samples, where `TREATMENT_REP3` has been sequenced twice.
-
-```csv title="samplesheet.csv"
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
-CONTROL_REP2,AEG588A2_S2_L002_R1_001.fastq.gz,AEG588A2_S2_L002_R2_001.fastq.gz
-CONTROL_REP3,AEG588A3_S3_L002_R1_001.fastq.gz,AEG588A3_S3_L002_R2_001.fastq.gz
-TREATMENT_REP1,AEG588A4_S4_L003_R1_001.fastq.gz,
-TREATMENT_REP2,AEG588A5_S5_L003_R1_001.fastq.gz,
-TREATMENT_REP3,AEG588A6_S6_L003_R1_001.fastq.gz,
-TREATMENT_REP3,AEG588A6_S6_L004_R1_001.fastq.gz,
-```
-
-| Column    | Description                                                                                                                                                                            |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sample`  | Custom sample name. This entry will be identical for multiple sequencing libraries/runs from the same sample. Spaces in sample names are automatically converted to underscores (`_`). |
-| `fastq_1` | Full path to FastQ file for Illumina short reads 1. File has to be gzipped and have the extension ".fastq.gz" or ".fq.gz".                                                             |
-| `fastq_2` | Full path to FastQ file for Illumina short reads 2. File has to be gzipped and have the extension ".fastq.gz" or ".fq.gz".                                                             |
-
-An [example samplesheet](../assets/samplesheet.csv) has been provided with the pipeline.
-
 ## Running the pipeline
 
 The typical command for running the pipeline is as follows:
 
+#### Image-based segmentation mode
+
+This runs the default image mode:<br>
+`CELLPOSE ➔ BAYSOR ➔ XR-IMPORT-SEGMENTATION ➔ SPATIALDATA ➔ QC`
+
 ```bash
-nextflow run nf-core/spatialxe --input ./samplesheet.csv --outdir ./results --genome GRCh37 -profile docker
+nextflow run nf-core/spatialaxe \
+        -profile <docker/singularity/...>
+        --input ./samplesheet.csv \
+        --outdir ./results \
+        --mode image
+```
+
+#### Coordinate-based (transcripts-based) segmentation mode
+
+This runs the default coordinate mode:<br>
+`PROSEG ➔ PROSEG2BAYSOR ➔ XR-IMPORT-SEGMENTATION ➔ SPATIALDATA ➔ QC`
+
+```bash
+nextflow run nf-core/spatialaxe \
+        -profile <docker/singularity/...>
+        --input ./samplesheet.csv \
+        --outdir ./results \
+        --mode coordinate
+```
+
+### Segmenation free mode
+
+`BAYSOR_SEGFREE`
+
+```bash
+nextflow run nf-core/spatialaxe \
+   -profile <docker/singularity/.../institute> \
+   --input samplesheet.csv \
+   --outdir <OUTDIR> \
+   --mode segfree
+```
+
+### Preview mode <br>
+
+`BAYSOR_PREVIEW`
+
+```bash
+nextflow run nf-core/spatialaxe \
+   -profile <docker/singularity/.../institute> \
+   --input samplesheet.csv \
+   --outdir <OUTDIR> \
+   --mode preview
+```
+
+### Quality control <br>
+
+It is possible to run the quality control with `--run_qc` to couple it with another mode like so:
+
+```bash
+nextflow run nf-core/spatialaxe \
+        -profile <docker/singularity/...>
+        --input ./samplesheet.csv \
+        --outdir ./results \
+        --mode image \
+        --run_qc
+```
+
+It is also possible to run just he QC with:
+
+```bash
+nextflow run nf-core/spatialaxe \
+   -profile <docker/singularity/.../institute> \
+   --input samplesheet.csv \
+   --outdir <OUTDIR> \
+   --mode qc
+```
+
+- QC methods:
+  - [MultiQC Xenium Extra Plugin](https://github.com/MultiQC/xenium-extra)
+  - [OPT](https://github.com/JEFworks-Lab/off-target-probe-tracker)
+
+### Image-based Segmentation mode (--mode image): <br>
+
+- cellpose
+- baysor
+- xeniumranger
+- stardist
+
+### Coordinate-based (transcripts-based) Segmentation methods (--mode coordinate): <br>
+
+- proseg
+- baysor
+- segger
+
+### Segmentation free methods (--mode segfree): <br>
+
+- baysor
+- ficture
+
+#### Run Segmentation with the methods methods mentioned above : <br>
+
+eg: To run proseg segmentation use the `coordinate` mode and the `proseg` segmentation method (--method)
+
+```bash
+nextflow run nf-core/spatialaxe \
+        -profile <docker/singularity/...>
+        --input ./samplesheet.csv \
+        --outdir ./results \
+        --mode coordinate \
+        --method proseg
+```
+
+eg: To run cellpose segmentation use the `image` mode and the `cellpose` segmentation method (--method)
+
+```bash
+nextflow run nf-core/spatialaxe \
+        -profile <docker/singularity/...>
+        --input ./samplesheet.csv \
+        --outdir ./results \
+        --mode image \
+        --method cellpose
 ```
 
 This will launch the pipeline with the `docker` configuration profile. See below for more information about profiles.
@@ -76,12 +168,12 @@ If you wish to repeatedly use the same parameters for multiple runs, rather than
 Pipeline settings can be provided in a `yaml` or `json` file via `-params-file <file>`.
 
 > [!WARNING]
-> Do not use `-c <file>` to specify parameters as this will result in errors. Custom config files specified with `-c` must only be used for [tuning process resource specifications](https://nf-co.re/docs/running/run-pipelines#configuring-pipelines), other infrastructural tweaks (such as output directories), or module arguments (args).
+> Do not use `-c <file>` to specify parameters as this will result in errors. Custom config files specified with `-c` must only be used for [tuning process resource specifications](https://nf-co.re/docs/usage/configuration#tuning-workflow-resources), other infrastructural tweaks (such as output directories), or module arguments (args).
 
 The above pipeline run specified with a params file in yaml format:
 
 ```bash
-nextflow run nf-core/spatialxe -profile docker -params-file params.yaml
+nextflow run nf-core/spatialaxe -profile docker -params-file params.yaml
 ```
 
 with:
@@ -89,7 +181,6 @@ with:
 ```yaml title="params.yaml"
 input: './samplesheet.csv'
 outdir: './results/'
-genome: 'GRCh37'
 <...>
 ```
 
@@ -100,14 +191,14 @@ You can also generate such `YAML`/`JSON` files via [nf-core/launch](https://nf-c
 When you run the above command, Nextflow automatically pulls the pipeline code from GitHub and stores it as a cached version. When running the pipeline after this, it will always use the cached version if available - even if the pipeline has been updated since. To make sure that you're running the latest version of the pipeline, make sure that you regularly update the cached version of the pipeline:
 
 ```bash
-nextflow pull nf-core/spatialxe
+nextflow pull nf-core/spatialaxe
 ```
 
 ### Reproducibility
 
 It is a good idea to specify the pipeline version when running the pipeline on your data. This ensures that a specific version of the pipeline code and software are used when you run your pipeline. If you keep using the same tag, you'll be running the same version of the pipeline, even if there have been changes to the code since.
 
-First, go to the [nf-core/spatialxe releases page](https://github.com/nf-core/spatialxe/releases) and find the latest pipeline version - numeric only (eg. `1.3.1`). Then specify this when running the pipeline with `-r` (one hyphen) - eg. `-r 1.3.1`. Of course, you can switch to another version by changing the number after the `-r` flag.
+First, go to the [nf-core/spatialaxe releases page](https://github.com/nf-core/spatialaxe/releases) and find the latest pipeline version - numeric only (eg. `1.0.0`). Then specify this when running the pipeline with `-r` (one hyphen) - eg. `-r 1.0.0`. Of course, you can switch to another version by changing the number after the `-r` flag.
 
 This version number will be logged in reports when you run the pipeline, so that you'll know what you used when you look back in the future. For example, at the bottom of the MultiQC reports.
 
@@ -173,19 +264,19 @@ Specify the path to a specific config file (this is a core Nextflow command). Se
 
 Whilst the default requirements set within the pipeline will hopefully work for most people and with most input data, you may find that you want to customise the compute resources that the pipeline requests. Each step in the pipeline has a default set of requirements for number of CPUs, memory and time. For most of the pipeline steps, if the job exits with any of the error codes specified [here](https://github.com/nf-core/rnaseq/blob/4c27ef5610c87db00c3c5a3eed10b1d161abf575/conf/base.config#L18) it will automatically be resubmitted with higher resources request (2 x original, then 3 x original). If it still fails after the third attempt then the pipeline execution is stopped.
 
-To change the resource requests, please see the [max resources](https://nf-co.re/docs/running/configuration/nextflow-for-your-system#set-max-resources) and [customise process resources](https://nf-co.re/docs/running/configuration/nextflow-for-your-system#customize-process-resources) section of the nf-core website.
+To change the resource requests, please see the [max resources](https://nf-co.re/docs/usage/configuration#max-resources) and [tuning workflow resources](https://nf-co.re/docs/usage/configuration#tuning-workflow-resources) section of the nf-core website.
 
 ### Custom Containers
 
 In some cases, you may wish to change the container or conda environment used by a pipeline steps for a particular tool. By default, nf-core pipelines use containers and software from the [biocontainers](https://biocontainers.pro/) or [bioconda](https://bioconda.github.io/) projects. However, in some cases the pipeline specified version maybe out of date.
 
-To use a different container from the default container or conda environment specified in a pipeline, please see the [updating tool versions](https://nf-co.re/docs/running/configuration/nextflow-for-your-system#update-tool-versions) section of the nf-core website.
+To use a different container from the default container or conda environment specified in a pipeline, please see the [updating tool versions](https://nf-co.re/docs/usage/configuration#updating-tool-versions) section of the nf-core website.
 
 ### Custom Tool Arguments
 
 A pipeline might not always support every possible argument or option of a particular tool used in pipeline. Fortunately, nf-core pipelines provide some freedom to users to insert additional parameters that the pipeline does not include by default.
 
-To learn how to provide additional arguments to a particular tool of the pipeline, please see the [customising tool arguments](https://nf-co.re/docs/running/configuration/nextflow-for-your-system#modifying-tool-arguments) section of the nf-core website.
+To learn how to provide additional arguments to a particular tool of the pipeline, please see the [customising tool arguments](https://nf-co.re/docs/usage/configuration#customising-tool-arguments) section of the nf-core website.
 
 ### nf-core/configs
 

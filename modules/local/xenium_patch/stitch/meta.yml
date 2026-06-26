@@ -1,0 +1,104 @@
+name: "xenium_patch_stitch"
+description: Stitch per-patch segmentation results into a unified output using sopa's solve_conflicts() to resolve overlapping cells at patch boundaries.
+keywords:
+  - xenium
+  - patches
+  - stitching
+  - sopa
+  - segmentation
+tools:
+  - "python":
+      description: |
+        Python programming language interpreter.
+      homepage: "https://www.python.org/"
+      documentation: "https://docs.python.org/3/"
+      tool_dev_url: "https://github.com/python/cpython"
+      doi: "no DOI available"
+      licence: ["PSF-2.0"]
+      identifier: ""
+  - "sopa":
+      description: |
+        Spatial-omics pipeline that handles tile-based segmentation, conflict
+        resolution, and aggregation across multiple platforms (Xenium,
+        MERSCOPE, CosMx, etc.).
+      homepage: "https://gustaveroussy.github.io/sopa/"
+      documentation: "https://gustaveroussy.github.io/sopa/"
+      tool_dev_url: "https://github.com/gustaveroussy/sopa"
+      doi: "10.1038/s41467-024-48981-z"
+      licence: ["BSD-3-Clause"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'test' ]
+    - patches:
+        type: directory
+        description: Directory containing per-patch subdirectories and a patch_grid.json file.
+        pattern: "patches"
+
+output:
+  xr_polygons_transcript:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test' ]
+      - "output/xr-cell-polygons.geojson":
+          type: file
+          description: Stitched cell polygons in GeoJSON format compatible with XeniumRanger.
+          pattern: "output/xr-cell-polygons.geojson"
+          ontologies: []
+      - "output/xr-transcript-metadata.csv":
+          type: file
+          description: Per-transcript cell assignments and noise flags after stitching.
+          pattern: "output/xr-transcript-metadata.csv"
+          ontologies: []
+  versions_python:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "python3 --version | sed 's/Python //'":
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_sopa:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - sopa:
+          type: string
+          description: The tool name
+      - 'python3 -c "import sopa; print(sopa.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "python3 --version | sed 's/Python //'":
+          type: eval
+          description: The expression to obtain the version of the tool
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - sopa:
+          type: string
+          description: The tool name
+      - 'python3 -c "import sopa; print(sopa.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+
+authors:
+  - "@an-altosian"
+maintainers:
+  - "@an-altosian"
