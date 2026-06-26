@@ -30,8 +30,7 @@
                 "preview/baysor/create_dataset/test_run",
                 "preview/baysor/create_dataset/test_run/sampled_transcripts.csv",
                 "preview/baysor/preview",
-                "preview/baysor/preview/test_run",
-                "preview/baysor/preview/test_run/preview.html",
+                "preview/baysor/preview/test_run_preview.html",
                 "preview/multiqc",
                 "preview/multiqc/multiqc_data",
                 "preview/multiqc/multiqc_data/.stub",
@@ -77,7 +76,7 @@
             ],
             [
                 "sampled_transcripts.csv:md5,d41d8cd98f00b204e9800998ecf8427e",
-                "preview.html:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "test_run_preview.html:md5,d41d8cd98f00b204e9800998ecf8427e",
                 ".stub:md5,d41d8cd98f00b204e9800998ecf8427e",
                 ".stub:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "multiqc_report.html:md5,d41d8cd98f00b204e9800998ecf8427e",
@@ -111,10 +110,10 @@
                 "umap_mqc.tsv:md5,d41d8cd98f00b204e9800998ecf8427e"
             ]
         ],
-        "timestamp": "2026-06-17T11:15:30.764424637",
+        "timestamp": "2026-06-26T23:00:39.337211113",
         "meta": {
             "nf-test": "0.9.5",
-            "nextflow": "26.04.2"
+            "nextflow": "26.04.4"
         }
     }
 }
