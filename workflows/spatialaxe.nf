@@ -44,7 +44,7 @@ include { XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE } from '../subworkflo
 include { SPATIALDATA_WRITE_META_MERGE                     } from '../subworkflows/local/spatialdata_write_meta_merge/main'
 
 // qc layer subworkflows
-include { OPT_FLIP_TRACK_STAT                              } from '../subworkflows/local/opt_flip_track_stat/main'
+include { OPT_FLIP_TRACK_STAT                              } from '../subworkflows/nf-core/opt_flip_track_stat/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -106,26 +106,26 @@ workflow SPATIALAXE {
 
     ch_versions = channel.empty()
 
-    ch_input = channel.empty()
-    ch_config = channel.empty()
-    ch_features = channel.value([])
-    ch_raw_bundle = channel.empty()
-    ch_gene_panel = channel.empty()
-    ch_qc_reports = channel.empty()
-    ch_bundle_path = channel.empty()
-    ch_preview_html = channel.empty()
-    ch_exp_metadata = channel.empty()
-    ch_gene_synonyms = channel.empty()
-    ch_multiqc_files = channel.empty()
-    ch_multiqc_report = channel.empty()
-    ch_qupath_polygons = channel.empty()
-    ch_morphology_image = channel.empty()
-    ch_redefined_bundle = channel.empty()
-    ch_coordinate_space = channel.empty()
-    ch_panel_probes_fasta = channel.empty()
-    ch_transcripts_parquet = channel.empty()
-    ch_reference_annotations = channel.empty()
-    ch_multiqc_pre_xr_report = channel.empty()
+    ch_input                  = channel.empty()
+    ch_features               = channel.value([])
+    ch_raw_bundle             = channel.empty()
+    ch_gene_panel             = channel.empty()
+    ch_qc_reports             = channel.empty()
+    ch_bundle_path            = channel.empty()
+    ch_preview_html           = channel.empty()
+    ch_exp_metadata           = channel.empty()
+    ch_gene_synonyms          = channel.empty()
+    ch_baysor_config          = channel.empty()
+    ch_multiqc_files          = channel.empty()
+    ch_multiqc_report         = channel.empty()
+    ch_qupath_polygons        = channel.empty()
+    ch_morphology_image       = channel.empty()
+    ch_redefined_bundle       = channel.empty()
+    ch_coordinate_space       = channel.empty()
+    ch_panel_probes_fasta     = channel.empty()
+    ch_transcripts_parquet    = channel.empty()
+    ch_reference_annotations  = channel.empty()
+    ch_multiqc_pre_xr_report  = channel.empty()
     ch_multiqc_post_xr_report = channel.empty()
 
 
@@ -267,11 +267,20 @@ workflow SPATIALAXE {
     }
 
     // get baysor xenium config
-    ch_config = channel.fromPath(
-            "${projectDir}/assets/config/xenium.toml",
-            checkIfExists: true
-        )
-        .flatten()
+    if (baysor_config) {
+        ch_baysor_config = channel.fromPath(
+                baysor_config,
+                checkIfExists: true
+            )
+            .flatten()
+    }
+    else {
+        ch_baysor_config = channel.fromPath(
+                "${projectDir}/assets/config/xenium.toml",
+                checkIfExists: true
+            )
+            .flatten()
+    }
 
     // get segmentation mask if provided with --segmentation_mask for the baysor method
     if (segmentation_mask) {
@@ -382,7 +391,7 @@ workflow SPATIALAXE {
 
         BAYSOR_GENERATE_PREVIEW(
             ch_transcripts_parquet,
-            ch_config,
+            ch_baysor_config,
         )
         ch_preview_html = BAYSOR_GENERATE_PREVIEW.out.preview_html
     }
@@ -422,7 +431,7 @@ workflow SPATIALAXE {
                 ch_bundle_path,
                 ch_transcripts_parquet,
                 ch_exp_metadata,
-                ch_config,
+                ch_baysor_config,
                 cell_segmentation_only,
                 cellpose_model,
                 max_x,
@@ -460,7 +469,7 @@ workflow SPATIALAXE {
                     ch_bundle_path,
                     ch_transcripts_parquet,
                     ch_segmentation_mask,
-                    ch_config,
+                    ch_baysor_config,
                     max_x,
                     max_y,
                     min_qv,
@@ -558,7 +567,7 @@ workflow SPATIALAXE {
                 ch_bundle_path,
                 ch_transcripts_parquet,
                 ch_morphology_image,
-                ch_config,
+                ch_baysor_config,
                 ch_prior_mask,
                 baysor_scale,
                 baysor_tiling,
@@ -628,7 +637,7 @@ workflow SPATIALAXE {
 
             BAYSOR_GENERATE_SEGFREE(
                 ch_transcripts_parquet,
-                ch_config,
+                ch_baysor_config,
                 max_x,
                 max_y,
                 min_qv,

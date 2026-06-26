@@ -34,21 +34,18 @@
                     },
                     "opt/flip": {
                         "branch": "master",
-                        "git_sha": "7d3e5c9d3d44",
-                        "installed_by": ["modules"],
-                        "patch": "modules/nf-core/opt/flip/opt-flip.diff"
+                        "git_sha": "f0ce9f694b4d372a663199a810de933651465987",
+                        "installed_by": ["modules", "opt_flip_track_stat"]
                     },
                     "opt/stat": {
                         "branch": "master",
-                        "git_sha": "7d3e5c9d3d44",
-                        "installed_by": ["modules"],
-                        "patch": "modules/nf-core/opt/stat/opt-stat.diff"
+                        "git_sha": "f0ce9f694b4d372a663199a810de933651465987",
+                        "installed_by": ["modules", "opt_flip_track_stat"]
                     },
                     "opt/track": {
                         "branch": "master",
-                        "git_sha": "7d3e5c9d3d44",
-                        "installed_by": ["modules"],
-                        "patch": "modules/nf-core/opt/track/opt-track.diff"
+                        "git_sha": "f0ce9f694b4d372a663199a810de933651465987",
+                        "installed_by": ["modules", "opt_flip_track_stat"]
                     },
                     "stardist": {
                         "branch": "master",
@@ -87,6 +84,11 @@
             },
             "subworkflows": {
                 "nf-core": {
+                    "opt_flip_track_stat": {
+                        "branch": "master",
+                        "git_sha": "f0ce9f694b4d372a663199a810de933651465987",
+                        "installed_by": ["subworkflows"]
+                    },
                     "utils_nextflow_pipeline": {
                         "branch": "master",
                         "git_sha": "05954dab2ff481bcb999f24455da29a5828af08d",
