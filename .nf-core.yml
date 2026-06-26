@@ -9,7 +9,7 @@ lint:
     - docs/images/nf-core-spatialaxe_logo_dark.png
     - docs/images/nf-core-spatialaxe_logo_light.png
     - .github/PULL_REQUEST_TEMPLATE.md
-nf_core_version: 3.5.2
+nf_core_version: 4.0.2
 repository_type: pipeline
 template:
   author: Sameesh Kher, Dongze He, Florian Heyl
@@ -21,4 +21,4 @@ template:
   outdir: .
   skip_features:
     - igenomes
-  version: 1.1.0dev
+  version: 1.0.0dev
