@@ -7,7 +7,7 @@ on:
 jobs:
   run-platform:
     name: Run AWS tests
-    if: github.repository == 'nf-core/spatialxe'
+    if: github.repository == 'nf-core/spatialaxe'
     runs-on: ubuntu-latest
     steps:
       # Launch workflow using Seqera Platform CLI tool action
@@ -18,10 +18,10 @@ jobs:
           access_token: ${{ secrets.TOWER_ACCESS_TOKEN }}
           compute_env: ${{ vars.TOWER_COMPUTE_ENV }}
           revision: ${{ github.sha }}
-          workdir: s3://${{ vars.AWS_S3_BUCKET }}/work/spatialxe/work-${{ github.sha }}
+          workdir: s3://${{ vars.AWS_S3_BUCKET }}/work/spatialaxe/work-${{ github.sha }}
           parameters: |
             {
-              "outdir": "s3://${{ vars.AWS_S3_BUCKET }}/spatialxe/results-test-${{ github.sha }}"
+              "outdir": "s3://${{ vars.AWS_S3_BUCKET }}/spatialaxe/results-test-${{ github.sha }}"
             }
           profiles: test
 

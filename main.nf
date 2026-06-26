@@ -1,11 +1,11 @@
 #!/usr/bin/env nextflow
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    nf-core/spatialxe
+    nf-core/spatialaxe
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Github : https://github.com/nf-core/spatialxe
-    Website: https://nf-co.re/spatialxe
-    Slack  : https://nfcore.slack.com/channels/spatialxe
+    Github : https://github.com/nf-core/spatialaxe
+    Website: https://nf-co.re/spatialaxe
+    Slack  : https://nfcore.slack.com/channels/spatialaxe
 ----------------------------------------------------------------------------------------
 */
 
@@ -15,22 +15,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { SPATIALXE  } from './workflows/spatialxe'
-include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_spatialxe_pipeline'
-include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_spatialxe_pipeline'
-include { getGenomeAttribute      } from './subworkflows/local/utils_nfcore_spatialxe_pipeline'
-
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    GENOME PARAMETER VALUES
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
-
-// TODO nf-core: Remove this line if you don't need a FASTA file
-//   This is an example of how to use getGenomeAttribute() to fetch parameters
-//   from igenomes.config using `--genome`
-params.fasta = getGenomeAttribute('fasta')
-
+include { SPATIALAXE  } from './workflows/spatialaxe'
+include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_spatialaxe_pipeline'
+include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_spatialaxe_pipeline'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     NAMED WORKFLOWS FOR PIPELINE
@@ -40,7 +27,7 @@ params.fasta = getGenomeAttribute('fasta')
 //
 // WORKFLOW: Run main analysis pipeline depending on type of input
 //
-workflow NFCORE_SPATIALXE {
+workflow NFCORE_SPATIALAXE {
 
     take:
     samplesheet // channel: samplesheet read in from --input
@@ -50,7 +37,7 @@ workflow NFCORE_SPATIALXE {
     //
     // WORKFLOW: Run pipeline
     //
-    SPATIALXE (
+    SPATIALAXE (
         samplesheet,
         params.multiqc_config,
         params.multiqc_logo,
@@ -58,7 +45,7 @@ workflow NFCORE_SPATIALXE {
         params.outdir,
     )
     emit:
-    multiqc_report = SPATIALXE.out.multiqc_report // channel: /path/to/multiqc_report.html
+    multiqc_report = SPATIALAXE.out.multiqc_report // channel: /path/to/multiqc_report.html
 }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -87,7 +74,7 @@ workflow {
     //
     // WORKFLOW: Run main workflow
     //
-    NFCORE_SPATIALXE (
+    NFCORE_SPATIALAXE (
         PIPELINE_INITIALISATION.out.samplesheet
     )
     //
@@ -99,7 +86,7 @@ workflow {
         params.plaintext_email,
         params.outdir,
         params.monochrome_logs,
-        NFCORE_SPATIALXE.out.multiqc_report
+        NFCORE_SPATIALAXE.out.multiqc_report
     )
 }
 

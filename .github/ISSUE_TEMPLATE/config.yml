@@ -2,6 +2,6 @@ contact_links:
   - name: Join nf-core
     url: https://nf-co.re/join
     about: Please join the nf-core community here
-  - name: "Slack #spatialxe channel"
-    url: https://nfcore.slack.com/channels/spatialxe
-    about: Discussion about the nf-core/spatialxe pipeline
+  - name: "Slack #spatialaxe channel"
+    url: https://nfcore.slack.com/channels/spatialaxe
+    about: Discussion about the nf-core/spatialaxe pipeline

@@ -1,6 +1,6 @@
 {
-    "name": "nf-core/spatialxe",
-    "homePage": "https://github.com/nf-core/spatialxe",
+    "name": "nf-core/spatialaxe",
+    "homePage": "https://github.com/nf-core/spatialaxe",
     "repos": {
         "https://github.com/nf-core/modules.git": {
             "modules": {
