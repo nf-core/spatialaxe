@@ -188,5 +188,5 @@ If you update images or graphics, follow the nf-core [style guidelines](https://
 - In the nf-core community we often trade for PR reviews, but we would really appreciate if a member of the `spatialaxe team`(Sameesh Kher, Florian Heyl, Dongze He) is added as a PR reviewer
 - If you build a container image, please make sure that this conatiner is available from the nf-core quay.io and not from your personal container repository
 - We would move towards implementing conda profile support for the pipeline and would really appreciate if a bioconda package is built around your new tool addition
-- Finally, we would apprciate your PR descriptions to be as descriptive as possible
+- Finally, we would appreciate your PR descriptions to be as descriptive as possible
 - We look forward to your contributions 🍻
