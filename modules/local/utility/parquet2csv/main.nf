@@ -1,4 +1,4 @@
-process PARQUET_TO_CSV {
+process PARQUET2CSV {
     tag "$meta.id"
     label 'process_low'
 
@@ -20,12 +20,12 @@ process PARQUET_TO_CSV {
     script:
     // Exit if running this module with -profile conda / -profile mamba
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
-        error "PARQUET_TO_CSV module does not support Conda. Please use Docker / Singularity / Podman instead."
+        error "PARQUET2CSV module does not support Conda. Please use Docker / Singularity / Podman instead."
     }
     prefix = task.ext.prefix ?: "${meta.id}"
 
     """
-    utility_parquet_to_csv.py \\
+    utility_parquet2csv.py \\
         --transcripts ${transcripts} \\
         --extension ${extension} \\
         --prefix ${prefix}
@@ -34,7 +34,7 @@ process PARQUET_TO_CSV {
     stub:
     // Exit if running this module with -profile conda / -profile mamba
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
-        error "PARQUET_TO_CSV module does not support Conda. Please use Docker / Singularity / Podman instead."
+        error "PARQUET2CSV module does not support Conda. Please use Docker / Singularity / Podman instead."
     }
 
     prefix = task.ext.prefix ?: "${meta.id}"

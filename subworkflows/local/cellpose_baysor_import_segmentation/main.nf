@@ -10,7 +10,7 @@ include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeni
 include { RESOLIFT                         } from '../../../modules/local/resolift/main'
 include { EXTRACT_DAPI                     } from '../../../modules/local/utility/extract_dapi/main'
 include { CONVERT_MASK_UINT32              } from '../../../modules/local/utility/convert_mask_uint32/main'
-include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
+include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/utility/preprocess/main'
 include { RESIZE_TIF                       } from '../../../modules/local/utility/resize_tif/main'
 
 workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {

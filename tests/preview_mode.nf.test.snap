@@ -11,7 +11,7 @@
                 "EXTRACT_PREVIEW_DATA": {
                     "python": "3.14.4"
                 },
-                "PARQUET_TO_CSV": {
+                "PARQUET2CSV": {
                     "pyarrow": "24.0.0"
                 },
                 "UNTAR": {
@@ -63,9 +63,9 @@
                 "preview/untar/test_run/transcripts.parquet",
                 "preview/untar/test_run/transcripts.zarr.zip",
                 "preview/utility",
-                "preview/utility/parquet_to_csv",
-                "preview/utility/parquet_to_csv/test_run",
-                "preview/utility/parquet_to_csv/test_run/transcripts.parquet.csv",
+                "preview/utility/parquet2csv",
+                "preview/utility/parquet2csv/test_run",
+                "preview/utility/parquet2csv/test_run/transcripts.parquet.csv",
                 "preview/utility/preview_data",
                 "preview/utility/preview_data/test_run",
                 "preview/utility/preview_data/test_run/gene_structure_mqc.tsv",
@@ -110,7 +110,7 @@
                 "umap_mqc.tsv:md5,d41d8cd98f00b204e9800998ecf8427e"
             ]
         ],
-        "timestamp": "2026-06-26T23:00:39.337211113",
+        "timestamp": "2026-06-27T17:43:45.016177869",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.04.4"

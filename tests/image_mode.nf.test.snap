@@ -157,7 +157,7 @@
                 "resized_morphology_focus_0000.ome_cp_masks.tif.tif:md5,d41d8cd98f00b204e9800998ecf8427e"
             ]
         ],
-        "timestamp": "2026-06-26T22:59:36.500757124",
+        "timestamp": "2026-06-27T17:42:50.445458354",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.04.4"

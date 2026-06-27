@@ -5,9 +5,10 @@
 include { BAYSOR_RUN                       } from '../../../modules/nf-core/baysor/run/main'
 include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
 
-include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
+include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/utility/preprocess/main'
 
 workflow BAYSOR_RUN_PRIOR_SEGMENTATION_MASK {
+
     take:
     ch_bundle_path         // channel: [ val(meta), ["path-to-xenium-bundle"] ]
     ch_transcripts_parquet // channel: [ val(meta), ["path-to-transcripts.parquet"] ]

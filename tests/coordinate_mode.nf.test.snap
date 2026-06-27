@@ -152,7 +152,7 @@
                 "experiment.xenium:md5,d41d8cd98f00b204e9800998ecf8427e"
             ]
         ],
-        "timestamp": "2026-06-26T22:57:26.453776578",
+        "timestamp": "2026-06-27T17:41:01.307236782",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.04.4"

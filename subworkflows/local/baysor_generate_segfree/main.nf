@@ -4,18 +4,19 @@
 
 include { BAYSOR_SEGFREE                } from '../../../modules/nf-core/baysor/segfree/main'
 
-include { BAYSOR_PREPROCESS_TRANSCRIPTS } from '../../../modules/local/baysor/preprocess/main'
+include { BAYSOR_PREPROCESS_TRANSCRIPTS } from '../../../modules/local/utility/preprocess/main'
 // TODO - should we include a module to process the output loom file with scapny or anndata?
 
 workflow BAYSOR_GENERATE_SEGFREE {
+
     take:
     ch_transcripts_file // channel: [ val(meta), ["transcripts.parquet"] ]
-    ch_config              // channel: [ ["path-to-xenium.toml"] ]
-    max_x                  // value: spatial filter upper x bound
-    max_y                  // value: spatial filter upper y bound
-    min_qv                 // value: minimum transcript QV
-    min_x                  // value: spatial filter lower x bound
-    min_y                  // value: spatial filter lower y bound
+    ch_config           // channel: [ ["path-to-xenium.toml"] ]
+    max_x               // value: spatial filter upper x bound
+    max_y               // value: spatial filter upper y bound
+    min_qv              // value: minimum transcript QV
+    min_x               // value: spatial filter lower x bound
+    min_y               // value: spatial filter lower y bound
 
     main:
 

@@ -13,8 +13,8 @@ include { BAYSOR_RUN                       } from '../../../modules/nf-core/bays
 include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
 
 include { XENIUM_PATCH_DIVIDE              } from '../../../modules/local/xenium_patch/divide/main'
-include { PARQUET_TO_CSV                   } from '../../../modules/local/parquet_to_csv/main'
-include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
+include { PARQUET2CSV                      } from '../../../modules/local/utility/parquet2csv/main'
+include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/utility/preprocess/main'
 include { XENIUM_PATCH_STITCH              } from '../../../modules/local/xenium_patch/stitch/main'
 include { RECONSTRUCT_PATCHES              } from '../../../modules/local/utility/reconstruct_patches/main'
 
@@ -64,12 +64,12 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
             }
 
         // Step 2b: Convert parquet to CSV (Baysor Julia Parquet.jl incompatibility)
-        PARQUET_TO_CSV ( ch_patches )
+        PARQUET2CSV ( ch_patches, ".csv" )
 
         // Step 3: Run Baysor on each patch independently
         // Use baysor_tiling_scale (larger than baysor_scale) to compensate for EM
         // convergence producing smaller cells on tile-sized datasets.
-        ch_baysor_input = PARQUET_TO_CSV.out.csv
+        ch_baysor_input = PARQUET2CSV.out.csv
             .combine(ch_config)
             .map { meta, transcripts, config ->
                 tuple(meta, transcripts, [], config ? file(config) : [], baysor_tiling_scale)
