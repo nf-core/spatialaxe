@@ -25,3 +25,22 @@ repos:
               subworkflows/nf-core/.*|
               .*\.snap$
           )$
+  - repo: local
+    hooks:
+      - id: ban-moduledir-templates-shell-call
+        name: Ban "python3 ${moduleDir}/templates/" shell-call invocation
+        description: |
+          The pattern `python3 ${moduleDir}/templates/<script>.py` (introduced by
+          PR #154 in May 2026) breaks on Seqera Platform (Tower) running AWS
+          Batch: ${moduleDir} interpolates to a head-node path (typically
+          /.nextflow/assets/<user>/<repo>/...) that does not exist on the worker
+          containers, so every task fails at start with
+          "python3: can't open file '/.nextflow/...': No such file or directory".
+          Use top-level bin/ scripts invoked by name via PATH (canonical
+          nf-core pattern), or declare the template as a `path` input so
+          Nextflow stages it to the worker. See PR #154 discussion for
+          empirical evidence from the 2026-05-28 Atera compatibility evaluation.
+        language: pygrep
+        types: [text]
+        files: ^modules/local/.*\.nf$
+        entry: '\$\{moduleDir\}/templates/'

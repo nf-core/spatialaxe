@@ -333,24 +333,34 @@ workflow SPATIALAXE {
 
     // get gene_panel.json if provided with --gene_panel, sets relabel_genes to true
     def do_relabel = gene_panel ? true : relabel_genes
-    if (gene_panel) {
 
-        def gene_panel_file = file(gene_panel, checkIfExists: true)
-        ch_gene_panel = ch_input.map { meta, _bundle, _image ->
-            return [meta, gene_panel_file]
+    // Only construct ch_gene_panel when relabel will actually run.
+    // The .map { file(..., checkIfExists: true) } closure is evaluated eagerly
+    // by Nextflow as soon as ch_input emits — even if ch_gene_panel is never
+    // consumed downstream — so leaving this block unconditional breaks every
+    // bundle that ships without gene_panel.json (e.g. 10x Atera / Xenium Gen2),
+    // even in modes that never invoke XENIUMRANGER_RELABEL_RESEGMENT.
+    if (do_relabel) {
+        if (gene_panel) {
+
+            def gene_panel_file = file(gene_panel, checkIfExists: true)
+            ch_gene_panel = ch_input.map { meta, _bundle, _image ->
+                return [meta, gene_panel_file]
+            }
+        }
+        else {
+
+            // gene panel to use if only --relabel_genes is provided
+            ch_gene_panel = ch_input.map { meta, bundle, _image ->
+                def gene_panel_file = file(
+                    bundle.toString().replaceFirst(/\/$/, '') + "/gene_panel.json",
+                    checkIfExists: true
+                )
+                return [meta, gene_panel_file]
+            }
         }
     }
-    else {
-
-        // gene panel to use if only --relabel_genes is provided
-        ch_gene_panel = ch_input.map { meta, bundle, _image ->
-            def gene_panel_file = file(
-                bundle.toString().replaceFirst(/\/$/, '') + "/gene_panel.json",
-                checkIfExists: true
-            )
-            return [meta, gene_panel_file]
-        }
-    }
+    // else: ch_gene_panel keeps its initial channel.empty() value from line 112
 
     /*
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
