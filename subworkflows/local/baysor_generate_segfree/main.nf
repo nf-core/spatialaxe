@@ -33,7 +33,7 @@ workflow BAYSOR_GENERATE_SEGFREE {
         max_y,
         min_y,
     )
-    ch_transcripts = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_file
+    ch_transcripts = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_csv
 
     // run baysor segfree
     ch_baysor_segfree_input = ch_transcripts

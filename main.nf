@@ -43,10 +43,11 @@ workflow NFCORE_SPATIALAXE {
         params.alignment_csv,
         params.baysor_config,
         params.baysor_prior,
-        params.baysor_scale,
+        // params.baysor_scale,
         params.baysor_tiling,
-        params.baysor_tiling_scale,
+        // params.baysor_tiling_scale,
         params.baysor_prior_confidence,
+        params.min_transcripts_per_cell,
         params.buffer_samples,
         params.buffer_size,
         params.cell_segmentation_only,
@@ -79,7 +80,7 @@ workflow NFCORE_SPATIALAXE {
         params.sharpen_tiff,
         params.stardist_nuclei_model,
         params.tiling,
-        params.xeniumranger_only,
+        params.xeniumranger_only
     )
     emit:
 

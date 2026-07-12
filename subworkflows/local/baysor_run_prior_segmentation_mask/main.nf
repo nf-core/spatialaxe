@@ -6,27 +6,31 @@ include { BAYSOR_RUN                       } from '../../../modules/nf-core/bays
 include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
 
 include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/utility/preprocess/main'
+include { BAYSOR_ESTIMATE_SCALE_FACTOR     } from '../../../modules/local/utility/estimatescalefactor/main'
 
 workflow BAYSOR_RUN_PRIOR_SEGMENTATION_MASK {
 
     take:
-    ch_bundle_path         // channel: [ val(meta), ["path-to-xenium-bundle"] ]
-    ch_transcripts_parquet // channel: [ val(meta), ["path-to-transcripts.parquet"] ]
-    ch_segmentation_mask   // channel: [ ["path-to-prior-segmentation-mask"] ]
-    ch_config              // channel: [ "path-to-xenium.toml" ]
-    max_x                  // value: spatial filter upper x bound
-    max_y                  // value: spatial filter upper y bound
-    min_qv                 // value: minimum transcript QV
-    min_x                  // value: spatial filter lower x bound
-    min_y                  // value: spatial filter lower y bound
-    ch_prior_column        // channel: [val("cell_id")]
-    ch_prior_confidence    // channel: [val(prior_confidence) ]
+    ch_bundle_path          // channel: [ val(meta), ["path-to-xenium-bundle"] ]
+    ch_transcripts_parquet  // channel: [ val(meta), ["path-to-transcripts.parquet"] ]
+    ch_segmentation_mask    // channel: [ ["path-to-prior-segmentation-mask"] ]
+    ch_config               // channel: [ "path-to-xenium.toml" ]
+    max_x                   // value: spatial filter upper x bound
+    max_y                   // value: spatial filter upper y bound
+    min_qv                  // value: minimum transcript QV
+    min_x                   // value: spatial filter lower x bound
+    min_y                   // value: spatial filter lower y bound
+    ch_prior_column         // channel: [val("cell_id")]
+    ch_prior_confidence     // channel: [val(prior_confidence) ]
+    ch_transcripts_per_cell // channel: [val(min_transcripts_per_cell)]
 
     main:
 
     ch_transcripts      = channel.empty()
     ch_redefined_bundle = channel.empty()
     ch_coordinate_space = channel.value("pixels")
+    ch_x_column         = channel.value("x_location")
+    ch_y_column         = channel.value("y_location")
     ch_polygon_format   = channel.value("GeometryCollectionLegacy")
 
     // Always preprocess transcripts.parquet to CSV for Baysor 0.7.1 compatibility.
@@ -40,20 +44,32 @@ workflow BAYSOR_RUN_PRIOR_SEGMENTATION_MASK {
         max_y,
         min_y,
     )
-    ch_transcripts = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_file
+    ch_transcripts = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_csv
 
 
-    // run baysor with prior segmentation mask
-    ch_baysor_input = ch_transcripts
+    // estimated scale factor cell radius
+    BAYSOR_ESTIMATE_SCALE_FACTOR (
+        ch_transcripts_parquet,
+        ch_prior_column,
+        ch_x_column,
+        ch_y_column,
+        ch_transcripts_per_cell
+    )
+    ch_scale_factor = BAYSOR_ESTIMATE_SCALE_FACTOR.out.scale_factor
+
+
+    // run baysor with prior segmentation mask with the estimated scale factor
+    ch_baysor_input = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_csv
         .combine(ch_segmentation_mask)
         .combine(ch_config)
-        .map { meta, transcripts, mask, config ->
+        .combine(ch_scale_factor)
+        .map { meta, transcripts, mask, config, scale_factor ->
             tuple(
                 meta,
                 transcripts,
                 mask,
                 config,
-                30,
+                scale_factor,
             )
         }
     BAYSOR_RUN(ch_baysor_input, ch_prior_column, ch_prior_confidence, ch_polygon_format)

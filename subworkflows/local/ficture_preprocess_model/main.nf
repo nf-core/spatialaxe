@@ -17,7 +17,7 @@ workflow FICTURE_PREPROCESS_MODEL {
     main:
 
     // convert parquet to csv
-    PARQUET2CSV(ch_transcripts_parquet, ".csv")
+    PARQUET2CSV(ch_transcripts_parquet)
 
     // run ficture preprocessing
     ch_transcripts = PARQUET2CSV.out.transcripts_csv

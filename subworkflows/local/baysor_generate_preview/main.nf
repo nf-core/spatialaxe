@@ -20,7 +20,7 @@ workflow BAYSOR_GENERATE_PREVIEW {
     ch_preview_mqc_png  = channel.empty()
 
     // run parquet to csv
-    PARQUET2CSV(ch_transcripts_file, ".csv")
+    PARQUET2CSV(ch_transcripts_file)
 
     // generate randomised sample data
     BAYSOR_CREATE_DATASET(PARQUET2CSV.out.transcripts_csv, 0.3)

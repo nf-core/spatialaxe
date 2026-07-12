@@ -19,6 +19,7 @@ components:
   - resize/tif
   - get/transcripts/coordinates
   - baysor/preprocess/transcripts
+  - baysor/estimate/scale/factor
   - baysor/run
   - xeniumranger/import/segmentation
   - split/transcripts

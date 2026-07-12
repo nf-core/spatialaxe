@@ -16,10 +16,11 @@ components:
   - baysor/run
   - xeniumranger/import/segmentation
   - split/transcripts
-  - parquet/to/csv
+  - parquet2csv
   - reconstruct/patches
   - xenium/patch/divide
   - xenium/patch/stitch
+  - baysor/estimate/scale/factor
 input:
   - ch_bundle_path:
       description: |
@@ -49,10 +50,22 @@ input:
       description: |
         minimum y coordinate for spatial filtering of transcripts
         Structure: [ val("min-y-coordinate") ]
-  - ch_polygon_format:
+  - ch_prior_column:
       description: |
-        the polygon format to use for the baysor segmentation output
-        Structure: [ val("GeometryCollectionLegacy") ]
+        the column name in the prior segmentation mask to use as a prior for Baysor segmentation
+        Structure: [ val("prior-column") ]
+  - ch_x_column:
+      description: |
+        the column name in the transcripts.parquet file that contains the x coordinates of the transcripts
+        Structure: [ val("x_location") ]
+  - ch_y_column:
+      description: |
+        the column name in the transcripts.parquet file that contains the y coordinates of the transcripts
+        Structure: [ val("y_location") ]
+  - ch_transcripts_per_cell:
+      description: |
+        min number of transcripts per cell for filtering transcripts
+        Structure: [ val("min-transcripts-per-cell") ]
 output:
   - coordinate_space:
       description: |

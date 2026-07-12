@@ -11,10 +11,11 @@ keywords:
   - polygons
 components:
   - baysor/preprocess/transcripts
+  - baysor/estimate/scale/factor
   - baysor/run
   - xeniumranger/import/segmentation
   - split/transcripts
-  - parquet/to/csv
+  - parquet2csv
   - reconstruct/patches
   - xenium/patch/divide
   - xenium/patch/stitch

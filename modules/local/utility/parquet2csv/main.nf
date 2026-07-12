@@ -8,7 +8,6 @@ process PARQUET2CSV {
 
     input:
     tuple val(meta), path(transcripts)
-    val(extension)
 
     output:
     tuple val(meta), path("${prefix}/*.csv*"), emit: transcripts_csv
@@ -27,7 +26,6 @@ process PARQUET2CSV {
     """
     utility_parquet2csv.py \\
         --transcripts ${transcripts} \\
-        --extension ${extension} \\
         --prefix ${prefix}
     """
 

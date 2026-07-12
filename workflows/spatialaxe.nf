@@ -58,10 +58,11 @@ workflow SPATIALAXE {
     alignment_csv
     baysor_config
     baysor_prior
-    baysor_scale
+    // baysor_scale
     baysor_tiling
-    baysor_tiling_scale
+    // baysor_tiling_scale
     baysor_prior_confidence
+    min_transcripts_per_cell
     buffer_samples
     buffer_size
     cell_segmentation_only
@@ -426,6 +427,7 @@ workflow SPATIALAXE {
         // trigger the default image-based workflow if no method is specified
         if (!method) {
 
+            prior_column = baysor_prior == 'cells' ? 'cell_id' : null
             CELLPOSE_BAYSOR_IMPORT_SEGMENTATION(
                 ch_morphology_image,
                 ch_bundle_path,
@@ -439,6 +441,8 @@ workflow SPATIALAXE {
                 min_qv,
                 min_x,
                 min_y,
+                prior_column,
+                min_transcripts_per_cell,
                 nucleus_segmentation_only,
                 sharpen_tiff,
                 stardist_nuclei_model,
@@ -476,11 +480,12 @@ workflow SPATIALAXE {
                     min_x,
                     min_y,
                     prior_column,
-                    prior_confidence
+                    prior_confidence,
+                    min_transcripts_per_cell
                 )
+                ch_redefined_bundle = BAYSOR_RUN_PRIOR_SEGMENTATION_MASK.out.redefined_bundle
+                ch_coordinate_space = BAYSOR_RUN_PRIOR_SEGMENTATION_MASK.out.coordinate_space
             }
-            ch_redefined_bundle = BAYSOR_RUN_PRIOR_SEGMENTATION_MASK.out.redefined_bundle
-            ch_coordinate_space = BAYSOR_RUN_PRIOR_SEGMENTATION_MASK.out.coordinate_space
         }
 
         // run cellpose on the morphology_ome.tif
@@ -569,14 +574,14 @@ workflow SPATIALAXE {
                 ch_morphology_image,
                 ch_baysor_config,
                 ch_prior_mask,
-                baysor_scale,
                 baysor_tiling,
-                baysor_tiling_scale,
                 max_x,
                 max_y,
                 min_qv,
                 min_x,
                 min_y,
+                prior_column,
+                min_transcripts_per_cell
             )
             ch_redefined_bundle = BAYSOR_RUN_TRANSCRIPTS_PARQUET.out.redefined_bundle
             ch_coordinate_space = BAYSOR_RUN_TRANSCRIPTS_PARQUET.out.coordinate_space
@@ -642,7 +647,7 @@ workflow SPATIALAXE {
                 max_y,
                 min_qv,
                 min_x,
-                min_y,
+                min_y
             )
         }
 

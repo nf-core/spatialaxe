@@ -13,37 +13,55 @@ include { BAYSOR_RUN                       } from '../../../modules/nf-core/bays
 include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
 
 include { XENIUM_PATCH_DIVIDE              } from '../../../modules/local/xenium_patch/divide/main'
+include { XENIUM_PATCH_STITCH              } from '../../../modules/local/xenium_patch/stitch/main'
 include { PARQUET2CSV                      } from '../../../modules/local/utility/parquet2csv/main'
 include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/utility/preprocess/main'
-include { XENIUM_PATCH_STITCH              } from '../../../modules/local/xenium_patch/stitch/main'
 include { RECONSTRUCT_PATCHES              } from '../../../modules/local/utility/reconstruct_patches/main'
+include { BAYSOR_ESTIMATE_SCALE_FACTOR     } from '../../../modules/local/utility/estimatescalefactor/main'
 
 
 workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
 
     take:
-    ch_bundle_path         // channel: [ val(meta), ["path-to-xenium-bundle"] ]
-    ch_transcripts_parquet // channel: [ val(meta), ["transcripts.parquet"] ]
-    ch_morphology_image    // channel: [ val(meta), ["morphology_focus.ome.tif"] ]
-    ch_config              // channel: ["path-to-xenium.toml"]
-    ch_prior_mask          // channel: [ val(meta), ["resized_mask.tif"] ] or empty (cellpose)
-    baysor_scale           // value: Baysor --scale for non-tiled runs
-    baysor_tiling          // value: bool — enable tiling
-    baysor_tiling_scale    // value: Baysor --scale for tiled runs
-    max_x                  // value: spatial filter upper x bound
-    max_y                  // value: spatial filter upper y bound
-    min_qv                 // value: minimum transcript QV
-    min_x                  // value: spatial filter lower x bound
-    min_y                  // value: spatial filter lower y bound
+    ch_bundle_path           // channel: [ val(meta), ["path-to-xenium-bundle"] ]
+    ch_transcripts_parquet   // channel: [ val(meta), ["transcripts.parquet"] ]
+    ch_morphology_image      // channel: [ val(meta), ["morphology_focus.ome.tif"] ]
+    ch_config                // channel: ["path-to-xenium.toml"]
+    ch_prior_mask            // channel: [ val(meta), ["resized_mask.tif"] ] or empty (cellpose)
+    baysor_tiling            // value: bool — enable tiling
+    max_x                    // value: spatial filter upper x bound
+    max_y                    // value: spatial filter upper y bound
+    min_qv                   // value: minimum transcript QV
+    min_x                    // value: spatial filter lower x bound
+    min_y                    // value: spatial filter lower y bound
+    ch_prior_column          // channel: [val("cell_id")] or empty (no prior)
+    ch_transcripts_per_cell  // channel: [val(min_transcripts_per_cell)]
 
     main:
 
+    ch_x_column = channel.value("x_location")
+    ch_y_column = channel.value("y_location")
     ch_coordinate_space = channel.value("microns")
     ch_polygon_format   = channel.value("GeometryCollectionLegacy")
 
-    if ( baysor_tiling ) {
+    // Estimate scale factor which specified the cell radius for each patch
+    BAYSOR_ESTIMATE_SCALE_FACTOR (
+        ch_transcripts_parquet,
+        ch_prior_column,
+        ch_x_column,
+        ch_y_column,
+        ch_transcripts_per_cell
+    )
 
-        // ── TILED PATH ──────────────────────────────────────────────────
+    // keep meta-keyed for non-tiled join
+    ch_scale_factor_by_meta = BAYSOR_ESTIMATE_SCALE_FACTOR.out.scale_factor
+
+    // keyed by sample_id (String) for the tiled/patch path
+    ch_scale_factor_by_sample = ch_scale_factor_by_meta
+        .map { meta, scale_factor -> tuple(meta.id, scale_factor) }
+
+    // ── TILED PATH ───────────────────────
+    if ( baysor_tiling ) {
 
         // Step 1: Divide transcripts into overlapping patches
         ch_divide_input = ch_transcripts_parquet
@@ -64,15 +82,17 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
             }
 
         // Step 2b: Convert parquet to CSV (Baysor Julia Parquet.jl incompatibility)
-        PARQUET2CSV ( ch_patches, ".csv" )
+        PARQUET2CSV ( ch_patches )
 
         // Step 3: Run Baysor on each patch independently
         // Use baysor_tiling_scale (larger than baysor_scale) to compensate for EM
         // convergence producing smaller cells on tile-sized datasets.
-        ch_baysor_input = PARQUET2CSV.out.csv
+        ch_baysor_input = PARQUET2CSV.out.transcripts_csv
+            .map { meta, csv -> tuple(meta.sample_id, meta, csv) }
             .combine(ch_config)
-            .map { meta, transcripts, config ->
-                tuple(meta, transcripts, [], config ? file(config) : [], baysor_tiling_scale)
+            .combine(ch_scale_factor_by_sample, by: 0)
+            .map { _sample_id, meta, transcripts, config, scale_factor ->
+                tuple(meta, transcripts, [], config ? file(config) : [], scale_factor)
             }
         BAYSOR_RUN (ch_baysor_input, [], [], ch_polygon_format)
 
@@ -135,15 +155,16 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
         )
 
         // Run Baysor on full transcripts (with optional image-based prior mask)
-        ch_csv_with_mask = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_file
+        ch_csv_with_mask = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_csv
             .join(ch_prior_mask, by: 0, remainder: true)
             .map { meta, transcripts, mask ->
                 tuple(meta, transcripts, mask ?: [])
             }
         ch_baysor_input = ch_csv_with_mask
             .combine(ch_config)
-            .map { meta, transcripts, mask, config ->
-                tuple(meta, transcripts, mask, config, baysor_scale)
+            .combine(ch_scale_factor_by_meta, by: 0)
+            .map { meta, transcripts, mask, config, scale_factor ->
+                tuple(meta, transcripts, mask, config, scale_factor)
             }
         BAYSOR_RUN(ch_baysor_input, [], [], ch_polygon_format)
 

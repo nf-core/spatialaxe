@@ -14,6 +14,7 @@ components:
   - baysor/preprocess/transcripts
   - baysor/run
   - xeniumranger/import/segmentation
+  - baysor/estimate/scale/factor
 input:
   - ch_bundle_path:
       description: |

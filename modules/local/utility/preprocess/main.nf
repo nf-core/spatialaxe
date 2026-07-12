@@ -15,7 +15,7 @@ process BAYSOR_PREPROCESS_TRANSCRIPTS {
     val min_y
 
     output:
-    tuple val(meta), path("${prefix}/filtered_transcripts.csv"), emit: transcripts_file
+    tuple val(meta), path("${prefix}/filtered_transcripts.csv"), emit: transcripts_csv
     tuple val("${task.process}"), val('python'), eval("python3 --version | sed 's/Python //'"), topic: versions, emit: versions_python
 
     when:

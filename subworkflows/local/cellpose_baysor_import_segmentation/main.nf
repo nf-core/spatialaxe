@@ -8,10 +8,11 @@ include { STARDIST as STARDIST_NUCLEI      } from '../../../modules/nf-core/star
 include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
 
 include { RESOLIFT                         } from '../../../modules/local/resolift/main'
-include { EXTRACT_DAPI                     } from '../../../modules/local/utility/extract_dapi/main'
-include { CONVERT_MASK_UINT32              } from '../../../modules/local/utility/convert_mask_uint32/main'
 include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/utility/preprocess/main'
 include { RESIZE_TIF                       } from '../../../modules/local/utility/resize_tif/main'
+include { EXTRACT_DAPI                     } from '../../../modules/local/utility/extract_dapi/main'
+include { CONVERT_MASK_UINT32              } from '../../../modules/local/utility/convert_mask_uint32/main'
+include { BAYSOR_ESTIMATE_SCALE_FACTOR     } from '../../../modules/local/utility/estimatescalefactor/main'
 
 workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     take:
@@ -27,6 +28,8 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     min_qv                       // value: minimum transcript QV
     min_x                        // value: spatial filter lower x bound
     min_y                        // value: spatial filter lower y bound
+    ch_prior_column              // value: [val("cell_id")]
+    ch_transcripts_per_cell      // value: [val(min_transcripts_per_cell)]
     nucleus_segmentation_only    // value: bool
     sharpen_tiff                 // value: bool
     stardist_nuclei_model        // value: stardist pretrained model name
@@ -36,6 +39,8 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     ch_transcripts = channel.empty()
     ch_imp_seg_inputs = channel.empty()
     ch_coordinate_space = channel.value("microns")
+    ch_x_column = channel.value("x_location")
+    ch_y_column = channel.value("y_location")
     ch_polygon_format = channel.value("GeometryCollectionLegacy")
 
 
@@ -84,7 +89,17 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
         max_y,
         min_y,
     )
-    ch_transcripts = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_file
+    ch_transcripts = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_csv
+
+    // estimate scale factor which specifed the cell radius for baysor run
+    BAYSOR_ESTIMATE_SCALE_FACTOR (
+        ch_transcripts_parquet,
+        ch_prior_column,
+        ch_x_column,
+        ch_y_column,
+        ch_transcripts_per_cell
+    )
+    ch_scale_factor = BAYSOR_ESTIMATE_SCALE_FACTOR.out.scale_factor
 
 
     // run baysor with cellpose results
@@ -108,13 +123,14 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
         ch_baysor_input = ch_transcripts
             .combine(RESIZE_TIF.out.resized_mask, by: 0)
             .combine(ch_config)
-            .map { meta, transcripts, mask, config ->
+            .combine(ch_scale_factor)
+            .map { meta, transcripts, mask, config, scale_factor ->
                 tuple(
                     meta,
                     transcripts,
                     mask,
                     config,
-                    30,
+                    scale_factor,
                 )
             }
         BAYSOR_RUN(ch_baysor_input, [], [], ch_polygon_format)
@@ -139,13 +155,14 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
         ch_baysor_input = ch_transcripts
             .combine(RESIZE_TIF.out.resized_mask, by: 0)
             .combine(ch_config)
-            .map { meta, transcripts, mask, config ->
+            .combine(ch_scale_factor)
+            .map { meta, transcripts, mask, config, scale_factor ->
                 tuple(
                     meta,
                     transcripts,
                     mask,
                     config,
-                    30,
+                    scale_factor,
                 )
             }
         BAYSOR_RUN(ch_baysor_input, [], [], ch_polygon_format)
@@ -155,13 +172,14 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
         // run baysor without cell/nuclei mask
         ch_baysor_input = ch_transcripts
             .combine(ch_config)
-            .map { meta, transcripts, config ->
+            .combine(ch_scale_factor)
+            .map { meta, transcripts, config, scale_factor ->
                 tuple(
                     meta,
                     transcripts,
                     [],
                     config,
-                    30,
+                    scale_factor,
                 )
             }
         BAYSOR_RUN(ch_baysor_input, [], [], ch_polygon_format)
