@@ -311,7 +311,7 @@
                 },
                 "min_transcripts_per_cell": {
                     "type": "integer",
-                    "default": 3,
+                    "default": 10,
                     "description": "Minimum number of transcripts per cell for filtering."
                 },
                 "baysor_prior_confidence": {
