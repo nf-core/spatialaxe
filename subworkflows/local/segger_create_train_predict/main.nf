@@ -1,5 +1,5 @@
 //
-// Run segger create_dataset, train and predict modules & parquet_to_csv
+// Run segger create_dataset, train and predict modules
 //
 
 include { SEGGER2XR                        } from '../../../modules/local/utility/segger2xr/main'
@@ -72,6 +72,7 @@ workflow SEGGER_CREATE_TRAIN_PREDICT {
     )
 
     emit:
-    coordinate_space = ch_coordinate_space // channel: [ "microns" ]
+
+    coordinate_space = ch_coordinate_space                       // channel: [ "microns" ]
     redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs // channel: [ val(meta), ["redefined-xenium-bundle"] ]
 }

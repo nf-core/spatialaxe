@@ -24,8 +24,7 @@
                 "segfree/baysor/preprocess/test_run",
                 "segfree/baysor/preprocess/test_run/filtered_transcripts.csv",
                 "segfree/baysor/segfree",
-                "segfree/baysor/segfree/test_run",
-                "segfree/baysor/segfree/test_run/ncvs.loom",
+                "segfree/baysor/segfree/test_run_ncvs.loom",
                 "segfree/multiqc",
                 "segfree/multiqc/multiqc_data",
                 "segfree/multiqc/multiqc_data/.stub",
@@ -60,7 +59,7 @@
             ],
             [
                 "filtered_transcripts.csv:md5,d41d8cd98f00b204e9800998ecf8427e",
-                "ncvs.loom:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "test_run_ncvs.loom:md5,d41d8cd98f00b204e9800998ecf8427e",
                 ".stub:md5,d41d8cd98f00b204e9800998ecf8427e",
                 ".stub:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "multiqc_report.html:md5,d41d8cd98f00b204e9800998ecf8427e",
@@ -88,10 +87,10 @@
                 "transcripts.zarr.zip:md5,d41d8cd98f00b204e9800998ecf8427e"
             ]
         ],
-        "timestamp": "2026-05-18T22:02:39.947804998",
+        "timestamp": "2026-06-27T17:44:23.349495745",
         "meta": {
             "nf-test": "0.9.5",
-            "nextflow": "25.10.4"
+            "nextflow": "26.04.4"
         }
     }
 }

@@ -2,30 +2,37 @@
 // Runs baysor with tiling: divide transcripts -> preprocess per patch -> baysor per patch -> stitch -> xeniumranger
 //
 
-include { XENIUM_PATCH_DIVIDE              } from '../../../modules/local/xenium_patch/divide/main'
-include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
-include { BAYSOR_RUN                       } from '../../../modules/local/baysor/run/main'
-include { XENIUM_PATCH_STITCH              } from '../../../modules/local/xenium_patch/stitch/main'
+include { BAYSOR_RUN                       } from '../../../modules/nf-core/baysor/run/main'
 include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
+
+include { XENIUM_PATCH_DIVIDE              } from '../../../modules/local/xenium_patch/divide/main'
+include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/utility/preprocess/main'
+include { XENIUM_PATCH_STITCH              } from '../../../modules/local/xenium_patch/stitch/main'
+include { BAYSOR_ESTIMATE_SCALE_FACTOR     } from '../../../modules/local/utility/estimatescalefactor/main'
 
 workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET_TILED {
 
     take:
-    ch_bundle_path         // channel: [ val(meta), ["xenium-bundle"] ]
-    ch_transcripts_file // channel: [ val(meta), ["transcripts.parquet"] ]
-    ch_config              // channel: ["path-to-xenium.toml"]
-    max_x                  // value: spatial filter upper x bound
-    max_y                  // value: spatial filter upper y bound
-    min_qv                 // value: minimum transcript QV
-    min_x                  // value: spatial filter lower x bound
-    min_y                  // value: spatial filter lower y bound
+    ch_bundle_path           // channel: [ val(meta), ["xenium-bundle"] ]
+    ch_transcripts_parquet   // channel: [ val(meta), ["transcripts.parquet"] ]
+    ch_config                // channel: ["path-to-xenium.toml"]
+    max_x                    // value: spatial filter upper x bound
+    max_y                    // value: spatial filter upper y bound
+    min_qv                   // value: minimum transcript QV
+    min_x                    // value: spatial filter lower x bound
+    min_y                    // value: spatial filter lower y bound
+    ch_prior_column          // channel: [val("cell_id")]
+    ch_x_column              // channel: [val("x_location")]
+    ch_y_column              // channel: [val("y_location")]
+    ch_transcripts_per_cell  // channel: [val(min_transcripts_per_cell)]
 
     main:
 
     ch_coordinate_space = channel.value("microns")
+    ch_polygon_format   = channel.value("GeometryCollectionLegacy")
 
     // Step 1: Divide transcripts into overlapping patches
-    XENIUM_PATCH_DIVIDE ( ch_transcripts_file )
+    XENIUM_PATCH_DIVIDE ( ch_transcripts_parquet )
 
     // Step 2: Fan out patches for parallel processing
     ch_patches = XENIUM_PATCH_DIVIDE.out.patch_transcripts
@@ -47,17 +54,28 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET_TILED {
         max_x,
         min_x,
         max_y,
-        min_y,
+        min_y
     )
 
+    // Step 4: // estimate scale factor which specifed the cell radius for each patch
+    BAYSOR_ESTIMATE_SCALE_FACTOR (
+        ch_transcripts_parquet,
+        ch_prior_column,
+        ch_x_column,
+        ch_y_column,
+        ch_transcripts_per_cell
+    )
+    ch_scale_factor = BAYSOR_ESTIMATE_SCALE_FACTOR.out.scale_factor
+
     // Step 4: Run Baysor on each patch independently
-    ch_baysor_input = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_file
+    ch_baysor_input = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_csv
         .combine(ch_config)
-        .map { meta, transcripts, config ->
-            tuple(meta, transcripts, [], config, 30)
+        .combine(ch_scale_factor)
+        .map { meta, transcripts, config, scale_factor ->
+            tuple(meta, transcripts, [], config, scale_factor)
         }
 
-    BAYSOR_RUN ( ch_baysor_input )
+    BAYSOR_RUN ( ch_baysor_input, [], [], ch_polygon_format )
 
     // Step 5: Gather patch results per sample for stitching
     ch_for_stitch = BAYSOR_RUN.out.segmentation
@@ -99,6 +117,7 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET_TILED {
     XENIUMRANGER_IMPORT_SEGMENTATION ( ch_xr )
 
     emit:
+
     coordinate_space = ch_coordinate_space                          // channel: [ "microns" ]
     redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs    // channel: [ val(meta), ["redefined-xenium-bundle"] ]
 }
