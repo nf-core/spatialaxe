@@ -145,7 +145,9 @@ workflow SPATIALAXE {
         UNTAR(ch_input_untar)
 
         ch_untar_outs = UNTAR.out.untar.map { meta, bundle ->
-            return [meta, bundle.toString()]
+            // use toUriString() (not toString()) so the URI scheme (e.g. s3://)
+            // is preserved when the work dir is on object storage
+            return [meta, bundle.toUriString()]
         }
 
         ch_samplesheet
@@ -205,12 +207,12 @@ workflow SPATIALAXE {
             error("❌ Xenium bundle does not exist: ${bundle}")
         }
 
-        def missing_required = bundle_required_files.findAll { check -> !file("${bundle_path}/${check}").exists() }
+        def missing_required = bundle_required_files.findAll { check -> !bundle_path.resolve(check).exists() }
         if (missing_required) {
             error("❌ Missing required file(s) in xenium bundle '${bundle}': ${missing_required}")
         }
 
-        def missing_optional = bundle_optional_files.findAll { check -> !file("${bundle_path}/${check}").exists() }
+        def missing_optional = bundle_optional_files.findAll { check -> !bundle_path.resolve(check).exists() }
         if (missing_optional) {
             log.warn("⚠️ Missing optional file(s) in xenium bundle '${bundle}': ${missing_optional}")
         }
@@ -222,7 +224,7 @@ workflow SPATIALAXE {
     // get transcript.parquet from the xenium bundle
     ch_transcripts_file = ch_input.map { meta, bundle, _image ->
         def transcripts_parquet = file(
-            bundle.toString().replaceFirst(/\/$/, '') + "/transcripts.parquet",
+            file(bundle).toUriString().replaceFirst(/\/$/, '') + "/transcripts.parquet",
             checkIfExists: true
         )
         return [meta, transcripts_parquet]
@@ -239,7 +241,7 @@ workflow SPATIALAXE {
         if (image) {
             morphology_img = file(image)
         } else {
-            def bundle_path = bundle.toString().replaceFirst(/\/$/, '')
+            def bundle_path = file(bundle).toUriString().replaceFirst(/\/$/, '')
             def focus_v3 = file("${bundle_path}/morphology_focus/morphology_focus_0000.ome.tif")
             def focus_v4 = file("${bundle_path}/morphology_focus/ch0000_dapi.ome.tif")
             def focus_v1 = file("${bundle_path}/morphology_focus.ome.tif")
@@ -259,7 +261,7 @@ workflow SPATIALAXE {
     // get experiment metdata - experiment.xenium
     ch_exp_metadata = ch_input.map { meta, bundle, _image ->
         def exp_metadata = file(
-            bundle.toString().replaceFirst(/\/$/, '') + "/experiment.xenium",
+            file(bundle).toUriString().replaceFirst(/\/$/, '') + "/experiment.xenium",
             checkIfExists: true
         )
         return [meta, exp_metadata]
@@ -345,7 +347,7 @@ workflow SPATIALAXE {
         // gene panel to use if only --relabel_genes is provided
         ch_gene_panel = ch_input.map { meta, bundle, _image ->
             def gene_panel_file = file(
-                bundle.toString().replaceFirst(/\/$/, '') + "/gene_panel.json",
+                file(bundle).toUriString().replaceFirst(/\/$/, '') + "/gene_panel.json",
                 checkIfExists: true
             )
             return [meta, gene_panel_file]
