@@ -9,6 +9,8 @@ Initial release of nf-core/spatialaxe, created with the [nf-core](https://nf-co.
 
 ### `Added`
 
+- Template update for nf-core/tools version 4.0.2
+
 ### `Fixed`
 
 - Only pass `--expansion-distance` to `xeniumranger import-segmentation` for nuclei-based imports. It was applied to every import, but xeniumranger rejects it for transcript-assignment imports (proseg/baysor/segger) and cells-only imports with `ERROR: --expansion-distance requires --nuclei`.
