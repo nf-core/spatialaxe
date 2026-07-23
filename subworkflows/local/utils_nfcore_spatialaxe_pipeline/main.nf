@@ -132,8 +132,8 @@ workflow PIPELINE_INITIALISATION {
     try {
 
         channel.fromList(samplesheetToList(input, "${projectDir}/assets/schema_input.json"))
-            .map { meta, bundle, image ->
-                return [[id: meta.id], bundle, image]
+            .map { meta, bundle, image, annotation, stainings ->
+                return [[id: meta.id], bundle, image, annotation, stainings]
             }
             .set { ch_samplesheet }
 

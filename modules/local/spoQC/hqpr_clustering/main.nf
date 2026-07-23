@@ -1,0 +1,55 @@
+
+process SPOQC_HQPR_CLUSTERING {
+    tag "${meta.id}_${staining}"
+    label 'process_xl'
+    label 'spoqc'
+    
+
+    container "heylf/spoqc:0.0.1"
+
+    input:
+    tuple val(meta), path(spatialdata, stageAs: "*"), val(_stain_sd)
+    val(step)
+    tuple val(staining), path(metrices, stageAs: "spoQC_tmp/metrices/hqpr/*")
+
+    output:
+    tuple val(staining), path("report/hqpr/${staining}/hqpr_clustering")               , emit: report
+    tuple val(staining), path("spoQC_tmp/hqpr_${staining}_output_mask_raw")            , emit: mask
+    tuple val("${task.process}"), val('spoqc'), eval("spoqc --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown"), topic: versions, emit: versions_spoqc
+
+    when:
+    task.ext.when == null || task.ext.when
+
+    script:
+    // Exit if running this module with -profile conda / -profile mamba
+    if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
+        error("SPOQC_HQPR_CLUSTERING module does not support Conda. Please use Docker / Singularity / Podman instead.")
+    }
+    
+    def args = task.ext.args ?: ''
+
+    """
+    python3 -m spoqc \\
+        -i ${spatialdata} \\
+        -o ./ \\
+        -t ./spoQC_tmp/ \\
+        -n ${task.cpus} \\
+        -s ${step}  \\
+        --dataset ${meta.id} \\
+        --staining ${staining} \\
+        ${args}
+    """
+
+    stub:
+    // Exit if running this module with -profile conda / -profile mamba
+    if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
+        error("SPOQC_HQPR_CLUSTERING module does not support Conda. Please use Docker / Singularity / Podman instead.")
+    }
+
+    """
+    mkdir -p report/hqpr/${staining}/hqpr_clustering
+    mkdir -p spoQC_tmp/hqpr_${staining}_output_mask_raw
+    """
+
+}
+    
