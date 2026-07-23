@@ -13,7 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Deprecated`
 
-
 ## 1.0.1 - [date]
 
 Initial release of nf-core/spatialaxe, created with the [nf-core](https://nf-co.re/) template.
