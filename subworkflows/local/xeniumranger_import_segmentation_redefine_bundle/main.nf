@@ -40,6 +40,7 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
                     [],
                     [],
                     ch_coordinate_space.val,
+                    expansion_distance,
                 )
             }
 
@@ -65,6 +66,7 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
                     [],
                     [],
                     ch_coordinate_space.val,
+                    expansion_distance,
                 )
             }
 
@@ -88,6 +90,7 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
                     polygons_geojson,
                     [],
                     ch_coordinate_space.val,
+                    expansion_distance,
                 )
             }
 
@@ -117,6 +120,7 @@ workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {
                     polygons_geojson,
                     alignment_csv_file,
                     ch_coordinate_space.val,
+                    expansion_distance,
                 )
             }
 

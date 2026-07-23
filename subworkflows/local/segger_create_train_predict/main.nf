@@ -13,6 +13,7 @@ workflow SEGGER_CREATE_TRAIN_PREDICT {
     ch_bundle              // channel: [ val(meta), ["path-to-xenium-bundle"] ]
     ch_transcripts_file // channel: [ val(meta), [bundle + "/transcripts.parquet"]]
     segger_model           // value: path to a pre-trained segger model checkpoint (or null)
+    expansion_distance      // value: nuclear expansion distance
 
     main:
 
@@ -64,6 +65,7 @@ workflow SEGGER_CREATE_TRAIN_PREDICT {
                 [],  // cells
                 [],  // coordinate_transform
                 ch_coordinate_space.val,
+                expansion_distance,
             )
         }
 

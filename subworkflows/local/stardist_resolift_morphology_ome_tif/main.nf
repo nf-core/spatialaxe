@@ -14,6 +14,7 @@ workflow STARDIST_RESOLIFT_MORPHOLOGY_OME_TIF {
     ch_bundle_path         // channel: [ val(meta), ["path-to-xenium-bundle"] ]
     sharpen_tiff           // value: bool
     stardist_nuclei_model  // value: stardist pretrained model name
+    expansion_distance     // value: nuclear expansion distance
 
     main:
 
@@ -58,6 +59,7 @@ workflow STARDIST_RESOLIFT_MORPHOLOGY_OME_TIF {
                 [],
                 [],
                 ch_coordinate_space.val,
+                expansion_distance,
             )
         }
     XENIUMRANGER_IMPORT_SEGMENTATION(

@@ -10,6 +10,7 @@ workflow PROSEG_PRESET_PROSEG2BAYSOR {
     take:
     ch_bundle_path         // channel: [ val(meta), ["path-to-xenium-bundle"] ]
     ch_transcripts_file // channel: [ val(meta), [ "transcripts.parquet" ] ]
+    expansion_distance      // value: nuclear expansion distance
 
     main:
 
@@ -37,6 +38,7 @@ workflow PROSEG_PRESET_PROSEG2BAYSOR {
                 [],
                 [],
                 ch_coordinate_space.val,
+                expansion_distance,
             )
         }
 

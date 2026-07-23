@@ -24,7 +24,7 @@
                     "untar": 1.34
                 },
                 "Workflow": {
-                    "nf-core/spatialaxe": "v1.1.0dev"
+                    "nf-core/spatialaxe": "v1.0.1"
                 },
                 "XENIUMRANGER_IMPORT_SEGMENTATION": {
                     "xeniumranger": "4.0.1.1"
@@ -143,10 +143,10 @@
                 "experiment.xenium:md5,d41d8cd98f00b204e9800998ecf8427e"
             ]
         ],
-        "timestamp": "2026-05-18T21:58:08.945192717",
+        "timestamp": "2026-07-23T15:40:58.675984128",
         "meta": {
             "nf-test": "0.9.5",
-            "nextflow": "25.10.4"
+            "nextflow": "26.04.6"
         }
     }
 }

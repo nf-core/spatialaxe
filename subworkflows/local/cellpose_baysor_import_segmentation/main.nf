@@ -30,6 +30,7 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     nucleus_segmentation_only    // value: bool
     sharpen_tiff                 // value: bool
     stardist_nuclei_model        // value: stardist pretrained model name
+    expansion_distance           // value: nuclear expansion distance
 
     main:
 
@@ -180,6 +181,7 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
                 [],
                 [],
                 ch_coordinate_space.val,
+                expansion_distance,
             )
         }
 

@@ -35,6 +35,7 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
     min_qv                 // value: minimum transcript QV
     min_x                  // value: spatial filter lower x bound
     min_y                  // value: spatial filter lower y bound
+    expansion_distance     // value: nuclear expansion distance
 
     main:
 
@@ -112,7 +113,8 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
                     xr_transcript_metadata,
                     xr_cell_polygons,
                     [], [], [],
-                    "microns"
+                    "microns",
+                    expansion_distance,
                 )
             }
 
@@ -154,7 +156,8 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
                     segmentation_csv,
                     polygons2d,
                     [], [], [],
-                    ch_coordinate_space.val)
+                    ch_coordinate_space.val,
+                    expansion_distance)
             }
 
         XENIUMRANGER_IMPORT_SEGMENTATION(ch_xr)

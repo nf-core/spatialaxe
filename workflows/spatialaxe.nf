@@ -434,6 +434,7 @@ workflow SPATIALAXE {
                 nucleus_segmentation_only,
                 sharpen_tiff,
                 stardist_nuclei_model,
+                expansion_distance,
             )
             ch_redefined_bundle = CELLPOSE_BAYSOR_IMPORT_SEGMENTATION.out.redefined_bundle
             ch_coordinate_space = CELLPOSE_BAYSOR_IMPORT_SEGMENTATION.out.coordinate_space
@@ -445,6 +446,7 @@ workflow SPATIALAXE {
             XENIUMRANGER_RESEGMENT_MORPHOLOGY_OME_TIF(
                 ch_bundle_path,
                 nucleus_segmentation_only,
+                expansion_distance,
             )
             ch_redefined_bundle = XENIUMRANGER_RESEGMENT_MORPHOLOGY_OME_TIF.out.redefined_bundle
             ch_coordinate_space = XENIUMRANGER_RESEGMENT_MORPHOLOGY_OME_TIF.out.coordinate_space
@@ -464,6 +466,7 @@ workflow SPATIALAXE {
                     min_qv,
                     min_x,
                     min_y,
+                    expansion_distance,
                 )
             }
             ch_redefined_bundle = BAYSOR_RUN_PRIOR_SEGMENTATION_MASK.out.redefined_bundle
@@ -481,6 +484,7 @@ workflow SPATIALAXE {
                 nucleus_segmentation_only,
                 sharpen_tiff,
                 stardist_nuclei_model,
+                expansion_distance,
             )
             ch_redefined_bundle = CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF.out.redefined_bundle
             ch_coordinate_space = CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF.out.coordinate_space
@@ -494,6 +498,7 @@ workflow SPATIALAXE {
                 ch_bundle_path,
                 sharpen_tiff,
                 stardist_nuclei_model,
+                expansion_distance,
             )
             ch_redefined_bundle = STARDIST_RESOLIFT_MORPHOLOGY_OME_TIF.out.redefined_bundle
             ch_coordinate_space = STARDIST_RESOLIFT_MORPHOLOGY_OME_TIF.out.coordinate_space
@@ -514,6 +519,7 @@ workflow SPATIALAXE {
                 PROSEG_PRESET_PROSEG2BAYSOR_TILED(
                     ch_bundle_path,
                     ch_transcripts_file,
+                    expansion_distance,
                 )
                 ch_redefined_bundle = PROSEG_PRESET_PROSEG2BAYSOR_TILED.out.redefined_bundle
                 ch_coordinate_space = PROSEG_PRESET_PROSEG2BAYSOR_TILED.out.coordinate_space
@@ -521,6 +527,7 @@ workflow SPATIALAXE {
                 PROSEG_PRESET_PROSEG2BAYSOR(
                     ch_bundle_path,
                     ch_transcripts_file,
+                    expansion_distance,
                 )
                 ch_redefined_bundle = PROSEG_PRESET_PROSEG2BAYSOR.out.redefined_bundle
                 ch_coordinate_space = PROSEG_PRESET_PROSEG2BAYSOR.out.coordinate_space
@@ -534,6 +541,7 @@ workflow SPATIALAXE {
                 ch_bundle_path,
                 ch_transcripts_file,
                 segger_model,
+                expansion_distance,
             )
             ch_redefined_bundle = SEGGER_CREATE_TRAIN_PREDICT.out.redefined_bundle
             ch_coordinate_space = SEGGER_CREATE_TRAIN_PREDICT.out.coordinate_space
@@ -565,6 +573,7 @@ workflow SPATIALAXE {
                 min_qv,
                 min_x,
                 min_y,
+                expansion_distance,
             )
             ch_redefined_bundle = BAYSOR_RUN_TRANSCRIPTS_PARQUET.out.redefined_bundle
             ch_coordinate_space = BAYSOR_RUN_TRANSCRIPTS_PARQUET.out.coordinate_space

@@ -20,6 +20,7 @@ workflow CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF {
     nucleus_segmentation_only  // value: bool
     sharpen_tiff               // value: bool
     stardist_nuclei_model      // value: stardist pretrained model name
+    expansion_distance         // value: nuclear expansion distance
 
     main:
 
@@ -106,6 +107,7 @@ workflow CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF {
                     [],
                     [],
                     coord_space,
+                    expansion_distance,
                 )
             }
         XENIUMRANGER_IMPORT_SEGMENTATION(
@@ -128,6 +130,7 @@ workflow CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF {
                     cells_seg,
                     [],
                     coord_space,
+                    expansion_distance,
                 )
             }
         XENIUMRANGER_IMPORT_SEGMENTATION(

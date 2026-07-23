@@ -9,6 +9,7 @@ workflow XENIUMRANGER_RESEGMENT_MORPHOLOGY_OME_TIF {
     take:
     ch_bundle_path             // channel: [ val(meta), ["path-to-xenium-bundle"] ]
     nucleus_segmentation_only  // value: bool
+    expansion_distance         // value: nuclear expansion distance
 
     main:
 
@@ -41,6 +42,7 @@ workflow XENIUMRANGER_RESEGMENT_MORPHOLOGY_OME_TIF {
                     cells_zarr,
                     [],
                     "pixels",
+                    expansion_distance,
                 )
             }
 
