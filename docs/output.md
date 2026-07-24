@@ -1,4 +1,4 @@
-# nf-core/spatialxe: Output
+# nf-core/spatialaxe: Output
 
 ## Introduction
 
