@@ -3,6 +3,7 @@ lint:
   files_exist:
     - .github/workflows/awsfulltest.yml
     - .github/workflows/awstest.yml
+    - .github/workflows/linting_comment.yml
   files_unchanged:
     - .gitignore
     - assets/nf-core-spatialaxe_logo_light.png
