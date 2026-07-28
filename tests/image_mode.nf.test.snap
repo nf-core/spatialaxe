@@ -30,18 +30,13 @@
                     "untar": 1.34
                 },
                 "Workflow": {
-                    "nf-core/spatialaxe": "v1.1.0dev"
+                    "nf-core/spatialaxe": "v1.0.1"
                 },
-                "XENIUMRANGER_IMPORT_SEGMENTATION": {
+                "XENIUMRANGER_IMPORTSEGMENTATION": {
                     "xeniumranger": "4.0.1.1"
                 }
             },
             [
-                "coordinate",
-                "coordinate/xeniumranger",
-                "coordinate/xeniumranger/import_segementation",
-                "coordinate/xeniumranger/import_segementation/test_run",
-                "coordinate/xeniumranger/import_segementation/test_run/experiment.xenium",
                 "image",
                 "image/baysor",
                 "image/baysor/preprocess",
@@ -115,10 +110,12 @@
                 "image/utility/resize_tif/test_run",
                 "image/utility/resize_tif/test_run/resized_morphology_focus_0000.ome_cp_masks.tif.tif",
                 "pipeline_info",
-                "pipeline_info/nf_core_spatialaxe_software_mqc_versions.yml"
+                "pipeline_info/nf_core_spatialaxe_software_mqc_versions.yml",
+                "xeniumranger",
+                "xeniumranger/test_run",
+                "xeniumranger/test_run/experiment.xenium"
             ],
             [
-                "experiment.xenium:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "filtered_transcripts.csv:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "segmentation.csv:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "segmentation_polygons_2d.json:md5,d41d8cd98f00b204e9800998ecf8427e",
@@ -155,13 +152,14 @@
                 "nucleus_boundaries.parquet:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "transcripts.parquet:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "transcripts.zarr.zip:md5,d41d8cd98f00b204e9800998ecf8427e",
-                "resized_morphology_focus_0000.ome_cp_masks.tif.tif:md5,d41d8cd98f00b204e9800998ecf8427e"
+                "resized_morphology_focus_0000.ome_cp_masks.tif.tif:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "experiment.xenium:md5,d41d8cd98f00b204e9800998ecf8427e"
             ]
         ],
-        "timestamp": "2026-05-18T22:00:39.030306506",
+        "timestamp": "2026-07-28T12:22:39.999118613",
         "meta": {
             "nf-test": "0.9.5",
-            "nextflow": "25.10.4"
+            "nextflow": "26.04.6"
         }
     }
 }
