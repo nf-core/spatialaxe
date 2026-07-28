@@ -2,9 +2,9 @@
 // Run xeniumranger import-segmentation
 //
 
-include { XENIUMRANGER_IMPORT_SEGMENTATION as IMP_SEG_COUNT_MATRIX_EXP_DISTANCE } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
-include { XENIUMRANGER_IMPORT_SEGMENTATION as IMP_SEG_POLYGON_GEOJSON_INPUT     } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
-include { XENIUMRANGER_IMPORT_SEGMENTATION as IMP_SEG_TRANS_MATRIX_INPUT        } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
+include { XENIUMRANGER_IMPORTSEGMENTATION as IMP_SEG_COUNT_MATRIX_EXP_DISTANCE } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
+include { XENIUMRANGER_IMPORTSEGMENTATION as IMP_SEG_POLYGON_GEOJSON_INPUT     } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
+include { XENIUMRANGER_IMPORTSEGMENTATION as IMP_SEG_TRANS_MATRIX_INPUT        } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
 
 
 workflow XENIUMRANGER_IMPORT_SEGMENTATION_REDEFINE_BUNDLE {

@@ -15,7 +15,7 @@ include { BAYSOR_RUN                       } from '../../../modules/local/baysor
 include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
 include { XENIUM_PATCH_STITCH              } from '../../../modules/local/xenium_patch/stitch/main'
 include { RECONSTRUCT_PATCHES              } from '../../../modules/local/utility/reconstruct_patches/main'
-include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
+include { XENIUMRANGER_IMPORTSEGMENTATION } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
 
 
 workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
@@ -118,7 +118,7 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
                 )
             }
 
-        XENIUMRANGER_IMPORT_SEGMENTATION (ch_xr)
+        XENIUMRANGER_IMPORTSEGMENTATION (ch_xr)
 
     } else {
 
@@ -160,10 +160,10 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
                     expansion_distance)
             }
 
-        XENIUMRANGER_IMPORT_SEGMENTATION(ch_xr)
+        XENIUMRANGER_IMPORTSEGMENTATION(ch_xr)
     }
 
     emit:
-    redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs
+    redefined_bundle = XENIUMRANGER_IMPORTSEGMENTATION.out.outs
     coordinate_space = ch_coordinate_space
 }

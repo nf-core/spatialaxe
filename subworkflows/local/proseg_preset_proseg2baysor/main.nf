@@ -4,7 +4,7 @@
 
 include { PROSEG                           } from '../../../modules/local/proseg/preset/main'
 include { PROSEG2BAYSOR                    } from '../../../modules/local/proseg/proseg2baysor/main'
-include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
+include { XENIUMRANGER_IMPORTSEGMENTATION } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
 
 workflow PROSEG_PRESET_PROSEG2BAYSOR {
     take:
@@ -42,11 +42,11 @@ workflow PROSEG_PRESET_PROSEG2BAYSOR {
             )
         }
 
-    XENIUMRANGER_IMPORT_SEGMENTATION(
+    XENIUMRANGER_IMPORTSEGMENTATION(
         ch_imp_seg_inputs
     )
 
     emit:
     coordinate_space = ch_coordinate_space // channel: [ "microns" ]
-    redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs // channel: [ val(meta), ["redefined-xenium-bundle"] ]
+    redefined_bundle = XENIUMRANGER_IMPORTSEGMENTATION.out.outs // channel: [ val(meta), ["redefined-xenium-bundle"] ]
 }
