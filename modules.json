@@ -55,7 +55,7 @@
                     },
                     "xeniumranger/importsegmentation": {
                         "branch": "master",
-                        "git_sha": "124f2c855e6f0acd676bbe83e1721cdfdf55e290",
+                        "git_sha": "1fa9ed32cfd532e7d2191b5ffdcc86c783878fb0",
                         "installed_by": ["modules"]
                     },
                     "xeniumranger/relabel": {
