@@ -9,7 +9,7 @@ Hotfix to tackle some bugs
 
 ### `Added`
 
-- Template update for nf-core/tools version 4.0.2
+- Template update for nf-core/tools version 4.0.3
 
 ### `Fixed`
 
@@ -21,8 +21,6 @@ Hotfix to tackle some bugs
 ### `Deprecated`
 
 ## 1.0.0 - [18.06.2026]
-
-## v1.0.0dev - [date]
 
 Initial release of nf-core/spatialaxe, created with the [nf-core](https://nf-co.re/) template.
 
