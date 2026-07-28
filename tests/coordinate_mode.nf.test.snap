@@ -26,7 +26,7 @@
                 "Workflow": {
                     "nf-core/spatialaxe": "v1.0.1"
                 },
-                "XENIUMRANGER_IMPORT_SEGMENTATION": {
+                "XENIUMRANGER_IMPORTSEGMENTATION": {
                     "xeniumranger": "4.0.1.1"
                 }
             },
@@ -98,12 +98,11 @@
                 "coordinate/untar/test_run/nucleus_boundaries.parquet",
                 "coordinate/untar/test_run/transcripts.parquet",
                 "coordinate/untar/test_run/transcripts.zarr.zip",
-                "coordinate/xeniumranger",
-                "coordinate/xeniumranger/import_segementation",
-                "coordinate/xeniumranger/import_segementation/test_run",
-                "coordinate/xeniumranger/import_segementation/test_run/experiment.xenium",
                 "pipeline_info",
-                "pipeline_info/nf_core_spatialaxe_software_mqc_versions.yml"
+                "pipeline_info/nf_core_spatialaxe_software_mqc_versions.yml",
+                "xeniumranger",
+                "xeniumranger/test_run",
+                "xeniumranger/test_run/experiment.xenium"
             ],
             [
                 ".stub:md5,d41d8cd98f00b204e9800998ecf8427e",
@@ -143,7 +142,7 @@
                 "experiment.xenium:md5,d41d8cd98f00b204e9800998ecf8427e"
             ]
         ],
-        "timestamp": "2026-07-23T15:40:58.675984128",
+        "timestamp": "2026-07-28T12:22:02.690566285",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.04.6"
