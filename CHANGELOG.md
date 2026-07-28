@@ -22,6 +22,8 @@ Hotfix to tackle some bugs
 
 ## 1.0.0 - [18.06.2026]
 
+## v1.0.0dev - [date]
+
 Initial release of nf-core/spatialaxe, created with the [nf-core](https://nf-co.re/) template.
 
 ### `Added`
