@@ -8,87 +8,65 @@
                     "cellpose": {
                         "branch": "master",
                         "git_sha": "0780b963d3ab087e861a4b74e9d0e404115e5352",
-                        "installed_by": [
-                            "modules"
-                        ],
+                        "installed_by": ["modules"],
                         "patch": "modules/nf-core/cellpose/cellpose.diff"
                     },
                     "multiqc": {
                         "branch": "master",
                         "git_sha": "cb9f4bec379866ca560f7f79d9a9a06bea8c9b51",
-                        "installed_by": [
-                            "modules"
-                        ],
+                        "installed_by": ["modules"],
                         "patch": "modules/nf-core/multiqc/multiqc.diff"
                     },
                     "opt/flip": {
                         "branch": "master",
                         "git_sha": "7d3e5c9d3d44",
-                        "installed_by": [
-                            "modules"
-                        ],
+                        "installed_by": ["modules"],
                         "patch": "modules/nf-core/opt/flip/opt-flip.diff"
                     },
                     "opt/stat": {
                         "branch": "master",
                         "git_sha": "7d3e5c9d3d44",
-                        "installed_by": [
-                            "modules"
-                        ],
+                        "installed_by": ["modules"],
                         "patch": "modules/nf-core/opt/stat/opt-stat.diff"
                     },
                     "opt/track": {
                         "branch": "master",
                         "git_sha": "7d3e5c9d3d44",
-                        "installed_by": [
-                            "modules"
-                        ],
+                        "installed_by": ["modules"],
                         "patch": "modules/nf-core/opt/track/opt-track.diff"
                     },
                     "stardist": {
                         "branch": "master",
                         "git_sha": "4e783502ab661bed13f15189401b73c93966831f",
-                        "installed_by": [
-                            "modules"
-                        ],
+                        "installed_by": ["modules"],
                         "patch": "modules/nf-core/stardist/stardist.diff"
                     },
                     "untar": {
                         "branch": "master",
                         "git_sha": "447f7bc0fa41dfc2400c8cad4c0291880dc060cf",
-                        "installed_by": [
-                            "modules"
-                        ],
+                        "installed_by": ["modules"],
                         "patch": "modules/nf-core/untar/untar.diff"
                     },
                     "unzip": {
                         "branch": "master",
                         "git_sha": "4dd9d8439a429c7ee566e0e2347f76ddeef27e66",
-                        "installed_by": [
-                            "modules"
-                        ],
+                        "installed_by": ["modules"],
                         "patch": "modules/nf-core/unzip/unzip.diff"
                     },
                     "xeniumranger/importsegmentation": {
                         "branch": "master",
                         "git_sha": "124f2c855e6f0acd676bbe83e1721cdfdf55e290",
-                        "installed_by": [
-                            "modules"
-                        ]
+                        "installed_by": ["modules"]
                     },
                     "xeniumranger/relabel": {
                         "branch": "master",
                         "git_sha": "39365e944e936511e33b993cdd978e0f12adac9a",
-                        "installed_by": [
-                            "modules"
-                        ]
+                        "installed_by": ["modules"]
                     },
                     "xeniumranger/resegment": {
                         "branch": "master",
                         "git_sha": "39365e944e936511e33b993cdd978e0f12adac9a",
-                        "installed_by": [
-                            "modules"
-                        ]
+                        "installed_by": ["modules"]
                     }
                 }
             },
@@ -97,23 +75,17 @@
                     "utils_nextflow_pipeline": {
                         "branch": "master",
                         "git_sha": "05954dab2ff481bcb999f24455da29a5828af08d",
-                        "installed_by": [
-                            "subworkflows"
-                        ]
+                        "installed_by": ["subworkflows"]
                     },
                     "utils_nfcore_pipeline": {
                         "branch": "master",
                         "git_sha": "05954dab2ff481bcb999f24455da29a5828af08d",
-                        "installed_by": [
-                            "subworkflows"
-                        ]
+                        "installed_by": ["subworkflows"]
                     },
                     "utils_nfschema_plugin": {
                         "branch": "master",
                         "git_sha": "4b406a74dc0449c0401ed87d5bfff4252fd277fd",
-                        "installed_by": [
-                            "subworkflows"
-                        ]
+                        "installed_by": ["subworkflows"]
                     }
                 }
             }
