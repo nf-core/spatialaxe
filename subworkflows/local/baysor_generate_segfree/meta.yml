@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "baysor_generate_segfree"
+description: with segfree analyses that don't require segmentation, can be run on local neighborhoods instead (Neighborhood Composition Vectors (NCVs))
+keywords:
+  - baysor
+  - segfree
+  - neighborhoods
+  - loom
+components:
+  - baysor/segfree
+input:
+  - ch_transcripts_parquet:
+      description: |
+        input parquet file from the xenium bundle
+        Structure: [ val(meta), path("path-to-transcripts.parquet") ]
+  - ch_config:
+      description: |
+        config file for the xenium baysor run (stored in assets/config/xenium.toml)
+        Structure: [ path("path-to-xenium.toml") ]
+output:
+  - ncvs:
+      description: |
+        loom file generated with the baysor segfree command
+        Structure: [ val(meta), path("path-to-ncvs.loom") ]
+authors:
+  - "@khersameesh24"
+maintainers:
+  - "@khersameesh24"

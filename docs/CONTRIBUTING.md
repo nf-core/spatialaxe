@@ -182,4 +182,11 @@ If you update images or graphics, follow the nf-core [style guidelines](https://
 
 ## Pipeline specific contribution guidelines
 
-<!-- TODO nf-core: Add any pipeline specific contribution guidelines here, such as coding styles, procedures, checklists etc. -->
+- If you update any method / subworkflow / execution step, write a detailed report of why the change was implemented with a small test case
+- We would also suggest to discuss with us your recommended changes before raising a PR, this would reduce the effort in case the changes are not approved
+- It is always welcome to also update the nf-core `slack` channel `spatialaxe` after a PR is raised
+- In the nf-core community we often trade for PR reviews, but we would really appreciate if a member of the `spatialaxe team`(Sameesh Kher, Florian Heyl, Dongze He) is added as a PR reviewer
+- If you build a container image, please make sure that this conatiner is available from the nf-core quay.io and not from your personal container repository
+- We would move towards implementing conda profile support for the pipeline and would really appreciate if a bioconda package is built around your new tool addition
+- Finally, we would appreciate your PR descriptions to be as descriptive as possible
+- We look forward to your contributions 🍻

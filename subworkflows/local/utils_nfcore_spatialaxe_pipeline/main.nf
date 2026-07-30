@@ -24,30 +24,40 @@ include { UTILS_NEXTFLOW_PIPELINE   } from '../../nf-core/utils_nextflow_pipelin
 */
 
 workflow PIPELINE_INITIALISATION {
-
     take:
-    version           // boolean: Display version and exit
-    validate_params   // boolean: Boolean whether to validate parameters against the schema at runtime
-    monochrome_logs   // boolean: Do not use coloured log outputs
-    nextflow_cli_args //   array: List of positional nextflow CLI args
-    outdir            //  string: The output directory where the results will be saved
-    input             //  string: Path to input samplesheet
-    help              // boolean: Display help message and exit
-    help_full         // boolean: Show the full help message
-    show_hidden       // boolean: Show hidden parameters in the help message
+    version                    // boolean: Display version and exit
+    validate_params            // boolean: Boolean whether to validate parameters against the schema at runtime
+    monochrome_logs            // boolean: Do not use coloured log outputs
+    nextflow_cli_args          // array: List of positional nextflow CLI args
+    outdir                     // string: The output directory where the results will be saved
+    input                      // string: Path to input samplesheet
+    help                       // boolean: Display help message and exit
+    help_full                  // boolean: Show the full help message
+    show_hidden                // boolean: Show hidden parameters in the help message
+    format                     // string: input data platform (xenium | cosmx | merscope)
+    gene_panel                 // string: path to gene panel
+    gene_synonyms              // string: path to gene synonyms
+    image_seg_methods          // list: valid image-mode segmentation methods
+    method                     // string: chosen segmentation method
+    mode                       // string: pipeline mode
+    nucleus_segmentation_only  // boolean
+    offtarget_probe_tracking   // boolean
+    probes_fasta               // string: path to probes fasta
+    reference_annotations      // string: path to reference annotations
+    relabel_genes              // boolean
+    segmentation_mask          // string: path to segmentation mask
+    transcript_seg_methods     // list: valid coordinate-mode segmentation methods
 
     main:
-
-    ch_versions = channel.empty()
 
     //
     // Print version and exit if required and dump pipeline parameters to JSON file
     //
-    UTILS_NEXTFLOW_PIPELINE (
+    UTILS_NEXTFLOW_PIPELINE(
         version,
         true,
         outdir,
-        workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1
+        workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1,
     )
 
     //
@@ -99,32 +109,51 @@ workflow PIPELINE_INITIALISATION {
     )
 
     //
-    // Create channel from input file provided through params.input
+    // Custom validation for pipeline parameters
     //
+    validateInputParameters(
+        input,
+        mode,
+        method,
+        format,
+        image_seg_methods,
+        transcript_seg_methods,
+        relabel_genes,
+        gene_panel,
+        nucleus_segmentation_only,
+        segmentation_mask,
+        offtarget_probe_tracking,
+        probes_fasta,
+        reference_annotations,
+        gene_synonyms,
+    )
+    log.info("✅ Pipeline parameters validated.")
 
-    channel
-        .fromList(samplesheetToList(input, "${projectDir}/assets/schema_input.json"))
-        .map {
-            meta, fastq_1, fastq_2 ->
-                if (!fastq_2) {
-                    return [ meta.id, meta + [ single_end:true ], [ fastq_1 ] ]
-                } else {
-                    return [ meta.id, meta + [ single_end:false ], [ fastq_1, fastq_2 ] ]
-                }
-        }
-        .groupTuple()
-        .map { samplesheet ->
-            validateInputSamplesheet(samplesheet)
-        }
-        .map {
-            meta, fastqs ->
-                return [ meta, fastqs.flatten() ]
-        }
-        .set { ch_samplesheet }
+    //
+    // Create channel from input file provided through --input
+    //
+    try {
+
+        channel.fromList(samplesheetToList(input, "${projectDir}/assets/schema_input.json"))
+            .map { meta, bundle, image ->
+                return [[id: meta.id], bundle, image]
+            }
+            .set { ch_samplesheet }
+
+        log.info("✅ Samplesheet validated.")
+    }
+    catch (Exception e) {
+
+        error("❌ Samplesheet validation failed: ${e.message}")
+    }
+
+
+    // Xenium bundle file-presence validation now runs in the main workflow
+    // (workflows/spatialaxe.nf) AFTER UNTAR staging, so it works uniformly for
+    // both directory inputs and tarball inputs.
 
     emit:
     samplesheet = ch_samplesheet
-    versions    = ch_versions
 }
 
 /*
@@ -134,7 +163,6 @@ workflow PIPELINE_INITIALISATION {
 */
 
 workflow PIPELINE_COMPLETION {
-
     take:
     email           //  string: email address
     email_on_fail   //  string: email address sent on pipeline failure
@@ -177,21 +205,91 @@ workflow PIPELINE_COMPLETION {
     FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-
 //
-// Validate channels from input samplesheet
+// Check and validate pipeline parameters
 //
-def validateInputSamplesheet(input) {
-    def (metas, fastqs) = input[1..2]
+def validateInputParameters(
+    input,
+    mode,
+    method,
+    format,
+    image_seg_methods,
+    transcript_seg_methods,
+    relabel_genes,
+    gene_panel,
+    nucleus_segmentation_only,
+    segmentation_mask,
+    offtarget_probe_tracking,
+    probes_fasta,
+    reference_annotations,
+    gene_synonyms
+) {
 
-    // Check that multiple runs of the same sample are of the same datatype i.e. single-end / paired-end
-    def endedness_ok = metas.collect{ meta -> meta.single_end }.unique().size == 1
-    if (!endedness_ok) {
-        error("Please check input samplesheet -> Multiple runs of a sample must be of the same datatype i.e. single-end or paired-end: ${metas[0].id}")
+    // check if conda profile is provided
+    if (workflow.profile.contains('conda')) {
+        error("❌ Error: `nf-core/spatialaxe` does not support running the pipeline with profile: conda ")
     }
 
-    return [ metas[0], fastqs ]
+    // check if the samplesheet provided with the test config is assets/samplesheet.csv
+    if (workflow.profile.contains('test') && !"${input}".endsWith("assets/samplesheet.csv")) {
+        error("❌ Error: Use the samplesheet at: ${projectDir}/assets/samplesheet.csv with `--input` when running the pipeline in test profile.")
+    }
+
+    // check if the segmentation method provided is valid for a mode
+    if (mode == 'image' && method) {
+        if (!image_seg_methods.contains(method)) {
+            error("❌ Error: Invalid segmentation method: ${method} provided for the `image` based mode. Options: ${image_seg_methods}")
+        }
+    }
+
+    if (mode == 'coordinate' && method) {
+        if (!transcript_seg_methods.contains(method)) {
+            error("❌ Error: Invalid segmentation method: `${method}` provided for the `coordinate` based mode. Options: ${transcript_seg_methods}")
+        }
+    }
+
+    // check method-format compatibility (schema enum constrains the universe; this enforces the method-specific subset)
+    def valid_segger_formats = ['xenium']
+    def valid_proseg_formats = ['xenium', 'cosmx', 'merscope']
+    if (method == 'segger' && !(format in valid_segger_formats)) {
+        error("❌ Error: Invalid --format '${format}' for segger. Valid: ${valid_segger_formats}")
+    }
+    if (method == 'proseg' && !(format in valid_proseg_formats)) {
+        error("❌ Error: Invalid --format '${format}' for proseg. Valid: ${valid_proseg_formats}")
+    }
+
+    // check if --relabel_genes is true but --gene_panel is not provided
+    if (relabel_genes && !gene_panel) {
+        log.warn("⚠️  Relabel genes is enabled, but gene panel is not provided with the `--gene_panel`. Using `gene_panel.json` in the xenium bundle.")
+    }
+
+    // check if --relabel_genes is true but --gene_panel is not provided
+    if (gene_panel && !relabel_genes) {
+        log.warn("⚠️  Gene panel provided, but relabel genes is disabled. Using `gene_panel.json` only to generate metadata.")
+    }
+
+    // check if segmentation method is xeniumranger and nucleus_ony_segmentation is enabled
+    if (method == 'xeniumranger' && !nucleus_segmentation_only) {
+        log.warn("⚠️  Nucleus segmentation is disabled. Running xeniumranger resegment module to redefine xenium bundle without nucleus segmentation.")
+        log.warn("⚠️  Use --nucleus_segmentation_only to enable nucleus segmentation to redefine xenium bundle with import-segmentation module.")
+    }
+
+    // check if segmentation mask is provided in image mode and baysor method
+    if (mode == 'image' && method == 'baysor') {
+        if (!segmentation_mask) {
+            log.warn("⚠️  Missing segmentation mask with `--segmentation_mask` when pipeline is run in ${mode} and with the ${method}. Running in coordinate mode.")
+        }
+    }
+
+    // check if required arguments are provided for off-target probe tracking
+    if (!mode && offtarget_probe_tracking) {
+        if(!probes_fasta || !reference_annotations || !gene_synonyms) {
+            error("❌ Error: Missing required param(s) for off-target-proebe detection.")
+        }
+        error("❌ Error: Use --mode qc and --offtraget_probe_tracking to run off-target probe tracking.")
+    }
 }
+
 //
 // Generate methods description for MultiQC
 //
@@ -245,7 +343,7 @@ def methodsDescriptionText(mqc_methods_yaml) {
     meta["tool_citations"] = ""
     meta["tool_bibliography"] = ""
 
-    // TODO nf-core: Only uncomment below if logic in toolCitationText/toolBibliographyText has been filled!
+    // Only uncomment below if logic in toolCitationText/toolBibliographyText has been filled!
     // meta["tool_citations"] = toolCitationText().replaceAll(", \\.", ".").replaceAll("\\. \\.", ".").replaceAll(", \\.", ".")
     // meta["tool_bibliography"] = toolBibliographyText()
 
