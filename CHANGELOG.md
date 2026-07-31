@@ -9,7 +9,7 @@ Hotfix to tackle some bugs
 
 ### `Added`
 
-- Template update for nf-core/tools version 4.0.2
+- Template update for nf-core/tools version 4.0.3
 
 ### `Fixed`
 
