@@ -13,7 +13,7 @@ process SPOQC_HQPR_CLUSTERING {
     tuple val(staining), path(metrices, stageAs: "spoQC_tmp/metrices/hqpr/*")
 
     output:
-    tuple val(staining), path("report/hqpr/${staining}/hqpr_clustering")               , emit: report
+    tuple val(staining), path("report/hqpr/hqpr_clustering/${staining}")               , emit: report
     tuple val(staining), path("spoQC_tmp/hqpr_${staining}_output_mask_raw")            , emit: mask
     tuple val("${task.process}"), val('spoqc'), eval("spoqc --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown"), topic: versions, emit: versions_spoqc
 
@@ -47,7 +47,7 @@ process SPOQC_HQPR_CLUSTERING {
     }
 
     """
-    mkdir -p report/hqpr/${staining}/hqpr_clustering
+    mkdir -p report/hqpr/hqpr_clustering/${staining}
     mkdir -p spoQC_tmp/hqpr_${staining}_output_mask_raw
     """
 

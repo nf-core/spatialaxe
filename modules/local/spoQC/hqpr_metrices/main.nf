@@ -13,7 +13,7 @@ process SPOQC_HQPR_METRICES {
     val(step)
 
     output:
-    tuple val(staining), path("report/hqpr/${staining}/hqpr_metrices")                       , emit: report
+    tuple val(staining), path("report/hqpr/hqpr_metrices/${staining}")                       , emit: report
     tuple val(staining), path("spoQC_tmp/metrices/hqpr/${staining}")                         , emit: metrices
     path("report/staining_log.txt")                                                          , emit: staininglog
     tuple val("${task.process}"), val('spoqc'), eval("spoqc --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown"), topic: versions, emit: versions_spoqc
@@ -48,7 +48,7 @@ process SPOQC_HQPR_METRICES {
     }
 
     """
-    mkdir -p report/hqpr/${staining}/hqpr_metrices
+    mkdir -p report/hqpr/hqpr_metrices/${staining}
     mkdir -p spoQC_tmp/metrices/hqpr/${staining}
     mkdir -p report
     touch report/staining_log.txt

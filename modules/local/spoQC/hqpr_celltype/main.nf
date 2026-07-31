@@ -19,7 +19,7 @@ process SPOQC_HQPR_CELLTYPE {
     tuple val(staining), path(mask, stageAs: "spoQC_tmp/*"), path(mask_smoothed, stageAs: "spoQC_tmp/*")
 
     output:
-    path("report/hqpr/${staining}/hqpr_celltype")       , emit: report
+    path("report/hqpr/hqpr_celltype/${staining}")       , emit: report
     tuple val("${task.process}"), val('spoqc'), eval("spoqc --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown"), topic: versions, emit: versions_spoqc
 
     when:
@@ -54,7 +54,7 @@ process SPOQC_HQPR_CELLTYPE {
     }
 
     """
-    mkdir -p report/hqpr/${staining}/hqpr_celltype
+    mkdir -p report/hqpr/hqpr_celltype/${staining}
     """
 
 }

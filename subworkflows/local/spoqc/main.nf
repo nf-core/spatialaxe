@@ -39,6 +39,8 @@ include { SPOQC_MARKER       } from '../../../modules/local/spoQC/marker/main'
 include { SPOQC_ANALYSIS_OVERVIEW       } from '../../../modules/local/spoQC/analysis_overview/main'
 include { SPOQC_ANALYSIS_CATEGORY       } from '../../../modules/local/spoQC/analysis_category/main'
 include { SPOQC_ANALYSIS_CLUSTER       } from '../../../modules/local/spoQC/analysis_cluster/main'
+// spoQC final report
+include { SPOQC_FINALREPORT       } from '../../../modules/local/spoQC/finalreport/main'
 
 workflow SPOQC {
 
@@ -81,7 +83,9 @@ workflow SPOQC {
         ch_coordinate_space,
     )
 
-    // General ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // General
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // keep only actual, usable annotations (non-null and not an empty list)
     ch_annotation_present = ch_annotation_src.filter { a -> a && (!(a instanceof List) || !a.isEmpty()) }
@@ -130,7 +134,9 @@ workflow SPOQC {
         "ambientqc",
     )
 
-    // HQCR ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // HQCR
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     SPOQC_HQCR_IDENT(
         SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
@@ -153,7 +159,9 @@ workflow SPOQC {
         SPOQC_CELL.out.tmp,
     )
 
-    // HQPR ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // HQPR
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     SPOQC_HQPR_METRICES(
         SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
@@ -197,7 +205,9 @@ workflow SPOQC {
     //     ch_masks_joined,
     // )
 
-    // HQTR ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // HQTR
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     SPOQC_HQTR_METRICES(
         SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
         "hqtr_metrices",
@@ -247,7 +257,9 @@ workflow SPOQC {
     //     SPOQC_HQTR_REFINEMENT.out.mask_smoothed,
     // )
 
-    // Downstream ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Downstream
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     SPOQC_COMBINE_MASKS(
         ch_spatialdata_stainings,
@@ -282,7 +294,9 @@ workflow SPOQC {
     //     "markerqc"
     // )
 
-    // Analysis ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Analysis
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     ch_files_hqpr_metrics = SPOQC_HQPR_METRICES.out.metrices
         .map { _idx, p -> p }
@@ -359,7 +373,50 @@ workflow SPOQC {
         ch_files_hqpr_masks,
     )
 
-    // Output ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Final Report
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // collect the per-staining report fragments into a single list per sample
+    ch_report_hqpr_metrices     = SPOQC_HQPR_METRICES.out.report.map { _staining, p -> p }.collect()
+    ch_report_hqpr_clustering   = SPOQC_HQPR_CLUSTERING.out.report.map { _staining, p -> p }.collect()
+    ch_report_hqpr_refinement   = SPOQC_HQPR_REFINEMENT.out.report.map { _staining, p -> p }.collect()
+    ch_report_hqpr_bounding_box = SPOQC_HQPR_BOUNDING_BOX.out.report.map { _staining, p -> p }.collect()
+    ch_report_combine_masks     = SPOQC_COMBINE_MASKS.out.report.collect()
+
+    SPOQC_FINALREPORT(
+        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        "final_report",
+        SPOQC_GENERAL.out.report,
+        SPOQC_DOUBLET.out.report,
+        SPOQC_VOID.out.report,
+        SPOQC_CELL.out.report,
+        SPOQC_HQCR_IDENT.out.report,
+        SPOQC_HQCR_CELLTYPE.out.report,
+        ch_report_hqpr_metrices,
+        ch_report_hqpr_clustering,
+        ch_report_hqpr_refinement,
+        ch_report_hqpr_bounding_box,
+        // SPOQC_HQPR_CELLTYPE.out.report,
+        SPOQC_HQTR_METRICES.out.report,
+        SPOQC_HQTR_AC.out.report,
+        SPOQC_HQTR_QV.out.report,
+        SPOQC_HQTR_CLUSTERING.out.report,
+        SPOQC_HQTR_REFINEMENT.out.report,
+        SPOQC_HQTR_BOUNDING_BOX.out.report,
+        // SPOQC_HQTR_CELLTYPE.out.report,
+        ch_report_combine_masks,
+        SPOQC_TRANSCRIPT.out.report,
+        SPOQC_CELLCYCLE.out.report,
+        SPOQC_MODEL.out.report,
+        SPOQC_ANALYSIS_OVERVIEW.out.report,
+        SPOQC_ANALYSIS_CATEGORY.out.report,
+        SPOQC_ANALYSIS_CLUSTER.out.report,
+    )
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Output
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     emit:
 
