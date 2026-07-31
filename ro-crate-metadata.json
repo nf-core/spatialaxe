@@ -137,6 +137,9 @@
                     "@id": "https://orcid.org/0009-0008-2420-6464"
                 },
                 {
+                    "@id": "#5fd4466e-7ce2-4d27-924e-ee46d6d24240"
+                },
+                {
                     "@id": "https://orcid.org/0000-0002-3651-5685"
                 }
             ],
@@ -359,6 +362,11 @@
             "email": "sameesh.kher@dkfz-heidelberg.de",
             "name": "Sameesh Kher",
             "url": "https://github.com/khersameesh24"
+        },
+        {
+            "@id": "#5fd4466e-7ce2-4d27-924e-ee46d6d24240",
+            "@type": "Person",
+            "name": "Dongze He"
         },
         {
             "@id": "https://orcid.org/0000-0002-3651-5685",
