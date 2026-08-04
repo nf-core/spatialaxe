@@ -10,3 +10,43 @@ multiqc/multiqc_plots/{svg,pdf,png}/*.{svg,pdf,png}
 multiqc/multiqc_report.html
 pipeline_info/*.{html,json,txt,yml}
 **/proseg/preset/**
+
+# proseg2baysor re-serializes proseg's segmentation non-deterministically (geojson/csv);
+# this propagates into every spatialdata bundle built from it
+coordinate/proseg/proseg2baysor/test_run/cell-polygons.geojson
+coordinate/proseg/proseg2baysor/test_run/transcript-metadata.csv
+coordinate/spatialdata/write/spatialdata/test_run/raw_bundle/points/**
+coordinate/spatialdata/write/spatialdata/test_run/raw_bundle/shapes/**
+coordinate/spatialdata/write/spatialdata/test_run/raw_bundle/tables/**
+coordinate/spatialdata/merge/spatialdata/test_run/merged_bundle/points/**
+coordinate/spatialdata/merge/spatialdata/test_run/merged_bundle/shapes/**
+coordinate/spatialdata/merge/spatialdata/test_run/merged_bundle/tables/**
+coordinate/spatialdata/meta/spatialdata/test_run/metadata/points/**
+coordinate/spatialdata/meta/spatialdata/test_run/metadata/shapes/**
+coordinate/spatialdata/meta/spatialdata/test_run/metadata/tables/**
+
+# xeniumranger's internal secondary analysis (clustering/PCA/UMAP/diffexp) and
+# resegmentation are not run-to-run reproducible; only existence is checked
+xeniumranger/test_run/**
+coordinate/untar/test_run/**
+coordinate/spatialdata/write/spatialdata/test_run/redefined_bundle/points/**
+coordinate/spatialdata/write/spatialdata/test_run/redefined_bundle/shapes/**
+coordinate/spatialdata/write/spatialdata/test_run/redefined_bundle/tables/**
+
+# MultiQC pre/post-Xeniumranger reports embed non-deterministic run data
+coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report.html
+coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/llms-full.txt
+coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc.log
+coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc.parquet
+coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_data.json
+coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_sources.txt
+
+# OME-Zarr group metadata (member/channel ordering) is not written in a stable
+# order across runs, both for the images subgroup and for each bundle's root
+# store (which declares its images/points/shapes/tables members); the
+# underlying pixel/array chunk data itself is unaffected
+**/images/zarr.json
+coordinate/spatialdata/write/spatialdata/test_run/raw_bundle/zarr.json
+coordinate/spatialdata/write/spatialdata/test_run/redefined_bundle/zarr.json
+coordinate/spatialdata/merge/spatialdata/test_run/merged_bundle/zarr.json
+coordinate/spatialdata/meta/spatialdata/test_run/metadata/zarr.json
