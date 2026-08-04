@@ -10,6 +10,8 @@ Hotfix to tackle some bugs
 ### `Added`
 
 - Template update for nf-core/tools version 4.0.3
+- Adding new conf/tests folder
+- Adding new test for coordinate mode to check the bugfixes
 
 ### `Fixed`
 
