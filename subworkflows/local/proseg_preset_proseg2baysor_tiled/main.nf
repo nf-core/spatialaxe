@@ -6,7 +6,7 @@ include { XENIUM_PATCH_DIVIDE              } from '../../../modules/local/xenium
 include { PROSEG                           } from '../../../modules/local/proseg/preset/main'
 include { PROSEG2BAYSOR                    } from '../../../modules/local/proseg/proseg2baysor/main'
 include { XENIUM_PATCH_STITCH              } from '../../../modules/local/xenium_patch/stitch/main'
-include { XENIUMRANGER_IMPORTSEGMENTATION } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
+include { XENIUMRANGER_IMPORTSEGMENTATION  } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
 
 workflow PROSEG_PRESET_PROSEG2BAYSOR_TILED {
 

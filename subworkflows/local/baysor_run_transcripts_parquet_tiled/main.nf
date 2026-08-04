@@ -6,7 +6,7 @@ include { XENIUM_PATCH_DIVIDE              } from '../../../modules/local/xenium
 include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
 include { BAYSOR_RUN                       } from '../../../modules/local/baysor/run/main'
 include { XENIUM_PATCH_STITCH              } from '../../../modules/local/xenium_patch/stitch/main'
-include { XENIUMRANGER_IMPORTSEGMENTATION } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
+include { XENIUMRANGER_IMPORTSEGMENTATION  } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
 
 workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET_TILED {
 
