@@ -6,7 +6,7 @@ include { SEGGER2XR                        } from '../../../modules/local/utilit
 include { SEGGER_TRAIN                     } from '../../../modules/local/segger/train/main'
 include { SEGGER_PREDICT                   } from '../../../modules/local/segger/predict/main'
 include { SEGGER_CREATE_DATASET            } from '../../../modules/local/segger/create_dataset/main'
-include { XENIUMRANGER_IMPORTSEGMENTATION } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
+include { XENIUMRANGER_IMPORTSEGMENTATION  } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
 
 workflow SEGGER_CREATE_TRAIN_PREDICT {
     take:

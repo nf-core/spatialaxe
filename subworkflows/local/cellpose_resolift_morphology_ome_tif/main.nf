@@ -9,7 +9,7 @@ include { CELLPOSE as CELLPOSE_CELLS       } from '../../../modules/nf-core/cell
 include { EXTRACT_DAPI                     } from '../../../modules/local/utility/extract_dapi/main'
 include { STARDIST as STARDIST_NUCLEI      } from '../../../modules/nf-core/stardist/main'
 include { CONVERT_MASK_UINT32              } from '../../../modules/local/utility/convert_mask_uint32/main'
-include { XENIUMRANGER_IMPORTSEGMENTATION } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
+include { XENIUMRANGER_IMPORTSEGMENTATION  } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
 
 workflow CELLPOSE_RESOLIFT_MORPHOLOGY_OME_TIF {
     take:

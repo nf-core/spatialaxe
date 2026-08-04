@@ -11,7 +11,7 @@ include { CONVERT_MASK_UINT32              } from '../../../modules/local/utilit
 include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
 include { RESIZE_TIF                       } from '../../../modules/local/utility/resize_tif/main'
 include { GET_TRANSCRIPTS_COORDINATES      } from '../../../modules/local/utility/get_coordinates/main'
-include { XENIUMRANGER_IMPORTSEGMENTATION } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
+include { XENIUMRANGER_IMPORTSEGMENTATION  } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
 
 workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     take:

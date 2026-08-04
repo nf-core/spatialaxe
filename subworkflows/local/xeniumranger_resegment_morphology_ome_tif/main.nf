@@ -3,7 +3,7 @@
 //
 
 include { XENIUMRANGER_RESEGMENT           } from '../../../modules/nf-core/xeniumranger/resegment/main'
-include { XENIUMRANGER_IMPORTSEGMENTATION } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
+include { XENIUMRANGER_IMPORTSEGMENTATION  } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
 
 workflow XENIUMRANGER_RESEGMENT_MORPHOLOGY_OME_TIF {
     take:
