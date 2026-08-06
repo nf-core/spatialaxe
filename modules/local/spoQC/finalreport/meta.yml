@@ -125,14 +125,6 @@ output:
       type: file
       description: Final combined spoQC HTML report
       pattern: "report/report.html"
-  - report_part1:
-      type: file
-      description: First part of the final combined spoQC HTML report
-      pattern: "report/report_part1.html"
-  - report_part2:
-      type: file
-      description: Second part of the final combined spoQC HTML report
-      pattern: "report/report_part2.html"
   - versions_spoqc:
       - - "${task.process}":
             type: string

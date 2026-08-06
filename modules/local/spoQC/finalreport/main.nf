@@ -37,8 +37,6 @@ process SPOQC_FINALREPORT {
 
     output:
     path("report/report.html")                      , emit: report
-    path("report/report_part1.html")                , emit: report_part1
-    path("report/report_part2.html")                , emit: report_part2
     tuple val("${task.process}"), val('spoqc'), eval("spoqc --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown"), topic: versions, emit: versions_spoqc
 
     when:
@@ -72,7 +70,5 @@ process SPOQC_FINALREPORT {
     """
     mkdir -p report/
     touch report/report.html
-    touch report/report_part1.html
-    touch report/report_part2.html
     """
 }
