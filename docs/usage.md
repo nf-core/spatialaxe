@@ -42,7 +42,7 @@ This runs the default image mode:<br>
 nextflow run nf-core/spatialaxe \
         -profile <docker/singularity/...>
         --input ./samplesheet.csv \
-        --outdir ./results \
+        --outdir <OUTDIR> \
         --mode image
 ```
 
@@ -55,7 +55,7 @@ This runs the default coordinate mode:<br>
 nextflow run nf-core/spatialaxe \
         -profile <docker/singularity/...>
         --input ./samplesheet.csv \
-        --outdir ./results \
+        --outdir <OUTDIR> \
         --mode coordinate
 ```
 
@@ -91,7 +91,7 @@ It is possible to run the quality control with `--run_qc` to couple it with anot
 nextflow run nf-core/spatialaxe \
         -profile <docker/singularity/...>
         --input ./samplesheet.csv \
-        --outdir ./results \
+        --outdir <OUTDIR> \
         --mode image \
         --run_qc
 ```
@@ -136,7 +136,7 @@ eg: To run proseg segmentation use the `coordinate` mode and the `proseg` segmen
 nextflow run nf-core/spatialaxe \
         -profile <docker/singularity/...>
         --input ./samplesheet.csv \
-        --outdir ./results \
+        --outdir <OUTDIR> \
         --mode coordinate \
         --method proseg
 ```
@@ -147,7 +147,7 @@ eg: To run cellpose segmentation use the `image` mode and the `cellpose` segment
 nextflow run nf-core/spatialaxe \
         -profile <docker/singularity/...>
         --input ./samplesheet.csv \
-        --outdir ./results \
+        --outdir <OUTDIR> \
         --mode image \
         --method cellpose
 ```

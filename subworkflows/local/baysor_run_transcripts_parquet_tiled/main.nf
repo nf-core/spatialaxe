@@ -6,7 +6,7 @@ include { XENIUM_PATCH_DIVIDE              } from '../../../modules/local/xenium
 include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
 include { BAYSOR_RUN                       } from '../../../modules/local/baysor/run/main'
 include { XENIUM_PATCH_STITCH              } from '../../../modules/local/xenium_patch/stitch/main'
-include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
+include { XENIUMRANGER_IMPORTSEGMENTATION  } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
 
 workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET_TILED {
 
@@ -19,6 +19,7 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET_TILED {
     min_qv                 // value: minimum transcript QV
     min_x                  // value: spatial filter lower x bound
     min_y                  // value: spatial filter lower y bound
+    expansion_distance     // value: nuclear expansion distance
 
     main:
 
@@ -93,12 +94,12 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET_TILED {
         .combine(XENIUM_PATCH_STITCH.out.xr_polygons_transcript, by: 0)
         .combine(ch_coordinate_space)
         .map { meta, bundle, geojson, csv, coord_space ->
-            tuple(meta, bundle, csv, geojson, [], [], [], coord_space)
+            tuple(meta, bundle, csv, geojson, [], [], [], coord_space, expansion_distance)
         }
 
-    XENIUMRANGER_IMPORT_SEGMENTATION ( ch_xr )
+    XENIUMRANGER_IMPORTSEGMENTATION ( ch_xr )
 
     emit:
     coordinate_space = ch_coordinate_space                          // channel: [ "microns" ]
-    redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs    // channel: [ val(meta), ["redefined-xenium-bundle"] ]
+    redefined_bundle = XENIUMRANGER_IMPORTSEGMENTATION.out.outs    // channel: [ val(meta), ["redefined-xenium-bundle"] ]
 }

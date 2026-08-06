@@ -15,7 +15,7 @@ include { BAYSOR_RUN                       } from '../../../modules/local/baysor
 include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
 include { XENIUM_PATCH_STITCH              } from '../../../modules/local/xenium_patch/stitch/main'
 include { RECONSTRUCT_PATCHES              } from '../../../modules/local/utility/reconstruct_patches/main'
-include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
+include { XENIUMRANGER_IMPORTSEGMENTATION  } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
 
 
 workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
@@ -35,6 +35,7 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
     min_qv                 // value: minimum transcript QV
     min_x                  // value: spatial filter lower x bound
     min_y                  // value: spatial filter lower y bound
+    expansion_distance     // value: nuclear expansion distance
 
     main:
 
@@ -112,11 +113,12 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
                     xr_transcript_metadata,
                     xr_cell_polygons,
                     [], [], [],
-                    "microns"
+                    "microns",
+                    expansion_distance,
                 )
             }
 
-        XENIUMRANGER_IMPORT_SEGMENTATION (ch_xr)
+        XENIUMRANGER_IMPORTSEGMENTATION (ch_xr)
 
     } else {
 
@@ -154,13 +156,14 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
                     segmentation_csv,
                     polygons2d,
                     [], [], [],
-                    ch_coordinate_space.val)
+                    ch_coordinate_space.val,
+                    expansion_distance)
             }
 
-        XENIUMRANGER_IMPORT_SEGMENTATION(ch_xr)
+        XENIUMRANGER_IMPORTSEGMENTATION(ch_xr)
     }
 
     emit:
-    redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs
+    redefined_bundle = XENIUMRANGER_IMPORTSEGMENTATION.out.outs
     coordinate_space = ch_coordinate_space
 }

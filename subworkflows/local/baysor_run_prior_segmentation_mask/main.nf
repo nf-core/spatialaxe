@@ -4,7 +4,7 @@
 
 include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
 include { BAYSOR_RUN                       } from '../../../modules/local/baysor/run/main'
-include { XENIUMRANGER_IMPORT_SEGMENTATION } from '../../../modules/nf-core/xeniumranger/import-segmentation/main'
+include { XENIUMRANGER_IMPORTSEGMENTATION  } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
 
 
 workflow BAYSOR_RUN_PRIOR_SEGMENTATION_MASK {
@@ -18,6 +18,7 @@ workflow BAYSOR_RUN_PRIOR_SEGMENTATION_MASK {
     min_qv                 // value: minimum transcript QV
     min_x                  // value: spatial filter lower x bound
     min_y                  // value: spatial filter lower y bound
+    expansion_distance     // value: nuclear expansion distance
 
     main:
 
@@ -69,13 +70,14 @@ workflow BAYSOR_RUN_PRIOR_SEGMENTATION_MASK {
                 polygons2d,
                 [],
                 ch_coordinate_space.val,
+                expansion_distance,
             )
         }
-    XENIUMRANGER_IMPORT_SEGMENTATION(
+    XENIUMRANGER_IMPORTSEGMENTATION(
         ch_imp_seg_inputs
     )
 
-    ch_redefined_bundle = XENIUMRANGER_IMPORT_SEGMENTATION.out.outs
+    ch_redefined_bundle = XENIUMRANGER_IMPORTSEGMENTATION.out.outs
 
     emit:
     coordinate_space = ch_coordinate_space // channel: [ "pixels" ]
