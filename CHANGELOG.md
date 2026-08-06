@@ -3,7 +3,7 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 1.0.1 - [31.07.2026]
+## 1.0.1 - [06.08.2026]
 
 Hotfix to tackle some bugs
 
@@ -12,6 +12,7 @@ Hotfix to tackle some bugs
 - Template update for nf-core/tools version 4.0.3
 - Adding new conf/tests folder
 - Adding new test for coordinate mode to check the bugfixes
+- Remove default outdir='results' for test profiles (tests)
 
 ### `Fixed`
 
