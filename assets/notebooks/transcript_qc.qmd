@@ -1,0 +1,333 @@
+---
+title: "Transcript and cell level QC for one Xenium run"
+author: "Viktor Petukhov; Malwina Prater; Dongze He; Felix Krueger"
+date: "today"
+format:
+  html:
+    embed-resources: true
+    standalone: true
+jupyter: python3
+---
+
+## Introduction
+
+This report provides a comprehensive quality control analysis for a single Xenium spatial transcriptomics run. We analyze molecular detection quality, cellular characteristics, and spatial organization to ensure data integrity and guide downstream analysis decisions.
+
+We generate QC metrics for the molecule and cell level using the following files from the Xenium bundle:
+`transcripts.parquet`, `cells.parquet` and `cell_feature_matrix.h5`.
+
+**Important Note:** The analyses in this report are carried out for a single run (=section on a Xenium slide). For multi-run experiments, each run should be analyzed separately before integration.
+
+```{python parameters}
+#| tags: [parameters]
+#| echo: false
+
+# Parameters - these get overridden by -P command line arguments
+INDIR = "transcript_qc"
+SAMPLE_NAME = ""
+XENIUM_BUNDLE = ""
+SAMPLE_PUBLISHED_OUTDIR = ""
+```
+
+## Notebook parameters
+
+```{python setup-environment}
+#| echo: false
+
+from pathlib import Path
+import json
+import pandas as pd
+import base64
+from IPython.display import HTML
+
+def display_figure(figure_path):
+    """Display a figure as embedded base64 image in HTML output"""
+    full_path = Path(INDIR) / "figures" / figure_path
+
+    if not full_path.exists():
+        raise FileNotFoundError(f"CRITICAL ERROR: Required figure missing: {full_path}")
+
+    with open(full_path, 'rb') as f:
+        img_data = f.read()
+
+    img_base64 = base64.b64encode(img_data).decode('utf-8')
+    return HTML(f'<img src="data:image/png;base64,{img_base64}" style="max-width:100%; height:auto;">')
+
+# Validate required files
+metrics_file = Path(INDIR) / "transcript_qc_metrics.json"
+if not metrics_file.exists():
+    raise FileNotFoundError(f"CRITICAL ERROR: Required QC metrics file missing: {metrics_file}")
+
+versions_path = Path(INDIR) / "versions.yml"
+if not versions_path.exists():
+    raise FileNotFoundError(f"CRITICAL ERROR: Required versions file missing: {versions_path}")
+
+# Load QC metrics
+with open(metrics_file, 'r') as f:
+    qc_metrics = json.load(f)
+
+print("=== TRANSCRIPT QC SUMMARY ===")
+print(f"Total molecules: {qc_metrics['total_molecules']:,}")
+print(f"Selected molecules: {qc_metrics['selected_molecules']:,}")
+print(f"Total features: {qc_metrics['total_features']:,}")
+print(f"Total cells: {qc_metrics['total_cells']:,}")
+print(f"Analyzed genes: {qc_metrics['analyzed_genes']:,}")
+print(f"Min molecules per cell: {qc_metrics['min_molecules_per_cell']:,}")
+print(f"Min genes per cell: {qc_metrics['min_genes_per_cell']:,}")
+```
+
+## Load data
+
+The Xenium platform detects and decodes molecules across the tissue sample. Each detected molecule is assigned spatial coordinates, a quality score, and classified into different categories based on the decoding process.
+
+## Molecule overview
+
+In this section, we display basic statistics of the dataset regarding the decoded molecules. These statistics and metrics help us understand the size, shape, and quality of the dataset, which is critical for determining the success of the experiment and appropriate filtering thresholds.
+
+### Detected Molecules
+
+First, we focus on the most important information: the molecules detected from the experiment. We show the total number of detected molecules and their assignment to genes in a cell-agnostic way.
+
+The exact number of detected molecules and corresponding genes depends on the dataset, the assay, and the applied probe sets. **Typical expectations:**
+
+- **Molecule counts:** Range from ~1 million to several billion molecules per sample
+- **Gene counts:** Usually a few hundred to a few thousand genes, depending on the panel used
+- **Quality distribution:** Most molecules should have high quality scores (>20)
+
+#### Molecule Categories
+
+Besides the molecules that come from genes, there are also other molecules that should be excluded from data analysis:
+
+1. **Unassigned molecules:** Molecules not assigned to any features. These are usually background molecules not associated with any predefined feature, often caused by imperfect tissue permeabilization or probe leakage.
+
+2. **Non-gene molecules:** Molecules assigned to non-gene features. In 10x Xenium assays, we expect to see a small number of such molecules, such as those from negative control probes and deprecated probes.
+
+**Quality Assessment:** A high-quality experiment should show:
+
+- Low percentage of unassigned molecules (<5%)
+- Minimal non-gene molecules (<2%)
+- Clear separation between gene and control categories
+
+### Quality Value Distribution
+
+Let's examine the quality value (`qv`) distribution of the detected molecules. The quality value measures the confidence in molecule detection based on signal-to-noise ratios.
+
+**Quality Score Interpretation:**
+
+- **qv ≤ 20:** Considered 'low quality' molecules - should be filtered out
+- **qv > 20:** Considered 'high quality' molecules - reliable for analysis
+- **Typical distribution:** Should show a clear peak at high quality values with relatively few low-quality molecules
+
+```{python display-quality-density}
+#| echo: false
+display_figure("quality_distribution_density.png")
+```
+
+**How to interpret this plot:**
+
+- **X-axis:** Quality value (qv) ranging from 0 to ~40+
+- **Y-axis:** Density of molecules at each quality level
+- **Curves:** Each colored curve represents a different codeword category
+- **Vertical line:** Red dashed line at qv=20 shows the quality threshold
+- **Good pattern:** Most gene molecules should peak well above qv=20
+- **Warning signs:** Large peaks below qv=20 or bimodal distributions may indicate technical issues
+
+```{python display-quality-violin}
+#| echo: false
+display_figure("quality_distributions_comprehensive.png")
+```
+
+**Violin plot interpretation:**
+
+- **Width of violin:** Shows the distribution density at each quality level
+- **Box plot inside:** Shows median, quartiles, and outliers
+- **Good pattern:** Gene categories should show distributions centered well above qv=20
+- **Quality comparison:** Different categories can be compared side-by-side
+
+#### Field of View (FoV) Quality Assessment
+
+We also examine quality value distribution across different Fields of View to identify potential technical issues in specific imaging areas.
+
+```{python display-fov-quality}
+#| echo: false
+display_figure("quality_by_fov.png")
+```
+
+**How to interpret FoV quality:**
+
+- **Consistent quality:** All FoVs should show similar quality distributions
+- **Warning signs:**
+  - Individual FoVs with significantly lower quality may indicate imaging problems
+  - Systematic differences could suggest optical issues or tissue artifacts
+  - Uneven quality across the sample may require FoV-specific filtering
+
+#### Distribution of molecule count of features
+
+Next, we examine the distribution of molecules assigned to each feature across the entire region. This helps us understand gene expression levels and identify lowly expressed genes that might represent noise.
+
+```{python display-molecules-per-feature}
+#| echo: false
+display_figure("num_molecules_per_feature.png")
+```
+
+**Molecule count distribution interpretation:**
+
+- **X-axis:** Number of molecules per feature (log scale)
+- **Y-axis:** Number of features with that molecule count
+- **Gene vs non-gene:** Different colors distinguish between true genes and control features
+- **Threshold line:** Gray dashed line shows the noise threshold calculated from negative controls
+- **Good pattern:** Clear separation between informative genes (above threshold) and noise (below threshold)
+
+**Quality indicators:**
+
+- **High-quality data:** Should show a clear bimodal distribution with most genes well above the noise threshold
+- **Problem signs:** Uniform distribution or unclear separation may indicate poor signal-to-noise ratio
+
+Next, let's visualize the distribution of gene molecule counts with the calculated threshold overlayed. In downstream analysis, we focus on genes with molecule counts above the threshold, as these are likely to be truly expressed rather than noise.
+
+**Important note:** The threshold was calculated using only negative control features, but the plot shows all gene and non-gene features, including genomic features, negative control features, and deprecated features.
+
+#### Distribution of cell size
+
+Next, we parse the `cells.parquet` file to generate cell-level statistics that help assess segmentation quality and cellular characteristics.
+
+```{python display-cell-size}
+#| echo: false
+display_figure("genes_per_cell_distribution.png")
+```
+
+**Cell size distribution interpretation:**
+
+- **Shape of distribution:** Should typically show a log-normal distribution
+- **Mean vs Median:** Lines show central tendencies - large differences may indicate outliers
+- **Quality assessment:**
+  - Very small cells might be segmentation artifacts
+  - Very large cells might be merged cell artifacts
+  - Reasonable range: typically 50-500 square pixels depending on tissue type
+
+#### Distribution of Nucleus RNA fraction per cell
+
+This plot shows the fraction of detected RNA molecules that are located within the nucleus versus the cytoplasm for each cell.
+
+```{python display-nucleus-rna-fraction}
+#| echo: false
+display_figure("nucleus_molecule_fraction_per_cell_distribution.png")
+```
+
+**Nucleus RNA fraction interpretation:**
+
+- **Biological expectation:** Most RNA should be in the cytoplasm, so nucleus fraction should be relatively low
+- **Typical range:** 0.1-0.4 (10-40% of RNA in nucleus)
+- **Quality indicators:**
+  - Very high nuclear fractions (>0.6) may indicate segmentation issues
+  - Very low nuclear fractions (<0.05) might suggest poor nuclear detection
+
+#### Distribution of nucleus-to-cell area fraction per cell
+
+This shows the ratio of nucleus area to total cell area, which is important for assessing segmentation quality.
+
+```{python display-nucleus-area-fraction}
+#| echo: false
+display_figure("nucleus_to_cell_size_fraction_per_cell_distribution.png")
+```
+
+**Nucleus-to-cell area ratio interpretation:**
+
+- **Biological expectation:** Nucleus typically occupies 10-30% of cell area
+- **Quality assessment:**
+  - Ratios >0.8 suggest over-segmentation of nuclei or under-segmentation of cells
+  - Ratios <0.05 suggest under-segmentation of nuclei or over-segmentation of cells
+  - Consistent ratios across cells indicate good segmentation quality
+
+#### Distribution of the number of molecules per cell
+
+Starting from here, we work with the feature-by-cell count matrix (`cell_feature_matrix.h5`) instead of the molecule table for computational efficiency. This matrix contains the number of molecules assigned to each cell for each gene, with non-gene features excluded.
+
+**Critical Quality Assessment:**
+
+We first show a histogram of molecules per cell. The distribution pattern is crucial for determining data quality:
+
+```{python display-molecules-per-cell}
+#| echo: false
+display_figure("num_molecules_per_cell.png")
+```
+
+**Distribution patterns and their meanings:**
+
+1. **Single peak (Good):** One clear peak representing healthy, high-confidence cells with hundreds to thousands of molecules
+2. **Two peaks (Warning):**
+   - **Main peak:** Healthy cells with substantial molecule counts
+   - **Left peak:** Poorly-segmented "cells" with very few molecules
+   - **Action needed:** This indicates segmentation issues requiring refinement
+
+**Quality thresholds:**
+
+- **Threshold line:** Gray dashed line shows recommended minimum molecules per cell
+- **Below threshold:** Likely represents segmentation artifacts or low-quality cells
+- **Above threshold:** High-confidence cells suitable for analysis
+
+**When to be concerned:**
+
+- Broad distributions without clear peaks suggest poor segmentation
+- Very low molecule counts (<10-50) dominating the distribution
+- Lack of a clear high-confidence cell population
+
+#### Distribution of the number of detected genes per cell
+
+Similarly, we examine the number of unique genes detected per cell, which is another critical quality metric.
+
+```{python display-genes-per-cell}
+#| echo: false
+display_figure("num_transcripts_per_cell.png")
+```
+
+**Gene detection patterns:**
+
+- **X-axis:** Number of detected genes per cell (log scale)
+- **Y-axis:** Number of cells with that gene count
+- **Threshold:** Gray dashed line shows minimum genes per cell threshold
+- **Expected pattern:** Should show a clear peak at moderate to high gene counts (50-500+ genes per cell)
+
+**Quality interpretation:**
+
+- **High-quality cells:** Detect hundreds of different genes
+- **Low-quality cells:** Detect very few genes (<10-20), often artifacts
+- **Biological variation:** Different cell types naturally express different numbers of genes
+
+**Red flags:**
+
+- Most cells detecting <20 genes suggests poor sensitivity
+- Very broad distribution without clear peak suggests segmentation issues
+- Large population of cells with <5 genes indicates extensive artifacts
+
+## Summary and Recommendations
+
+Based on the quality control analysis:
+
+**Dataset Quality Indicators:**
+
+- Total molecules detected and their quality distribution
+- Proportion of high-quality vs low-quality molecules
+- Separation between gene and control signals
+- Cell segmentation quality metrics
+- Spatial uniformity across fields of view
+
+**Recommended Next Steps:**
+
+1. **Filter cells** below the calculated thresholds for molecules and genes per cell
+2. **Filter molecules** with quality scores ≤20
+3. **Exclude low-expressed genes** below the noise threshold
+4. **Consider field-of-view specific filtering** if quality varies spatially
+5. **Validate segmentation** if distributions suggest poor cell identification
+
+## Code version
+
+*The information below is shown for reproducibility.*
+
+```{python display-version-info}
+#| echo: false
+# Display version information from processing results
+versions_path = Path(INDIR) / "versions.yml"
+with open(versions_path, 'r') as f:
+    print(f.read())
+```

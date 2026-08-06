@@ -45,6 +45,7 @@ include { SPATIALDATA_WRITE_META_MERGE                     } from '../subworkflo
 
 // qc layer subworkflows
 include { OPT_FLIP_TRACK_STAT                              } from '../subworkflows/local/opt_flip_track_stat/main'
+include { QC                                               } from '../subworkflows/local/qc/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -609,6 +610,9 @@ workflow SPATIALAXE {
 
     // check to run the qc layer
     if (mode == 'qc' || run_qc) {
+
+        // image QC + transcript QC on the validated Xenium bundle
+        QC(ch_bundle_path)
 
         if (offtarget_probe_tracking) {
 

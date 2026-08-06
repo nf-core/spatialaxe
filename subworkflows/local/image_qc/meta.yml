@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "image_qc"
+description: Run image-based quality control on a Xenium bundle and render an HTML report
+keywords:
+  - spatial
+  - xenium
+  - quality control
+  - image
+  - QC
+  - quarto
+components:
+  - image_qc
+  - quarto
+input:
+  - ch_input:
+      description: |
+        input channel for the image QC analysis
+        Structure: [ val(meta), val(parameters), path(input_files) ]
+  - ch_notebook:
+      description: |
+        Quarto notebook used to render the image QC report
+        Structure: [ val(meta2), path(qmd_file) ]
+output:
+  - outdir:
+      description: |
+        the image QC analysis output directory (metrics and figures)
+        Structure: [ val(meta), path(outdir) ]
+  - report:
+      description: |
+        the rendered image QC HTML report
+        Structure: [ val(meta), path(html) ]
+authors:
+  - "@an-altosian"
+maintainers:
+  - "@an-altosian"

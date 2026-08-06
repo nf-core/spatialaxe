@@ -1,0 +1,37 @@
+nextflow_process {
+
+    name "Test Process IMAGE_QC_ANALYSIS"
+    script "../main.nf"
+    process "IMAGE_QC_ANALYSIS"
+    config "./nextflow.config"
+
+    tag "modules"
+    tag "modules_local"
+    tag "image_qc"
+
+    test("image qc analysis stub") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [id: "test"],
+                    [],
+                    file("${moduleTestDir}/fixtures/bundle", checkIfExists: true)
+                ]
+                input[1] = file("${moduleTestDir}/fixtures/roi_thresholds.yaml", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.outdir[0][1]).exists() },
+                { assert file(process.out.outdir[0][1] + "/image_qc_metrics.json").exists() }
+            )
+        }
+    }
+}

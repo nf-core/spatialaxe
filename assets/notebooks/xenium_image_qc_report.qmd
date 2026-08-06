@@ -1,0 +1,2389 @@
+---
+title: "Xenium image QC — tile-based report"
+subtitle: "Slide and imaging quality as a gate for trustworthy downstream analysis"
+author: "Malwina Prater, Hanneke Okkenaug & Nell Nie, Bioinformatics Innovation Hub"
+date: last-modified
+format:
+  html:
+    embed-resources: true
+    standalone: true
+    toc: true
+    toc-depth: 2
+jupyter: python3
+---
+
+<!--
+  New report (does not extend notebooks/image_qc.qmd).
+  Scaffold alignment: plans/image_qc_report/ROI_IMAGE_QC_QUARTO_SCAFFOLD.md
+
+  Render locally (example):
+    quarto render notebooks/xenium_image_qc_report.qmd \\
+      -P INDIR:/path/to/published/image_qc \\
+      -P SAMPLE_NAME:sample_id \\
+      -P XENIUM_BUNDLE:/path/to/xenium_outs \\
+      -P SAMPLE_PUBLISHED_OUTDIR:/path/to/outdir/sample_id/image_qc
+
+  Nextflow QUARTO sets SAMPLE_NAME, XENIUM_BUNDLE, SAMPLE_PUBLISHED_OUTDIR from the samplesheet and params.outdir.
+  Report timestamp is always set when the HTML is rendered.
+-->
+
+## 1. Report metadata
+
+
+
+```{python parameters}
+#| tags: [parameters]
+#| echo: false
+
+# Nextflow QUARTO passes INDIR plus samplesheet-derived paths (see modules/quarto.nf).
+INDIR = "image_qc"
+SAMPLE_NAME = ""  # samplesheet `id`; if empty, inferred from INDIR (parent of folder named image_qc)
+XENIUM_BUNDLE = ""  # samplesheet `xenium_bundle` path string (local or s3://)
+SAMPLE_PUBLISHED_OUTDIR = ""  # expected publish dir: params.outdir / id / image_qc (set by Nextflow)
+ROI_THRESHOLDS_YAML = ""  # optional path override; defaults to conf/roi_image_qc_thresholds.yaml if found
+```
+
+```{python bootstrap}
+#| echo: false
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+from IPython.display import HTML, Markdown, display
+
+base = Path(INDIR)
+
+roi_json = base / "roi_qc_metrics.json"
+if not roi_json.exists():
+    raise FileNotFoundError(
+        f"ROI QC requires {roi_json}. "
+        "Point INDIR at the published image_qc output directory for this sample."
+    )
+
+with open(roi_json, encoding="utf-8") as f:
+    roi_metrics: dict = json.load(f)
+
+intensity_path = base / "intensity_assessment.json"
+intensity_stats: dict = {}
+if intensity_path.exists():
+    with open(intensity_path, encoding="utf-8") as f:
+        intensity_stats = json.load(f)
+
+threshold_path = base / "roi_blur_threshold.json"
+threshold_cfg: dict = {}
+if threshold_path.exists():
+    with open(threshold_path, encoding="utf-8") as f:
+        threshold_cfg = json.load(f)
+
+cell_metrics_path = base / "image_qc_metrics.json"
+cell_metrics: dict | None = None
+if cell_metrics_path.exists():
+    with open(cell_metrics_path, encoding="utf-8") as f:
+        cell_metrics = json.load(f)
+
+versions_path = base / "versions.yml"
+versions_text: str | None = None
+if versions_path.exists():
+    versions_text = versions_path.read_text(encoding="utf-8")
+
+
+def load_snr_summary(indir: Path) -> dict | None:
+    """Prefer nested snr under roi_qc_metrics; else standalone snr_metrics.json."""
+    if "snr" in roi_metrics:
+        return roi_metrics["snr"]
+    alt = indir / "snr_metrics.json"
+    if alt.exists():
+        with open(alt, encoding="utf-8") as f:
+            return json.load(f)
+    return None
+
+
+snr_summary = load_snr_summary(base)
+
+
+def load_roi_cutoffs() -> dict:
+    """
+    Load optional report cutoffs from conf/roi_image_qc_thresholds.yaml.
+    Falls back to empty dict when unavailable.
+    """
+    try:
+        import yaml  # type: ignore
+    except Exception:
+        return {}
+    candidates = []
+    # Optional explicit override from Quarto parameter if provided
+    try:
+        c = str(ROI_THRESHOLDS_YAML).strip()  # type: ignore[name-defined]
+        if c:
+            candidates.append(Path(c))
+    except Exception:
+        pass
+    # Common repo-relative locations for local and Nextflow runs
+    candidates.extend(
+        [
+            Path("conf/roi_image_qc_thresholds.yaml"),
+            Path("../conf/roi_image_qc_thresholds.yaml"),
+            Path("../../conf/roi_image_qc_thresholds.yaml"),
+        ]
+    )
+    for p in candidates:
+        try:
+            if p.exists():
+                with open(p, encoding="utf-8") as f:
+                    d = yaml.safe_load(f) or {}
+                    if isinstance(d, dict):
+                        return d
+        except Exception:
+            continue
+    return {}
+
+
+roi_cutoffs = load_roi_cutoffs()
+
+
+def fig_html(rel: str, *, max_width: str = "88%") -> HTML | str:
+    import base64
+
+    p = base / rel
+    if not p.exists():
+        return HTML(
+            f"<p><em>Figure not found (optional):</em> <code>{rel}</code></p>"
+        )
+    b64 = base64.b64encode(p.read_bytes()).decode("ascii")
+    return HTML(
+        f'<div style="display:flex;justify-content:center;margin:1em 0;">'
+        f'<img src="data:image/png;base64,{b64}" '
+        f'style="max-width:{max_width};height:auto;" alt="{rel}"/>'
+        f"</div>"
+    )
+
+
+def display_table(df: pd.DataFrame) -> None:
+    """Render table without row index for consistent report UX."""
+    display(HTML(df.to_html(index=False, border=0)))
+
+
+def display_kv_table(d: dict) -> None:
+    """Render dict as key/value table without row index."""
+    kv = pd.DataFrame(
+        [{"Metric": str(k), "Value": v} for k, v in d.items()],
+        columns=["Metric", "Value"],
+    )
+    display_table(kv)
+
+
+def _status_theme(status: str) -> tuple[str, str, str]:
+    """Return (container_css, badge_css, label) for report note styling."""
+    s = str(status).strip().upper()
+    if s in {"FAIL", "CRITICAL"}:
+        return (
+            "background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;",
+            "background:#DC2626;color:#FFFFFF;",
+            s,
+        )
+    if s in {"WARN", "WARNING"}:
+        return (
+            "background:#FFF7ED;border:1px solid #FED7AA;color:#7C2D12;",
+            "background:#EA580C;color:#FFFFFF;",
+            "WARN",
+        )
+    if s in {"PASS", "GOOD"}:
+        return (
+            "background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;",
+            "background:#16A34A;color:#FFFFFF;",
+            "PASS",
+        )
+    return (
+        "background:#F8FAFC;border:1px solid #E2E8F0;color:#334155;",
+        "background:#64748B;color:#FFFFFF;",
+        s if s else "N/A",
+    )
+
+
+def _status_cell_css(status: str) -> str:
+    """Cell-level status color styling for PASS/WARN/FAIL-like values."""
+    s = str(status).strip().upper()
+    if s in {"FAIL", "CRITICAL"}:
+        return "background-color:#FEE2E2;color:#991B1B;font-weight:700;"
+    if s in {"WARN", "WARNING"}:
+        return "background-color:#FFEDD5;color:#9A3412;font-weight:700;"
+    if s in {"PASS", "GOOD"}:
+        return "background-color:#DCFCE7;color:#166534;font-weight:700;"
+    return ""
+
+
+def display_status_table(df: pd.DataFrame, status_cols: list[str]) -> None:
+    """Render DataFrame without index and with status-colored cells."""
+    sty = (
+        df.style
+        .set_table_styles(
+            [
+                {"selector": "th", "props": "text-align:left; background-color:#F8FAFC;"},
+                {"selector": "td", "props": "text-align:left; vertical-align:top;"},
+            ]
+        )
+        .hide(axis="index")
+    )
+    for col in status_cols:
+        if col in df.columns:
+            styles = [_status_cell_css(v) for v in df[col]]
+            sty = sty.apply(lambda _col, s=styles: s, subset=[col])
+    display(HTML(sty.to_html()))
+
+
+def render_status_note(title: str, status: str, subtitle: str = "") -> None:
+    """Render a compact status note with themed background + badge."""
+    box_css, badge_css, label = _status_theme(status)
+    sub_html = (
+        f"<div style='font-size:0.92em;opacity:0.95;margin-top:0.35em;'>{subtitle}</div>"
+        if subtitle
+        else ""
+    )
+    display(
+        HTML(
+            f"<div style='margin:0.4em 0 0.9em 0;padding:0.6em 0.8em;border-radius:8px;{box_css}'>"
+            f"<div style='display:flex;align-items:center;gap:0.55em;flex-wrap:wrap;'>"
+            f"<strong>{title}</strong>"
+            f"<span style='padding:0.12em 0.55em;border-radius:999px;font-size:0.82em;font-weight:700;{badge_css}'>{label}</span>"
+            f"</div>"
+            f"{sub_html}"
+            f"</div>"
+        )
+    )
+```
+
+```{python report-metadata}
+#| echo: false
+
+from datetime import datetime
+
+# Set when this HTML is rendered (local time).
+_report_stamp = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M %Z")
+
+_resolved_out = base.resolve()
+_sample = str(SAMPLE_NAME).strip() if SAMPLE_NAME else ""
+if not _sample:
+    if _resolved_out.name == "image_qc":
+        _sample = _resolved_out.parent.name
+    else:
+        _sample = _resolved_out.name
+
+_bundle = str(XENIUM_BUNDLE).strip() if XENIUM_BUNDLE else ""
+_bundle_display = (
+    _bundle
+    if _bundle
+    else "— (pass -P XENIUM_BUNDLE:… for local render; Nextflow passes samplesheet path)"
+)
+
+_pub = str(SAMPLE_PUBLISHED_OUTDIR).strip() if SAMPLE_PUBLISHED_OUTDIR else ""
+_pub_display = (
+    _pub
+    if _pub
+    else "— (pass -P SAMPLE_PUBLISHED_OUTDIR:… or run via Nextflow)"
+)
+
+_meta = pd.DataFrame(
+    [
+        {"Field": "Report generated", "Value": _report_stamp},
+        {"Field": "Sample ID", "Value": _sample},
+        {"Field": "Xenium bundle", "Value": _bundle_display},
+        {"Field": "Image QC output folder path", "Value": _pub_display},
+    ]
+)
+_tbl = _meta.to_html(index=False, classes="table report-meta", border=0)
+display(
+    HTML(
+        "<style>.report-meta td:nth-child(2){word-break:break-word;max-width:50em;}</style>"
+        + _tbl
+    )
+)
+```
+
+## 2. Overview
+
+Xenium links **optical morphology** and **transcript detection** on the same tissue. Downstream work—segmentation, cell typing, spatial statistics, differential expression—assumes the incoming data carry real biological signal, not artefacts from out-of-focus optics, weak or saturated staining, or patchy tissue coverage. Slide and imaging quality are therefore a first gate: if the instrument read is marginal, subtle biology is easy to miss or to misread as noise.
+
+**Image QC** is how we make that gate explicit. This report answers, for one sample: **Is the Xenium imagery and associated QC summary good enough to treat as a solid basis for further analysis?** It does not replace biological interpretation; it flags where **optical and signal quality** may limit what you can conclude without extra caution or filtering.
+
+When cell segmentation exists, the report also includes cell-level QC figures using `CCFS_DAPI` (a per-cell focus score based on local contrast/brightness) and compares those cell-based scores with **tile-level focus**—the same grid-based focus values used elsewhere in the report, **sampled at each cell’s location** (for example at the nucleus centroid) so every cell gets the focus score of the tile it falls in.
+
+## 3. At-a-glance sample health
+
+Use this table as a **quick read on readiness**: intensity, focus, Signal-to-Noise Ratio (SNR), morphology and cell level QC verdicts (where present).
+
+```{python at-a-glance-scorecard}
+#| echo: false
+
+
+def _intensity_display_status(raw: str) -> str:
+    if not raw:
+        return "—"
+    sl = str(raw).strip().lower()
+    if sl == "good":
+        return "PASS"
+    if sl == "warning":
+        return "WARN"
+    if sl == "critical":
+        return "FAIL"
+    return str(raw).upper()
+
+
+iq = intensity_stats if intensity_stats else roi_metrics.get("intensity_quality") or {}
+rows: list[dict[str, str]] = []
+
+def _worst_status(labels: list[str]) -> str:
+    rank = {"PASS": 0, "WARN": 1, "FAIL": 2}
+    vals = [str(x).upper() for x in labels if str(x).upper() in rank]
+    if not vals:
+        return "N/A"
+    return max(vals, key=lambda u: rank[u])
+
+def _component_display_verdict(payload: dict) -> str:
+    """Map optional-dependency skips to N/A instead of FAIL."""
+    if not isinstance(payload, dict):
+        return "N/A"
+    reason = str(payload.get("reason", "") or payload.get("moran_note", "")).lower()
+    if "modulenotfounderror" in reason or "no module named" in reason:
+        return "N/A"
+    return str(payload.get("verdict", "")).upper()
+
+# Detect tissue mask failure once — reused by Intensity and Focus rows
+_tm_aag = roi_metrics.get("tissue_mask_qc") if isinstance(roi_metrics.get("tissue_mask_qc"), dict) else {}
+_mask_ok_aag = _tm_aag.get("tissue_mask_generated", True)
+_rit_aag = _tm_aag.get("rois_in_tissue", -1)
+_mask_ok_aag = _mask_ok_aag and (isinstance(_rit_aag, (int, float)) and _rit_aag > 0)
+
+# Intensity category
+int_statuses = []
+int_detail_parts = []
+if not _mask_ok_aag:
+    # No tissue mask → intensity QC is invalid
+    int_statuses = []
+    int_detail_parts.append("no tissue mask — intensity QC not performed")
+elif isinstance(iq, dict):
+    oq = iq.get("overall_quality")
+    if oq is not None and str(oq).strip():
+        ov = _intensity_display_status(str(oq))
+        int_statuses.append(ov)
+        int_detail_parts.append(f"overall={str(oq)}")
+    dapi = iq.get("dapi") if isinstance(iq.get("dapi"), dict) else {}
+    if dapi:
+        pbc = dapi.get("pct_tissue_roi_below_critical")
+        if isinstance(pbc, (int, float)):
+            int_detail_parts.append(f"DAPI % tissue tiles below min={float(pbc):.1f}%")
+rows.append(
+    {
+        "Category": "Intensity",
+        "Metric": "Category verdict",
+        "Status": _worst_status(int_statuses),
+        "Detail": ("; ".join(int_detail_parts) if int_detail_parts else "See section 7 for channel-level details."),
+        "Links": '<a href="#sec-intensity">Section 7</a>',
+    }
+)
+
+# Spatial morphology category
+morph_statuses = []
+morph_parts = []
+tm = roi_metrics.get("tissue_mask_qc", {})
+if isinstance(tm, dict):
+    s = str(tm.get("status", "")).upper()
+    if s in {"PASS", "WARN", "FAIL"}:
+        morph_statuses.append(s)
+    rin, tr = tm.get("rois_in_tissue"), tm.get("total_rois")
+    if isinstance(rin, (int, float)) and isinstance(tr, (int, float)) and float(tr) > 0:
+        morph_parts.append(f"tissue-overlap tiles={int(rin):,}/{int(tr):,} ({100.0*float(rin)/float(tr):.1f}%)")
+rows.append(
+    {
+        "Category": "Spatial morphology",
+        "Metric": "Category verdict",
+        "Status": _worst_status(morph_statuses),
+        "Detail": ("; ".join(morph_parts) if morph_parts else "See section 5 for morphology QC summary."),
+        "Links": '<a href="#sec-spatial-morphology">Section 5</a>',
+    }
+)
+
+# Tile focus category — composite verdict
+# Strategy: use GMM blur % when component separation is reliable (Cohen's d >= warn);
+# fall back to Laplacian absolute floor + CCFS when GMM separation is poor.
+roi_focus_status = "N/A"
+roi_detail = "See section 6 for tile focus/blur metrics."
+_roi_focus_path = ""  # which path determined the verdict
+
+_iq_cut = roi_cutoffs.get("image_qc") or {}
+_focus_cut_aag = _iq_cut.get("focus") or {}
+_dapi_cut_aag = ((_iq_cut.get("channels") or {}).get("DAPI") or {})
+
+# Extract component separation and thresholds
+_lap_aag = roi_metrics.get("laplacian_sharpness") or {}
+_comp_sep = _lap_aag.get("component_separation")
+_cs_warn = _focus_cut_aag.get("gmm_2d_laplacian_component_separation_warn", 1.0)
+_cs_fail = _focus_cut_aag.get("gmm_2d_laplacian_component_separation_fail", 0.5)
+_gmm_reliable = (
+    isinstance(_comp_sep, (int, float))
+    and np.isfinite(float(_comp_sep))
+    and float(_comp_sep) >= float(_cs_warn)
+)
+
+blur = roi_metrics.get("blur_gmm_1d") or roi_metrics.get("blur_gmm_2d")
+
+if not _mask_ok_aag:
+    roi_focus_status = "N/A"
+    roi_detail = "no tissue mask — focus/blur QC not performed"
+    _roi_focus_path = "no_mask"
+elif _gmm_reliable and isinstance(blur, dict):
+    # --- Path A: GMM separation is reliable → use GMM blur % ---
+    pct_all = blur.get("pct_blurred_gmm")
+    pct_tissue = blur.get("pct_blurred_gmm_tissue_filtered")
+    pct = pct_tissue if isinstance(pct_tissue, (int, float)) else pct_all
+    fw, ff = _dapi_cut_aag.get("focus_warn"), _dapi_cut_aag.get("focus_fail")
+    if isinstance(pct, (int, float)) and isinstance(fw, (int, float)) and isinstance(ff, (int, float)):
+        if float(pct) >= 100.0 * float(ff):
+            roi_focus_status = "FAIL"
+        elif float(pct) >= 100.0 * float(fw):
+            roi_focus_status = "WARN"
+        else:
+            roi_focus_status = "PASS"
+    if isinstance(pct, (int, float)):
+        roi_detail = f"GMM blur={float(pct):.1f}% (d={float(_comp_sep):.1f}, GMM reliable)"
+    _roi_focus_path = "GMM"
+else:
+    # --- Path B: GMM unreliable → composite of Laplacian floor + CCFS ---
+    _lap_status = _lap_aag.get("lap_var_absolute_status", "N/A")
+    _lap_ok = _lap_status == "PASS"
+    _lap_bad = _lap_status in ("FAIL", "WARN")
+
+    _cm_aag = cell_metrics or {}
+    _pct_ccfs_aag = _cm_aag.get("pct_low_nuclear_texture")
+    if _pct_ccfs_aag is None and _cm_aag.get("cells_low_nuclear_texture") and _cm_aag.get("total_cells"):
+        _pct_ccfs_aag = round(100.0 * _cm_aag["cells_low_nuclear_texture"] / _cm_aag["total_cells"], 2)
+    _ccfs_warn_thr = _focus_cut_aag.get("low_texture_cell_warn", 0.10)
+    _ccfs_ok = isinstance(_pct_ccfs_aag, (int, float)) and _pct_ccfs_aag < _ccfs_warn_thr * 100
+    _ccfs_bad = isinstance(_pct_ccfs_aag, (int, float)) and _pct_ccfs_aag >= _ccfs_warn_thr * 100
+
+    _d_str = f"d={float(_comp_sep):.1f}" if isinstance(_comp_sep, (int, float)) and np.isfinite(float(_comp_sep)) else "d=N/A"
+
+    if _lap_ok and _ccfs_ok:
+        roi_focus_status = "PASS"
+        roi_detail = f"Lap floor PASS + CCFS OK ({_d_str}, GMM unreliable → fallback)"
+    elif _lap_ok and _ccfs_bad:
+        roi_focus_status = "WARN"
+        _ccfs_str = f"{_pct_ccfs_aag:.1f}%" if isinstance(_pct_ccfs_aag, (int, float)) else "N/A"
+        roi_detail = f"Lap floor PASS but low nuclear texture={_ccfs_str} ({_d_str}, GMM unreliable → fallback)"
+    elif _lap_bad and _ccfs_ok:
+        roi_focus_status = "WARN"
+        roi_detail = f"Lap floor {_lap_status} but nuclear texture OK ({_d_str}, GMM unreliable → fallback)"
+    elif _lap_bad and _ccfs_bad:
+        roi_focus_status = "FAIL"
+        _ccfs_str = f"{_pct_ccfs_aag:.1f}%" if isinstance(_pct_ccfs_aag, (int, float)) else "N/A"
+        roi_detail = f"Lap floor {_lap_status} + low nuclear texture={_ccfs_str} ({_d_str}, GMM unreliable → fallback)"
+    else:
+        roi_focus_status = "N/A"
+        roi_detail = f"Insufficient data for fallback verdict ({_d_str}, GMM unreliable)"
+    _roi_focus_path = "fallback"
+
+rows.append(
+    {
+        "Category": "Tile focus",
+        "Metric": "Category verdict",
+        "Status": roi_focus_status,
+        "Detail": roi_detail,
+        "Links": '<a href="#sec-tile-focus-blur">Section 6</a>',
+    }
+)
+
+# SNR category (split into tile-level and cell/matrix tracks)
+if snr_summary and isinstance(snr_summary.get("components", {}), dict):
+    comp = snr_summary.get("components", {})
+    roi_keys = ("SNR_image_roi_quartile_db", "SNR_image_otsu", "SNR_roi_tx", "SNR_roi_neg_spatial")
+    matrix_keys = ("SNR_slide_plummer", "SNR_slide_spatialqm")
+    roi_vals = [_component_display_verdict(comp.get(k) or {}) for k in roi_keys if isinstance(comp.get(k), dict)]
+    mat_vals = [_component_display_verdict(comp.get(k) or {}) for k in matrix_keys if isinstance(comp.get(k), dict)]
+    rows.append(
+        {
+            "Category": "Signal-to-noise ratio",
+            "Metric": "Tile-based SNR",
+            "Status": _worst_status(roi_vals),
+            "Detail": "See section 8 for tile/image/transcript SNR components.",
+            "Links": '<a href="#sec-snr-roi">Section 8</a> | <a href="#tab-snr-image-otsu">Otsu tab</a> | <a href="#tab-snr-roi-neg-spatial">Neg-spatial tab</a>',
+        }
+    )
+    rows.append(
+        {
+            "Category": "Signal-to-noise ratio",
+            "Metric": "Cell/matrix SNR",
+            "Status": _worst_status(mat_vals),
+            "Detail": "See section 9 for cell x gene matrix SNR components.",
+            "Links": '<a href="#sec-snr-cell-matrix">Section 9</a> | <a href="#tab-snr-slide-plummer">Plummer tab</a> | <a href="#tab-snr-slide-spatialqm">SpatialQM tab</a>',
+        }
+    )
+else:
+    rows.append(
+        {
+            "Category": "Signal to noise ratio",
+            "Metric": "Tile-based SNR (4 components)",
+            "Status": "NOT_COMPUTED",
+            "Detail": "No SNR block in roi_qc_metrics.json / snr_metrics.json.",
+            "Links": '<a href="#sec-snr-roi">Section 8</a>',
+        }
+    )
+    rows.append(
+        {
+            "Category": "Signal to noise ratio",
+            "Metric": "Cell/matrix SNR (2 components)",
+            "Status": "NOT_COMPUTED",
+            "Detail": "No SNR block in roi_qc_metrics.json / snr_metrics.json.",
+            "Links": '<a href="#sec-snr-cell-matrix">Section 9</a>',
+        }
+    )
+
+# Cell-level category — composite of CCFS nuclear texture, GMM-ROI blur, and cluster outliers
+cell_status = "N/A"
+cell_detail = "See section 10 for per-cell QC summary and figures."
+if cell_metrics:
+    nc = cell_metrics.get("total_cells")
+    focus_cut_cell = ((roi_cutoffs.get("image_qc") or {}).get("focus") or {})
+    cw = focus_cut_cell.get("low_texture_cell_warn", 0.10)
+    cf = focus_cut_cell.get("low_texture_cell_fail", 0.25)
+    _cell_verdicts = []
+    _cell_parts = []
+
+    # (a) CCFS nuclear texture (per-cell contrast — distinct from optical blur)
+    _pct_ccfs = cell_metrics.get("pct_low_nuclear_texture")
+    if _pct_ccfs is None:
+        nb = cell_metrics.get("cells_low_nuclear_texture")
+        if isinstance(nb, (int, float)) and isinstance(nc, (int, float)) and float(nc) > 0:
+            _pct_ccfs = 100.0 * float(nb) / float(nc)
+    if isinstance(_pct_ccfs, (int, float)):
+        _cell_parts.append(f"CCFS low texture={_pct_ccfs:.1f}%")
+        if _pct_ccfs >= 100.0 * float(cf):
+            _cell_verdicts.append("FAIL")
+        elif _pct_ccfs >= 100.0 * float(cw):
+            _cell_verdicts.append("WARN")
+        else:
+            _cell_verdicts.append("PASS")
+
+    # (b) GMM-ROI blur (tile-level classification propagated to cells)
+    _pct_gmm_roi = cell_metrics.get("pct_blurred_gmm_2d_roi")
+    if _pct_gmm_roi is None:
+        _n_gmm_roi = cell_metrics.get("cells_blurred_gmm_2d_roi")
+        if isinstance(_n_gmm_roi, (int, float)) and isinstance(nc, (int, float)) and float(nc) > 0:
+            _pct_gmm_roi = 100.0 * float(_n_gmm_roi) / float(nc)
+    if isinstance(_pct_gmm_roi, (int, float)):
+        _cell_parts.append(f"GMM-tile blur={_pct_gmm_roi:.1f}%")
+        if _pct_gmm_roi >= 100.0 * float(cf):
+            _cell_verdicts.append("FAIL")
+        elif _pct_gmm_roi >= 100.0 * float(cw):
+            _cell_verdicts.append("WARN")
+        else:
+            _cell_verdicts.append("PASS")
+
+    # (c) Cluster-outlier blur — any cluster with blur >> sample average
+    _cluster_outliers = cell_metrics.get("cluster_blur_outliers")
+    if isinstance(_cluster_outliers, dict) and _cluster_outliers:
+        worst_cl = max(_cluster_outliers, key=lambda k: _cluster_outliers[k]["pct_blurred"])
+        worst_info = _cluster_outliers[worst_cl]
+        _cell_parts.append(
+            f"cluster outlier: C{worst_cl} ({worst_info['pct_blurred']:.0f}% blur, "
+            f"n={worst_info['n_cells']:,})"
+        )
+        # Outlier cluster is a WARN — spatially biased quality loss
+        _cell_verdicts.append("WARN")
+
+    cell_status = _worst_status(_cell_verdicts)
+    cell_detail = "; ".join(_cell_parts) if _cell_parts else "See section 10 for per-cell QC summary and figures."
+rows.append(
+    {
+        "Category": "Cell-level QC",
+        "Metric": "Category verdict",
+        "Status": cell_status,
+        "Detail": cell_detail,
+        "Links": '<a href="#sec-cell-level-qc">Section 10</a>',
+    }
+)
+
+df_glance = pd.DataFrame(rows)
+_df = df_glance.copy()
+_status = _df["Status"].astype(str).str.upper()
+def _status_css(s: str) -> str:
+    su = str(s).upper()
+    if su == "FAIL":
+        return "background-color:#FEE2E2;color:#991B1B;font-weight:700;"
+    if su == "WARN":
+        return "background-color:#FFEDD5;color:#9A3412;font-weight:700;"
+    if su == "PASS":
+        return "background-color:#DCFCE7;color:#166534;font-weight:700;"
+    return ""
+_status_style = [_status_css(s) for s in _status]
+_sty = (
+    _df.style
+    .set_table_styles(
+        [
+            {"selector": "th", "props": "text-align:left; background-color:#F8FAFC;"},
+            {"selector": "td", "props": "text-align:left; vertical-align:top;"},
+            {"selector": "td.col0, th.col_heading.level0.col0", "props": "text-align:left;"},
+        ]
+    )
+    .set_properties(subset=["Category"], **{"min-width": "12em", "text-align": "left"})
+    .set_properties(subset=["Metric"], **{"min-width": "20em", "text-align": "left"})
+    .set_properties(subset=["Detail"], **{"min-width": "26em"})
+    .set_properties(subset=["Links"], **{"min-width": "20em"})
+    .apply(lambda _col: _status_style, subset=["Status"])
+    .hide(axis="index")
+)
+display(HTML(_sty.to_html()))
+
+```
+
+# Part A — Tile / ROI analysis {.unnumbered}
+
+Sections 4–8 assess image quality at the **tile level**: a regular grid of 100 µm squares laid over the capture area. Each tile gets focus, intensity, blur, and SNR scores independently of cell segmentation.
+
+## 4. Tile processing summary
+
+This section is the tile analysis scaffold used by downstream QC sections: how the grid is defined, how much of it overlaps tissue, and which morphology channels are available for channel-aware checks.
+
+### Tile grid parameters
+
+```{python roi-grid-parameters}
+#| echo: false
+
+rows = []
+if "roi_size_pixels" in roi_metrics:
+    rows.append({"Metric": "Tile size (px)", "Value": roi_metrics["roi_size_pixels"]})
+for k in ("roi_stride_pixels", "roi_stride_px", "stride_pixels", "stride_px", "grid_stride_pixels"):
+    if k in roi_metrics:
+        rows.append({"Metric": "Tile stride (px)", "Value": roi_metrics[k]})
+        break
+if "total_rois" in roi_metrics:
+    rows.append({"Metric": "Total tiles", "Value": f"{roi_metrics['total_rois']:,}"})
+
+df_grid = pd.DataFrame(rows, columns=["Metric", "Value"])
+display_table(df_grid)
+```
+
+### Tissue coverage statistics
+
+```{python roi-tissue-coverage-stats}
+#| echo: false
+
+rows = []
+total = roi_metrics.get("total_rois")
+in_tissue = roi_metrics.get("rois_in_tissue")
+tissue_cov = (roi_metrics.get("tissue_coverage") or {}).get("mean")
+tm = roi_metrics.get("tissue_mask_qc") if isinstance(roi_metrics.get("tissue_mask_qc"), dict) else {}
+
+if isinstance(in_tissue, (int, float)):
+    rows.append({"Metric": "Tiles in tissue", "Value": f"{int(in_tissue):,}"})
+if isinstance(total, (int, float)) and isinstance(in_tissue, (int, float)) and float(total) > 0:
+    rows.append({"Metric": "Tile tissue-overlap fraction", "Value": f"{100.0*float(in_tissue)/float(total):.1f}%"})
+if isinstance(tissue_cov, (int, float)):
+    rows.append({"Metric": "Mean tissue coverage per tile", "Value": f"{100.0*float(tissue_cov):.1f}%"})
+if isinstance(tm, dict):
+    rows.append({"Metric": "Tissue mask generation status", "Value": str(tm.get("status", "N/A"))})
+
+df_cov = pd.DataFrame(rows, columns=["Metric", "Value"])
+_cov_val_styles = [_status_cell_css(v) for v in df_cov["Value"]]
+_sty_cov = (
+    df_cov.style
+    .set_table_styles(
+        [
+            {"selector": "th", "props": "text-align:left; background-color:#F8FAFC;"},
+            {"selector": "td", "props": "text-align:left; vertical-align:top;"},
+        ]
+    )
+    .hide(axis="index")
+    .apply(lambda _col: _cov_val_styles, subset=["Value"])
+)
+display(HTML(_sty_cov.to_html()))
+```
+
+### Channel availability (DAPI, Boundary, IntRNA)
+
+```{python roi-channel-availability}
+#| echo: false
+
+rows = []
+iq = intensity_stats if intensity_stats else roi_metrics.get("intensity_quality") or {}
+for ch in ("dapi", "boundary", "intrna"):
+    block = iq.get(ch) if isinstance(iq, dict) and isinstance(iq.get(ch), dict) else {}
+    qs = str(block.get("quality_status", "")).strip().lower()
+    available = "YES" if qs and qs != "not_available" else "NO"
+    mean_v = block.get("mean")
+    rows.append(
+        {
+            "Channel": ch.upper(),
+            "Available": available,
+            "Quality status": str(block.get("quality_status", "not_available")),
+            "Raw mean intensity": f"{float(mean_v):.3g}" if isinstance(mean_v, (int, float)) else "N/A",
+        }
+    )
+
+df_ch = pd.DataFrame(rows, columns=["Channel", "Available", "Quality status", "Raw mean intensity"])
+_avail_styles = [
+    _status_cell_css("PASS") if str(v).strip().upper() == "YES" else ""
+    for v in df_ch["Available"]
+]
+_q_styles = [_status_cell_css(v) for v in df_ch["Quality status"]]
+_sty_ch = (
+    df_ch.style
+    .set_table_styles(
+        [
+            {"selector": "th", "props": "text-align:left; background-color:#F8FAFC;"},
+            {"selector": "td", "props": "text-align:left; vertical-align:top;"},
+        ]
+    )
+    .hide(axis="index")
+    .apply(lambda _col: _avail_styles, subset=["Available"])
+    .apply(lambda _col: _q_styles, subset=["Quality status"])
+)
+display(HTML(_sty_ch.to_html()))
+
+# Warn when all channels are not_available — typically caused by tissue mask failure
+_all_unavailable = all(
+    str(r.get("Quality status", "")).strip().lower() == "not_available"
+    for r in rows
+)
+if _all_unavailable:
+    _tm_ch = roi_metrics.get("tissue_mask_qc") if isinstance(roi_metrics.get("tissue_mask_qc"), dict) else {}
+    _mask_gen = _tm_ch.get("tissue_mask_generated", True)
+    _rit = _tm_ch.get("rois_in_tissue", -1)
+    if not _mask_gen or (isinstance(_rit, (int, float)) and _rit == 0):
+        display(Markdown(
+            "> ⚠ **All channels report `not_available`.** "
+            "Tissue mask generation failed (0 tissue tiles detected), so per-channel "
+            "intensity QC could not be performed. This typically occurs with tissue types "
+            "that have very low or diffuse DAPI signal (e.g. skin, adipose, decalcified bone). "
+            "Review the morphology masks in Section 5 and consider adjusting "
+            "`roi_intensity_threshold` in the thresholds YAML if tissue is genuinely present."
+        ))
+    else:
+        display(Markdown(
+            "> ⚠ **All channels report `not_available`.** "
+            "Per-channel intensity assessment was not performed or produced no results. "
+            "Check `intensity_assessment.json` and the pipeline logs for details."
+        ))
+```
+
+## 5. Morphology {#sec-spatial-morphology}
+
+The tissue analysis generates whole-sample masks and identifies problematic regions that could affect data quality. This includes:
+
+### Morphology QC summary
+
+```{python spatial-morphology-qc}
+#| echo: false
+
+img_qc_cut = (roi_cutoffs.get("image_qc") or {}) if isinstance(roi_cutoffs, dict) else {}
+morph_cut = (img_qc_cut.get("morphology") or {}) if isinstance(img_qc_cut, dict) else {}
+slide_cut = (img_qc_cut.get("slide_level") or {}) if isinstance(img_qc_cut, dict) else {}
+
+
+def _find_metric(d: dict, names: tuple[str, ...]) -> float | None:
+    if not isinstance(d, dict):
+        return None
+    for n in names:
+        v = d.get(n)
+        if isinstance(v, (int, float)) and np.isfinite(float(v)):
+            return float(v)
+    return None
+
+
+def _status_from_value(
+    value: float | None,
+    *,
+    warn: float | None = None,
+    fail: float | None = None,
+    higher_is_better: bool = True,
+) -> str:
+    if value is None or fail is None:
+        return "N/A"
+    if warn is None:
+        if higher_is_better:
+            return "FAIL" if value < float(fail) else "PASS"
+        return "FAIL" if value > float(fail) else "PASS"
+    if higher_is_better:
+        if value < float(fail):
+            return "FAIL"
+        if value < float(warn):
+            return "WARN"
+        return "PASS"
+    if value > float(fail):
+        return "FAIL"
+    if value > float(warn):
+        return "WARN"
+    return "PASS"
+
+
+rows = []
+
+tissue_cov_mean = _find_metric(roi_metrics.get("tissue_coverage", {}), ("mean",))
+tissue_cov_warn = morph_cut.get("tissue_coverage_warn")
+tissue_cov_fail = morph_cut.get("tissue_coverage_fail")
+rows.append(
+    {
+        "Metric": "Tissue coverage",
+        "Status": _status_from_value(
+            tissue_cov_mean,
+            warn=tissue_cov_warn if isinstance(tissue_cov_warn, (int, float)) else None,
+            fail=tissue_cov_fail if isinstance(tissue_cov_fail, (int, float)) else None,
+            higher_is_better=True,
+        ),
+        "Value": f"{100.0*tissue_cov_mean:.1f}%" if tissue_cov_mean is not None else "not available",
+        "Cutoffs": (
+            f"PASS >= {100.0*float(tissue_cov_warn):.1f}%; WARN {100.0*float(tissue_cov_fail):.1f}-{100.0*float(tissue_cov_warn):.1f}%; FAIL < {100.0*float(tissue_cov_fail):.1f}%"
+            if isinstance(tissue_cov_warn, (int, float)) and isinstance(tissue_cov_fail, (int, float))
+            else "not configured"
+        ),
+    }
+)
+
+edge_zone = _find_metric(
+    roi_metrics.get("morphology", {}),
+    ("edge_zone_frac", "edge_zone_fraction", "edge_zone", "tissue_edge_fraction"),
+)
+if edge_zone is None:
+    edge_zone = _find_metric(
+        roi_metrics,
+        ("edge_zone_frac", "edge_zone_fraction", "edge_zone", "tissue_edge_fraction"),
+    )
+edge_warn = morph_cut.get("edge_zone_warn")
+edge_fail = morph_cut.get("edge_zone_fail")
+rows.append(
+    {
+        "Metric": "Edge-zone burden",
+        "Status": _status_from_value(
+            edge_zone,
+            warn=edge_warn if isinstance(edge_warn, (int, float)) else None,
+            fail=edge_fail if isinstance(edge_fail, (int, float)) else None,
+            higher_is_better=False,
+        ),
+        "Value": f"{100.0*edge_zone:.1f}%" if edge_zone is not None else "not available",
+        "Cutoffs": (
+            f"PASS <= {100.0*float(edge_warn):.1f}%; WARN {100.0*float(edge_warn):.1f}-{100.0*float(edge_fail):.1f}%; FAIL > {100.0*float(edge_fail):.1f}%"
+            if isinstance(edge_warn, (int, float)) and isinstance(edge_fail, (int, float))
+            else "not configured"
+        ),
+    }
+)
+
+hole_area = _find_metric(
+    roi_metrics.get("morphology", {}),
+    ("hole_area_frac", "hole_area_fraction", "hole_area", "internal_hole_fraction"),
+)
+if hole_area is None:
+    hole_area = _find_metric(
+        roi_metrics,
+        ("hole_area_frac", "hole_area_fraction", "hole_area", "internal_hole_fraction"),
+    )
+hole_warn = morph_cut.get("hole_area_warn")
+hole_fail = morph_cut.get("hole_area_fail")
+rows.append(
+    {
+        "Metric": "Hole-area burden",
+        "Status": _status_from_value(
+            hole_area,
+            warn=hole_warn if isinstance(hole_warn, (int, float)) else None,
+            fail=hole_fail if isinstance(hole_fail, (int, float)) else None,
+            higher_is_better=False,
+        ),
+        "Value": f"{100.0*hole_area:.1f}%" if hole_area is not None else "not available",
+        "Cutoffs": (
+            f"PASS <= {100.0*float(hole_warn):.1f}%; WARN {100.0*float(hole_warn):.1f}-{100.0*float(hole_fail):.1f}%; FAIL > {100.0*float(hole_fail):.1f}%"
+            if isinstance(hole_warn, (int, float)) and isinstance(hole_fail, (int, float))
+            else "not configured"
+        ),
+    }
+)
+
+usable_tissue = _find_metric(
+    roi_metrics.get("morphology", {}),
+    ("usable_tissue_frac", "usable_tissue_fraction", "usable_tissue"),
+)
+if usable_tissue is None:
+    usable_tissue = _find_metric(
+        roi_metrics,
+        ("usable_tissue_frac", "usable_tissue_fraction", "usable_tissue"),
+    )
+usable_warn = slide_cut.get("usable_tissue_warn")
+usable_fail = slide_cut.get("usable_tissue_fail")
+
+# Build a breakdown string showing what drives the usable tissue score
+_usable_detail = ""
+if usable_tissue is not None:
+    _blur_gmm = roi_metrics.get("blur_gmm_2d") or roi_metrics.get("blur_gmm_1d") or {}
+    _pct_blur_tissue = _blur_gmm.get("pct_blurred_gmm_tissue_filtered")
+    if isinstance(_pct_blur_tissue, (int, float)):
+        _usable_detail = f" (blur {_pct_blur_tissue:.1f}%)"
+
+rows.append(
+    {
+        "Metric": "Usable tissue",
+        "Status": _status_from_value(
+            usable_tissue,
+            warn=usable_warn if isinstance(usable_warn, (int, float)) else None,
+            fail=usable_fail if isinstance(usable_fail, (int, float)) else None,
+            higher_is_better=True,
+        ),
+        "Value": f"{100.0*usable_tissue:.1f}%{_usable_detail}" if usable_tissue is not None else "not available",
+        "Cutoffs": (
+            f"PASS >= {100.0*float(usable_warn):.1f}%; WARN {100.0*float(usable_fail):.1f}-{100.0*float(usable_warn):.1f}%; FAIL < {100.0*float(usable_fail):.1f}%"
+            if isinstance(usable_warn, (int, float)) and isinstance(usable_fail, (int, float))
+            else "not configured"
+        ),
+    }
+)
+
+cluster_bad = _find_metric(
+    roi_metrics.get("morphology", {}),
+    ("cluster_zone_frac", "cluster_zone_fraction", "cluster_zone_bad_fraction"),
+)
+if cluster_bad is None:
+    cluster_bad = _find_metric(
+        roi_metrics,
+        ("cluster_zone_frac", "cluster_zone_fraction", "cluster_zone_bad_fraction"),
+    )
+cluster_fail = slide_cut.get("cluster_zone_fail")
+rows.append(
+    {
+        "Metric": "Largest contiguous low-quality zone",
+        "Status": _status_from_value(
+            cluster_bad,
+            warn=None,
+            fail=cluster_fail if isinstance(cluster_fail, (int, float)) else None,
+            higher_is_better=False,
+        ),
+        "Value": f"{100.0*cluster_bad:.1f}%" if cluster_bad is not None else "not available",
+        "Cutoffs": (
+            f"PASS <= {100.0*float(cluster_fail):.1f}%; FAIL > {100.0*float(cluster_fail):.1f}% (no WARN cutoff configured)"
+            if isinstance(cluster_fail, (int, float))
+            else "not configured"
+        ),
+    }
+)
+
+df_morph = pd.DataFrame(rows)
+display_status_table(df_morph, ["Status"])
+
+# Conditional caveat for usable tissue WARN/FAIL
+_usable_status = df_morph.loc[df_morph["Metric"] == "Usable tissue", "Status"].values
+_usable_warn_or_fail = len(_usable_status) > 0 and str(_usable_status[0]).upper() in ("WARN", "FAIL")
+
+if _usable_warn_or_fail:
+    _blur_gmm = roi_metrics.get("blur_gmm_2d") or roi_metrics.get("blur_gmm_1d") or {}
+    _pct_blur_tissue = _blur_gmm.get("pct_blurred_gmm_tissue_filtered")
+    _blur_note = ""
+    if isinstance(_pct_blur_tissue, (int, float)) and _pct_blur_tissue > 30:
+        _blur_note = (
+            f" In this sample, **{_pct_blur_tissue:.1f}%** of tissue tiles were classified "
+            "as blurred by the GMM model — this is the primary driver of the low usable-tissue score."
+        )
+    display(Markdown(
+        "> ℹ **Usable tissue** is computed as the fraction of tissue tiles (≥ 50% tissue coverage) "
+        "that are neither GMM-blurred nor below the intensity floor. "
+        "In most samples, **tile-level blur** is the dominant factor — the intensity gate "
+        "rarely excludes additional tiles beyond the blur classification."
+        f"{_blur_note} "
+        "See Section 6 for spatial blur distribution and Section 10 for cell-level blur assessment."
+    ))
+
+# Conditional tissue-type caveat for edge-zone and hole-area
+_edge_status = df_morph.loc[df_morph["Metric"] == "Edge-zone burden", "Status"].values
+_hole_status = df_morph.loc[df_morph["Metric"] == "Hole-area burden", "Status"].values
+_edge_warn = len(_edge_status) > 0 and str(_edge_status[0]).upper() in ("WARN", "FAIL")
+_hole_warn = len(_hole_status) > 0 and str(_hole_status[0]).upper() in ("WARN", "FAIL")
+
+if _edge_warn or _hole_warn:
+    _parts = []
+    if _edge_warn:
+        _parts.append(
+            "**Edge-zone burden** is elevated — this is often tissue-specific rather than a "
+            "quality problem. Sparse or branching tissues (lung alveoli, intestinal villi, "
+            "lymph node sinuses) have proportionally more internal and external edges than "
+            "compact tissues (liver, brain cortex). High edge-zone burden in these contexts "
+            "does not indicate poor sample quality."
+        )
+    if _hole_warn:
+        _parts.append(
+            "**Hole-area burden** is elevated — distinguish biological lumens (airways, "
+            "blood vessels, glandular ducts) from technical artefacts (tissue tears, "
+            "detachment, processing damage). Lumen-rich tissues (lung, kidney, intestine) "
+            "routinely score high here without any quality concern."
+        )
+    display(Markdown("> ⚠ **Tissue-type caveat:** " + " ".join(_parts)))
+```
+
+### Definitions and interpretation
+
+::: {.panel-tabset}
+#### Tissue coverage
+
+Fraction of capture area overlapping tissue mask; low values indicate very small/partial sections.
+
+#### Edge-zone burden
+
+Fraction of tissue near the outer boundary; high values indicate edge-dominated samples. **Tissue-specific note:** sparse or branching tissues (lung, intestine, lymph node) naturally have high edge fractions — a WARN or FAIL here does not necessarily indicate poor quality.
+
+#### Hole-area burden
+
+Fraction of internal holes/voids; high values suggest tears or gaps. **Tissue-specific note:** lumen-rich tissues (lung airways, blood vessels, glandular ducts) produce high hole-area fractions that are biologically expected, not artefactual.
+
+#### Usable tissue
+
+Fraction of tissue tiles (with ≥ 50% tissue coverage) that are **neither blurred** (by GMM tile classification) **nor below the intensity floor** (`roi_intensity_threshold`). In practice this metric is dominated by the **tile blur rate** — most tissue tiles pass the intensity gate, so usable ≈ 1 − blur fraction. A low score therefore usually means many tiles were classified as out-of-focus by the GMM model, not that staining was weak. Cross-reference Section 6 (tile focus/blur) for the spatial distribution of blur calls.
+
+**Thresholds:** PASS ≥ 70%, WARN 50–70%, FAIL < 50%.
+
+#### Largest contiguous low-quality zone
+
+Fraction of tissue tiles occupied by the largest single connected region of low-quality tiles (blurred or below intensity floor), using 4-neighbour connectivity. A high value indicates a spatially concentrated artefact (tissue fold, chip, shadow, or coverslip defect) rather than diffuse degradation. **Threshold:** FAIL > 15%.
+:::
+
+
+### Distance to edge
+
+This map gives, for each location, distance to the nearest **outer tissue boundary**.
+
+```{python fig-distance-edge}
+#| echo: false
+if _mask_ok_aag:
+    display(fig_html("figures/distance_map_edge.png"))
+else:
+    display(Markdown(
+        "> **Not available:** tissue mask was not generated for this sample, so "
+        "distance-to-edge cannot be computed. This typically occurs with tissue types "
+        "that have very low or diffuse DAPI signal (e.g. skin, adipose)."
+    ))
+```
+
+::: {.callout-tip collapse="true" title="Interpretation"}
+- **Bright regions:** far from edges — generally reliable tissue with good signal support
+- **Dark regions:** near edges — partial tissue, sectioning artefacts, or weak signal
+- **Quality threshold:** cells within ~25–50 pixels of the edge are often excluded from downstream analysis
+- If poor focus/quality clusters at the perimeter, this likely reflects **edge effects** rather than whole-slide failure
+:::
+
+### Distance to holes
+
+This map gives distance to the nearest **internal void/hole** in the tissue mask (tears, gaps, folds, detached regions).
+
+```{python fig-distance-holes}
+#| echo: false
+if _mask_ok_aag:
+    display(fig_html("figures/distance_map_holes.png"))
+else:
+    display(Markdown(
+        "> **Not available:** hole detection requires a tissue mask. "
+        "No tissue mask was generated for this sample."
+    ))
+```
+
+::: {.callout-tip collapse="true" title="Interpretation"}
+- **Bright areas:** far from holes — normal tissue environment
+- **Dark areas:** near holes — potential environmental effects on nearby cells
+- **Biological holes:** blood vessels, airways, glandular lumens — may be biologically relevant and expected
+- **Technical holes:** tissue damage, processing artefacts, folds — should be flagged for exclusion
+- If blur/intensity failures align with dark regions, treat them as potential **local structural artefact zones**
+:::
+
+### Morphology channel overview
+
+A compact view of the morphology channels used for quality assessment (DAPI, boundary, interior RNA) plus dense-intensity region map.
+
+```{python fig-morphology-overview}
+#| echo: false
+display(fig_html("figures/morphology_overview.png"))
+```
+
+::: {.callout-tip collapse="true" title="Interpretation"}
+- **DAPI (top-left):** nuclear distribution and density — expect clear, punctate nuclei across the tissue
+- **Boundary (top-right):** cell membrane integrity and definition — expect visible membrane outlines in epithelial regions
+- **Interior RNA (bottom-left):** cytoplasmic staining patterns — expect diffuse signal within cell bodies
+- **Dense-intensity regions (bottom-right):** identified problem areas with unusually high signal (artefacts, folds, debris)
+- **Even staining:** indicates good tissue preservation and consistent reagent penetration
+- **Clear boundaries:** suggests successful membrane labelling for segmentation
+- **Minimal artefacts:** shows good tissue processing and mounting
+- Look for striping, washout, clipping, or channel-specific anomalies before reading downstream metrics
+:::
+
+### Quality masks and regions
+
+Shows the mask products used by the pipeline: tissue extent, holes, and dense-intensity regions.
+
+```{python fig-imageqc-masks}
+#| echo: false
+if _mask_ok_aag:
+    display(fig_html("figures/imageqc_masks.png"))
+else:
+    _mask_lines = [
+        "> **Tissue mask was not generated** for this sample. The following mask products are unavailable:\n",
+        "> - **Tissue mask:** not generated — automatic tissue segmentation could not find a foreground population",
+        "> - **Hole mask:** not generated (depends on tissue mask)",
+        "> - **Artefact / dense-intensity mask:** may still be available but cannot be interpreted without tissue context",
+        ">\n> This typically occurs with tissue types that have very low or diffuse DAPI signal "
+        "(e.g. skin, adipose, decalcified bone). Consider adjusting "
+        "`roi_intensity_threshold` if the tissue is genuinely present but below the default gate.",
+    ]
+    display(Markdown("\n".join(_mask_lines)))
+```
+
+::: {.callout-tip collapse="true" title="Interpretation"}
+- **Tissue mask (top-left/right):** detected tissue area (white) — all tile-level metrics are computed only within this mask
+- **Hole mask (bottom-left):** identified internal voids (white areas excluded from analysis)
+- **Artefact / dense-intensity mask (bottom-right):** problem regions (white areas flagged or excluded)
+
+These masks define where tile-level calculations are considered on-sample versus background/problem regions. Unexpected mask shapes (missing tissue, spurious holes, oversized artefact regions) can explain surprising table values downstream — always verify before interpreting quality metrics.
+:::
+
+## 6. Focus score analysis {#sec-tile-focus-blur}
+
+**Why this matters for analysis:** blurry or poorly focused optics **smear** morphology and make weak or ambiguous spots harder to separate from background. For Xenium, that erodes confidence in localisation, segmentation, and any read that assumes sharp nuclear and membrane cues. The tile grid summarises sharpness and blur calls across the capture area so you can see whether the slide was imaging well enough to support fine-grained spatial work.
+
+### Tile focus and blur QC summary
+
+```{python roi-focus-blur-summary}
+#| echo: false
+
+rows = []
+
+# Inputs / cutoffs
+blur = roi_metrics.get("blur_gmm_1d") or roi_metrics.get("blur_gmm_2d") or {}
+lap = roi_metrics.get("laplacian_sharpness") or {}
+dapi_cut = (((roi_cutoffs.get("image_qc") or {}).get("channels") or {}).get("DAPI") or {})
+focus_cut = ((roi_cutoffs.get("image_qc") or {}).get("focus") or {})
+
+# Check whether tissue mask was generated — if not, focus metrics are invalid
+_tissue_qc_sec6 = roi_metrics.get("tissue_mask_qc") if isinstance(roi_metrics.get("tissue_mask_qc"), dict) else {}
+_tissue_mask_ok = _tissue_qc_sec6.get("tissue_mask_generated", True)
+_rois_in_tissue_sec6 = _tissue_qc_sec6.get("rois_in_tissue", 0)
+# Also guard against edge case: mask "generated" but 0 tissue tiles
+_tissue_mask_ok = _tissue_mask_ok and (isinstance(_rois_in_tissue_sec6, (int, float)) and _rois_in_tissue_sec6 > 0)
+
+
+def _status_from_thresholds(value, warn=None, fail=None, higher_is_better=True):
+    if not isinstance(value, (int, float)) or not np.isfinite(float(value)):
+        return "N/A"
+    if not isinstance(fail, (int, float)) or not np.isfinite(float(fail)):
+        return "N/A"
+    v = float(value)
+    f = float(fail)
+    if warn is None or not isinstance(warn, (int, float)) or not np.isfinite(float(warn)):
+        if higher_is_better:
+            return "FAIL" if v < f else "PASS"
+        return "FAIL" if v > f else "PASS"
+    w = float(warn)
+    if higher_is_better:
+        if v < f:
+            return "FAIL"
+        if v < w:
+            return "WARN"
+        return "PASS"
+    if v > f:
+        return "FAIL"
+    if v > w:
+        return "WARN"
+    return "PASS"
+
+
+# 1) Tiles in focus (%) — primary status metric
+if not _tissue_mask_ok:
+    # No tissue mask → focus metrics are meaningless
+    pct_blur = np.nan
+    pct_focus = np.nan
+    status_focus = "N/A"
+    den_label = "no tissue mask"
+else:
+    pct_blur_tissue = blur.get("pct_blurred_gmm_tissue_filtered")
+    pct_blur_all = blur.get("pct_blurred_gmm")
+    if isinstance(pct_blur_tissue, (int, float)) and np.isfinite(float(pct_blur_tissue)):
+        pct_blur = float(pct_blur_tissue)
+        den_label = "tissue-filtered tiles"
+    else:
+        pct_blur = float(pct_blur_all) if isinstance(pct_blur_all, (int, float)) and np.isfinite(float(pct_blur_all)) else np.nan
+        den_label = "all tiles"
+    pct_focus = 100.0 - pct_blur if np.isfinite(pct_blur) else np.nan
+focus_warn = dapi_cut.get("focus_warn")
+focus_fail = dapi_cut.get("focus_fail")
+if _tissue_mask_ok:
+    status_focus = _status_from_thresholds(
+        pct_focus if np.isfinite(pct_focus) else None,
+        warn=(100.0 * (1.0 - float(focus_warn))) if isinstance(focus_warn, (int, float)) else None,
+        fail=(100.0 * (1.0 - float(focus_fail))) if isinstance(focus_fail, (int, float)) else None,
+        higher_is_better=True,
+    )
+rows.append(
+    {
+        "Metric": "Tiles in focus",
+        "Status": status_focus,
+        "Value": f"{pct_focus:.1f}%" if np.isfinite(pct_focus) else "not available",
+        "Cutoffs": (
+            f"PASS >= {100.0*(1.0-float(focus_warn)):.1f}%; WARN {100.0*(1.0-float(focus_fail)):.1f}-{100.0*(1.0-float(focus_warn)):.1f}%; FAIL < {100.0*(1.0-float(focus_fail)):.1f}%"
+            if isinstance(focus_warn, (int, float)) and isinstance(focus_fail, (int, float))
+            else "not configured"
+        ),
+        "Notes": f"Denominator: {den_label}",
+    }
+)
+
+# 2) Blurred tiles (%) — contextual companion metric
+rows.append(
+    {
+        "Metric": "Blurred tiles",
+        "Status": status_focus if status_focus in {"PASS", "WARN", "FAIL"} else "N/A",
+        "Value": f"{pct_blur:.1f}%" if np.isfinite(pct_blur) else "not available",
+        "Cutoffs": (
+            f"PASS <= {100.0*float(focus_warn):.1f}%; WARN {100.0*float(focus_warn):.1f}-{100.0*float(focus_fail):.1f}%; FAIL > {100.0*float(focus_fail):.1f}%"
+            if isinstance(focus_warn, (int, float)) and isinstance(focus_fail, (int, float))
+            else "not configured"
+        ),
+        "Notes": "Inverse view of 'Tiles in focus'",
+    }
+)
+
+# 3) Focus score median (tissue tiles)
+_fs = roi_metrics.get("focus_score") or {}
+focus_med = _fs.get("tissue_median", _fs.get("median"))
+_focus_med_warn = focus_cut.get("focus_median_warn")
+_focus_med_status = "N/A"
+if not _tissue_mask_ok:
+    focus_med = None  # suppress misleading value
+elif isinstance(focus_med, (int, float)) and np.isfinite(float(focus_med)):
+    if isinstance(_focus_med_warn, (int, float)) and float(focus_med) < float(_focus_med_warn):
+        _focus_med_status = "WARN"
+    else:
+        _focus_med_status = "PASS"
+rows.append(
+    {
+        "Metric": "Focus score median (tissue tiles)",
+        "Status": _focus_med_status,
+        "Value": f"{float(focus_med):.3g}" if isinstance(focus_med, (int, float)) and np.isfinite(float(focus_med)) else "not available",
+        "Cutoffs": f"WARN < {float(_focus_med_warn):.0f}" if isinstance(_focus_med_warn, (int, float)) else "not configured",
+        "Notes": "Tissue-dependent: brain/small-nucleus tissues score lower. Interpret with blur % and Laplacian floor.",
+    }
+)
+
+# 4) Absolute Laplacian variance floor
+lap_abs_status = "N/A" if not _tissue_mask_ok else lap.get("lap_var_absolute_status", "N/A")
+lap_med_raw = None if not _tissue_mask_ok else lap.get("lap_var_median_raw")
+lap_abs_warn = lap.get("lap_var_absolute_floor_warn")
+lap_abs_fail = lap.get("lap_var_absolute_floor_fail")
+rows.append(
+    {
+        "Metric": "Laplacian variance absolute floor",
+        "Status": lap_abs_status if lap_abs_status != "N/A" else "not calibrated",
+        "Value": f"{float(lap_med_raw):.2f}" if isinstance(lap_med_raw, (int, float)) else "N/A",
+        "Cutoffs": (
+            f"WARN < {float(lap_abs_warn):.1f}; FAIL < {float(lap_abs_fail):.1f}"
+            if isinstance(lap_abs_warn, (int, float)) and isinstance(lap_abs_fail, (int, float))
+            else "not calibrated — set lap_var_absolute_floor_warn/fail in YAML"
+        ),
+        "Notes": "Catches uniformly blurry slides where relative z-scores are all near 0",
+    }
+)
+
+# 5) Focus-Laplacian Spearman correlation
+lap_corr = None if not _tissue_mask_ok else lap.get("focus_lap_spearman_corr")
+lap_corr_status = "N/A" if not _tissue_mask_ok else lap.get("focus_lap_corr_status")
+corr_warn = dapi_cut.get("lap_focus_corr_warn")
+corr_fail = dapi_cut.get("lap_focus_corr_fail")
+if lap_corr_status == "uniform":
+    rows.append(
+        {
+            "Metric": "Focus-Laplacian correlation (Spearman)",
+            "Status": "N/A",
+            "Value": "Uniform — N/A",
+            "Cutoffs": "skipped (both metrics have CV < 0.1)",
+            "Notes": "Uniformly sharp slide — correlation is unstable and uninformative",
+        }
+    )
+else:
+    rows.append(
+        {
+            "Metric": "Focus-Laplacian correlation (Spearman)",
+            "Status": _status_from_thresholds(
+                float(lap_corr) if isinstance(lap_corr, (int, float)) and np.isfinite(float(lap_corr)) else None,
+                warn=float(corr_warn) if isinstance(corr_warn, (int, float)) else None,
+                fail=float(corr_fail) if isinstance(corr_fail, (int, float)) else None,
+                higher_is_better=True,
+            ),
+            "Value": f"{float(lap_corr):.3f}" if isinstance(lap_corr, (int, float)) and np.isfinite(float(lap_corr)) else "N/A",
+            "Cutoffs": (
+                f"PASS >= {float(corr_warn):.2f}; WARN {float(corr_fail):.2f}-{float(corr_warn):.2f}; FAIL < {float(corr_fail):.2f}"
+                if isinstance(corr_warn, (int, float)) and isinstance(corr_fail, (int, float))
+                else "not configured"
+            ),
+            "Notes": "Low correlation suggests disagreement between two sharpness lenses",
+        }
+    )
+
+# 6) 2D GMM Laplacian component separation
+comp_sep = None if not _tissue_mask_ok else lap.get("component_separation")
+comp_sep_warn = focus_cut.get("gmm_2d_laplacian_component_separation_warn")
+comp_sep_fail = focus_cut.get("gmm_2d_laplacian_component_separation_fail")
+rows.append(
+    {
+        "Metric": "2D GMM Laplacian component separation",
+        "Status": _status_from_thresholds(
+            comp_sep,
+            warn=comp_sep_warn if isinstance(comp_sep_warn, (int, float)) else None,
+            fail=comp_sep_fail if isinstance(comp_sep_fail, (int, float)) else None,
+            higher_is_better=True,
+        ),
+        "Value": f"{float(comp_sep):.2f}" if isinstance(comp_sep, (int, float)) and np.isfinite(float(comp_sep)) else "N/A",
+        "Cutoffs": (
+            f"PASS >= {float(comp_sep_warn):.1f}; WARN {float(comp_sep_fail):.1f}-{float(comp_sep_warn):.1f}; FAIL < {float(comp_sep_fail):.1f}"
+            if isinstance(comp_sep_warn, (int, float)) and isinstance(comp_sep_fail, (int, float))
+            else "not configured"
+        ),
+        "Notes": "Cohen's d between blur/focus populations in log1p(lap_var) space",
+    }
+)
+
+# 7) Boundary tiles excluded (info-only row, placed last)
+n_boundary_excluded = 0 if not _tissue_mask_ok else lap.get("n_boundary_excluded", 0)
+n_rois_used = 0 if not _tissue_mask_ok else lap.get("n_rois_used", 0)
+rows.append(
+    {
+        "Metric": "Boundary tiles excluded",
+        "Status": "info",
+        "Value": f"{n_boundary_excluded} excluded, {n_rois_used} used",
+        "Cutoffs": "N/A",
+        "Notes": "Edge tiles excluded from Laplacian normalisation (reflect-padding artefact)",
+    }
+)
+
+df_focus = pd.DataFrame(rows, columns=["Metric", "Status", "Value", "Cutoffs", "Notes"])
+display_status_table(df_focus, ["Status"])
+
+# Warning when tissue mask failed — focus metrics are invalid
+if not _tissue_mask_ok:
+    display(Markdown(
+        "> ⚠ **No tissue mask — focus score analysis is invalid.** "
+        "Tissue mask generation failed (0 tissue tiles detected), so GMM blur classification, "
+        "Laplacian sharpness, and intensity QC could not distinguish tissue from background. "
+        "All focus/blur metrics above should be treated as **N/A**. This can occur with tissue "
+        "types that have very low or diffuse DAPI signal (e.g. skin, adipose, decalcified bone) "
+        "where the automatic tissue segmentation cannot find a foreground population. "
+        "Review the morphology overview and quality masks in Section 5 to understand why mask "
+        "generation failed, and consider adjusting the `roi_intensity_threshold` if the tissue "
+        "is genuinely present but below the default gate."
+    ))
+
+# Conditional note when focus median and blur % disagree
+if _tissue_mask_ok and _focus_med_status == "PASS" and status_focus in ("WARN", "FAIL"):
+    display(Markdown(
+        "> ℹ **Focus score median is PASS but blur tile fraction is "
+        f"{status_focus}** — this is not contradictory. "
+        "The **median** is the 50th-percentile focus score across all tissue tiles: "
+        f"with {pct_focus:.0f}% of tiles in focus, the median falls inside the sharp population "
+        "and reports a healthy value. The **blur %** counts how many tiles the GMM placed in the "
+        "blurred component — a substantial minority can be blurred while the majority (and therefore "
+        "the median) remains sharp. In practice this means the slide has **regionally concentrated blur** "
+        "rather than uniform degradation. Check the spatial blur heatmap below to locate affected zones."
+    ))
+elif _tissue_mask_ok and _focus_med_status == "WARN" and status_focus == "PASS":
+    display(Markdown(
+        "> ℹ **Blur tile fraction is PASS but focus score median is WARN** — "
+        "the GMM classifies few tiles as blurred, yet the overall median focus score is low. "
+        "This typically means the slide is **uniformly soft** rather than having a distinct blurred "
+        "population: most tiles have similar (mediocre) sharpness, so the GMM does not find two "
+        "separable components. Check the Laplacian variance floor and component separation metrics — "
+        "low separation (d < 1) would confirm a unimodal focus distribution. "
+        "Tissue type matters here: brain and small-nucleus tissues inherently produce lower focus scores."
+    ))
+
+# Conditional warning when GMM component separation is poor
+if isinstance(comp_sep, (int, float)) and np.isfinite(float(comp_sep)):
+    _cs = float(comp_sep)
+    _cs_fail = float(comp_sep_fail) if isinstance(comp_sep_fail, (int, float)) else 0.5
+    _cs_warn = float(comp_sep_warn) if isinstance(comp_sep_warn, (int, float)) else 1.0
+    if _cs < _cs_warn:
+        _severity = "FAIL" if _cs < _cs_fail else "WARN"
+        _gmm_msg = (
+            f"> ⚠ **{'Low' if _severity == 'FAIL' else 'Moderate'} GMM component "
+            f"separation ({_severity}):** Cohen's d = {_cs:.2f} — the GMM cannot "
+            + ("reliably distinguish blurred from focused tiles. "
+               "**Do not use GMM tile blur % for quality decisions on this sample.** "
+               if _severity == "FAIL" else
+               "blur/focus populations are not well separated. "
+               "GMM tile blur % should be interpreted with caution. ")
+            + "This can occur on uniformly well-focused slides (no real blur population) "
+            "or on tissues with diffuse morphology (brain, adipose) where Laplacian "
+            "variance is naturally low."
+        )
+        display(Markdown(_gmm_msg))
+
+        # --- Fallback slide-level verdict from GMM-independent metrics ---
+        _lap_ok = lap_abs_status in ("PASS",)
+        _lap_bad = lap_abs_status in ("FAIL", "WARN")
+        _cm = cell_metrics or {}
+        _pct_ccfs = _cm.get("pct_low_nuclear_texture")
+        if _pct_ccfs is None and _cm.get("cells_low_nuclear_texture") and _cm.get("total_cells"):
+            _pct_ccfs = round(100.0 * _cm["cells_low_nuclear_texture"] / _cm["total_cells"], 2)
+        _ccfs_warn_thr = focus_cut.get("low_texture_cell_warn", 0.10)
+        _ccfs_ok = isinstance(_pct_ccfs, (int, float)) and _pct_ccfs < _ccfs_warn_thr * 100
+        _ccfs_bad = isinstance(_pct_ccfs, (int, float)) and _pct_ccfs >= _ccfs_warn_thr * 100
+
+        _lap_val = f"{float(lap_med_raw):.1f}" if isinstance(lap_med_raw, (int, float)) else "N/A"
+        _ccfs_val = f"{_pct_ccfs:.1f}%" if isinstance(_pct_ccfs, (int, float)) else "N/A"
+
+        if _lap_ok and _ccfs_ok:
+            _verdict = "PASS"
+            _icon = "✅"
+            _detail = (
+                "Laplacian absolute floor and cell-level CCFS both indicate acceptable focus. "
+                "The low GMM separation is most likely due to **tissue morphology** (diffuse structure, "
+                "large nuclei, or uniformly good imaging) rather than genuine focus problems."
+            )
+        elif _lap_ok and _ccfs_bad:
+            _verdict = "REVIEW"
+            _icon = "🔍"
+            _detail = (
+                "Tile-level sharpness is acceptable (Laplacian floor PASS), but a notable fraction of "
+                "individual cells show low contrast (CCFS). This can occur with tissue-specific nuclear "
+                "morphology (e.g. large neurons) or localised defocus. **Review spatial CCFS maps** to "
+                "determine if low-CCFS cells cluster in specific regions."
+            )
+        elif _lap_bad and _ccfs_ok:
+            _verdict = "REVIEW"
+            _icon = "🔍"
+            _detail = (
+                "Absolute tile sharpness is low (Laplacian floor FAIL), but cell-level contrast is acceptable. "
+                "This pattern can arise in tissues with inherently low edge contrast (adipose, neuropil) "
+                "where the Laplacian floor is confounded by morphology. **Review focus heatmaps** to check "
+                "whether low Laplacian values are spatially uniform (tissue effect) or clustered (defocus)."
+            )
+        elif _lap_bad and _ccfs_bad:
+            _verdict = "FAIL"
+            _icon = "❌"
+            _detail = (
+                "Both absolute tile sharpness (Laplacian floor) and cell-level contrast (CCFS) indicate "
+                "poor focus. This sample likely has **genuine imaging quality issues**. Downstream analysis "
+                "should account for reduced transcript detection sensitivity in affected regions."
+            )
+        else:
+            _verdict = "REVIEW"
+            _icon = "🔍"
+            _detail = (
+                "Insufficient data to determine slide quality from fallback metrics alone. "
+                "Review spatial focus heatmaps and cell-level CCFS maps manually."
+            )
+
+        display(Markdown(
+            f"> {_icon} **Slide focus verdict (GMM-independent):** **{_verdict}**\n>\n"
+            f"> - Laplacian absolute floor: **{lap_abs_status}** (median raw = {_lap_val})\n"
+            f"> - Cell-level CCFS nuclear texture: **{_ccfs_val}** low texture "
+            f"(threshold = {focus_cut.get('ccfs_low_texture_threshold', 0.02)})\n>\n"
+            f"> {_detail}"
+        ))
+
+if not lap:
+    tissue_qc = roi_metrics.get("tissue_mask_qc") or {}
+    if not tissue_qc.get("tissue_mask_generated", True):
+        display(Markdown(
+            "> **Note:** Laplacian sharpness metrics are not available for this sample. "
+            "Tissue mask generation failed (0 tissue tiles detected), so there are no "
+            "tissue-filtered tiles to compute Laplacian variance on. "
+            "Laplacian sharpness requires a valid tissue mask to distinguish in-tissue "
+            "focus quality from background. Review the tissue mask in section 2 and "
+            "consider whether the sample type or staining quality prevented mask generation."
+        ))
+    else:
+        display(Markdown(
+            "> **Note:** Laplacian sharpness metrics are not available for this sample. "
+            "This may indicate the analysis was run with an older pipeline version "
+            "that did not compute Laplacian variance."
+        ))
+```
+
+### Explanation of metrics
+
+::: {.panel-tabset}
+#### CCFS
+
+**CCFS** (**C**oefficient of **C**ontrast **F**ocus **S**core) is defined **at the pixel level**. For each location, a small window measures **how much the image varies** (local contrast) relative to **how bright it is on average** in that window. **Strong variation at moderate-to-high brightness** usually indicates **sharp, in-focus** optics; **flat** or **very dim** patches score low. Applying that rule everywhere gives a **2D focus map** over the full morphology image.
+
+#### Tiles
+
+A **regular square grid** is laid over the image. Each tile’s **focus score** is taken from that map (one representative value per tile), so every tile answers “how sharp does this patch of tissue look?” **Blur calls and heatmaps are per tile**—they describe **imaging quality by region**, not single-cell objects.
+
+#### Raw vs normalised
+
+Raw scores are in physical contrast units; **normalised** scores (e.g. `focus_score_norm`) use a robust scale (median/IQR) so you can compare tiles within a run.
+
+#### GMM blur
+
+A **two-component Gaussian Mixture Model** (2D: focus score + Laplacian variance) separates tiles into “blurry” vs “in-focus” populations. The lower-mean component is labelled as blur.
+
+**Important caveat:** the GMM **always fits two components**, even on uniformly well-focused slides. This means every sample will show some GMM-blurred tiles (typically 15–30%) regardless of actual imaging quality. The **component separation** (Cohen's d between the two populations in log₁p(lap_var) space) measures how distinct the populations are. Check the component separation metric above: **PASS (d ≥ 1.0)** means the GMM split is meaningful; **WARN/FAIL (d < 1.0)** means the populations overlap heavily and GMM blur % should not be used alone for quality decisions. Tissues with diffuse morphology (brain neuropil, adipose, stromal-dominant) often show reduced separation even when imaging is acceptable.
+
+#### Laplacian sharpness (alternative metric)
+
+The focus score (`std^2 / mean`) responds to broad contrast variation, including gradual biological intensity gradients. Laplacian variance responds mainly to **high-frequency edges**, so it is typically more specific to optical focus. In practice: sharp nuclear edges give high Laplacian response; blurred edges give low response; bright but flat regions can still have low Laplacian response. This complementarity is why the 2D GMM (focus + Laplacian) is often more reliable than 1D focus-only classification.
+:::
+
+### Grid tile focus heatmap
+
+Puts the **per-tile focus score** in **space**: each square of the grid is coloured by how sharp that patch of tissue looks, so you can see **regional** patterns (e.g. edges, folds, or a soft band across the slide).
+
+```{python fig-focus-heatmap}
+#| echo: false
+display(fig_html("figures/grid_roi_focus_heatmap.png"))
+```
+
+::: {.callout-tip collapse="true" title="Interpretation"}
+- **Good pattern:** relatively uniform warm colours across the tissue — imaging is consistently sharp
+- **Warning signs:** large contiguous regions of cool colours indicate systematic defocus (optical tilt, stage drift, tissue fold)
+- **Spatial gradients:** gradual shifts from sharp to soft may indicate uneven tissue thickness, mounting problems, or optical field curvature
+- **Edge-only dip:** lower scores confined to the tissue perimeter are common and usually reflect partial-tissue tiles rather than genuine blur
+:::
+
+### Focus vs intensity relationship
+
+Each point is one tile: **horizontal axis** is **mean DAPI brightness** in that tile, **vertical axis** is **focus score**. It shows whether **dim or bright** regions systematically differ in sharpness (e.g. out of focus vs simply understained).
+
+```{python fig-focus-vs-intensity}
+#| echo: false
+display(fig_html("figures/roi_focus_vs_intensity.png"))
+```
+
+::: {.callout-tip collapse="true" title="Interpretation"}
+- **No correlation (cloud):** focus and intensity are independent — good, image quality is not confounded by signal level
+- **Positive correlation (rising trend):** dim tiles are also out of focus — may indicate that understained areas coincide with physical defocus (e.g. tissue detachment)
+- **Low-intensity cluster with low focus:** a distinct group of dim + blurry tiles usually marks background or partial-tissue tiles that should be excluded via the tissue gate
+:::
+
+### Focus score distribution
+
+**Histogram (or density)** of **focus scores across all tiles**: the **spread** and **skew** tell you if most of the slide is similarly sharp or if a **tail** of poor tiles drives concern.
+
+```{python fig-focus-distribution}
+#| echo: false
+display(fig_html("figures/roi_focus_distribution.png"))
+```
+
+::: {.callout-tip collapse="true" title="Interpretation"}
+
+| Pattern | Meaning | Action |
+|---------|---------|--------|
+| Single tight peak | Most tiles have similar focus — uniformly sharp (or uniformly blurry) | Check the absolute value to distinguish |
+| Long left tail | A minority of tiles are notably softer | Check the spatial heatmap to see if they cluster (localised) or scatter (noise) |
+| Bimodal distribution | Two distinct populations — genuine blur/focus split | Check the component separation metric in the summary table |
+
+:::
+
+### Spatial patterns of blur
+
+This map shows where blur calls and probabilities cluster spatially across the tile grid.
+
+
+```{python fig-roi-blur-spatial}
+#| echo: false
+_blur_fig = base / "figures" / "grid_roi_blur_heatmap.png"
+if _blur_fig.exists():
+    display(fig_html("figures/grid_roi_blur_heatmap.png"))
+else:
+    display(Markdown("_Spatial blur map not available in this run (no GMM blur columns in tile data)._"))
+```
+
+- **Left panel — blur probability:** continuous GMM posterior probability (0 = sharp, 1 = blurred). The dashed line on the colorbar marks the classification threshold (default 0.5).
+- **Right panel — blur classification:** binary in-focus (blue) vs blurred (red) call per tile.
+
+::: {.callout-tip collapse="true" title="Interpretation"}
+Contiguous clusters of red tiles indicate localised physical artefacts (tissue folds, air bubbles, coverslip contact issues) — these may warrant exclusion of affected regions. Scattered blur calls near the classification boundary are more likely noise from marginal focus scores and are less concerning.
+:::
+
+
+
+## 7. Intensity assessment {#sec-intensity}
+
+**What this section shows:** whether **staining and exposure** landed in a usable range.
+
+**Too dim** risks losing weak signal in downstream steps; **too bright or saturated** can clip structure you need for segmentation and quality assessment.
+
+These are **mean signal** checks per morphology channel against **warning / critical** bands—not the same as focus (covered above), but equally important for trusting what the camera recorded.
+
+
+### Channel intensity overview
+
+Start with the tabular channel metrics and overall intensity status, then review the figure for spatial/distribution context.
+
+```{python intensity-table}
+#| echo: false
+
+if intensity_stats:
+    def _fmt_num3(v):
+        return (
+            f"{float(v):.3f}"
+            if isinstance(v, (int, float)) and np.isfinite(float(v))
+            else "N/A"
+        )
+    ch_rows = []
+    for ch in ("dapi", "boundary", "intrna"):
+        if ch not in intensity_stats:
+            continue
+        s = intensity_stats[ch]
+        crit_t = s.get("critical_threshold")
+        pct_bc = s.get("pct_tissue_roi_below_critical")
+        ch_rows.append(
+            {
+                "channel": ch,
+                "quality_status": s.get("quality_status", ""),
+                "mean_intensity": _fmt_num3(s.get("mean")),
+                "min_intensity_threshold": f"{int(float(crit_t))}" if isinstance(crit_t, (int, float)) and np.isfinite(float(crit_t)) else "N/A",
+                "% tissue tiles below threshold": (
+                    f"{float(pct_bc):.1f}%"
+                    if isinstance(pct_bc, (int, float)) and np.isfinite(float(pct_bc))
+                    else "N/A"
+                ),
+            }
+        )
+    if ch_rows:
+        _df_int = pd.DataFrame(ch_rows)
+        _sty_int = (
+            _df_int.style
+            .set_table_styles(
+                [
+                    {"selector": "th", "props": "text-align:left; background-color:#F8FAFC;"},
+                    {"selector": "td", "props": "text-align:left; vertical-align:top;"},
+                ]
+            )
+            .hide(axis="index")
+        )
+        if "quality_status" in _df_int.columns:
+            _q_styles = [_status_cell_css(v) for v in _df_int["quality_status"]]
+            _sty_int = _sty_int.apply(lambda _col: _q_styles, subset=["quality_status"])
+        # Colour % tissue tiles below threshold: green/orange/red based on per-channel YAML thresholds
+        def _pct_below_css(col):
+            styles = []
+            for idx, v in enumerate(col):
+                try:
+                    val = float(str(v).rstrip("%"))
+                    ch = _df_int.iloc[idx]["channel"]
+                    ch_s = intensity_stats.get(ch, {})
+                    fail_t = ch_s.get("pct_fail_threshold", 35.0)
+                    warn_t = ch_s.get("pct_warn_threshold", 15.0)
+                    if val > fail_t:
+                        styles.append(_status_cell_css("CRITICAL"))
+                    elif val > warn_t:
+                        styles.append(_status_cell_css("WARNING"))
+                    else:
+                        styles.append(_status_cell_css("PASS"))
+                except (ValueError, TypeError):
+                    styles.append("")
+            return styles
+        if "% tissue tiles below threshold" in _df_int.columns:
+            _sty_int = _sty_int.apply(_pct_below_css, subset=["% tissue tiles below threshold"])
+        display(HTML(_sty_int.to_html()))
+    if "overall_quality" in intensity_stats:
+        render_status_note(
+            "Overall intensity quality",
+            str(intensity_stats["overall_quality"]),
+            "Status is driven by channel threshold exceedance (for example, fraction of tiles below critical), not mean intensity alone.",
+        )
+    # Check if all channels are not_available — tissue mask failure
+    _int_all_na = all(
+        str(intensity_stats.get(ch, {}).get("quality_status", "")).strip().lower() == "not_available"
+        for ch in ("dapi", "boundary", "intrna")
+        if ch in intensity_stats
+    )
+    if _int_all_na and ch_rows:
+        _tm_int = roi_metrics.get("tissue_mask_qc") if isinstance(roi_metrics.get("tissue_mask_qc"), dict) else {}
+        _mask_gen_int = _tm_int.get("tissue_mask_generated", True)
+        _rit_int = _tm_int.get("rois_in_tissue", -1)
+        if not _mask_gen_int or (isinstance(_rit_int, (int, float)) and _rit_int == 0):
+            display(Markdown(
+                "> ⚠ **All channels report `not_available`.** "
+                "Tissue mask generation failed (0 tissue tiles detected), so per-channel "
+                "intensity thresholds could not be evaluated — there are no tissue tiles "
+                "to classify as dim or adequate. This is expected for tissue types with very "
+                "low or diffuse DAPI signal (e.g. skin, adipose, decalcified bone). "
+                "Cross-check with the morphology masks in [Section 5](#sec-spatial-morphology)."
+            ))
+        else:
+            display(Markdown(
+                "> ⚠ **All channels report `not_available`.** "
+                "Intensity QC ran but could not assess any channel. "
+                "Check pipeline logs and `intensity_assessment.json` for details."
+            ))
+else:
+    print("_No intensity_assessment.json — skip table._")
+```
+
+::: {.callout-tip collapse="true" title="Interpretation"}
+
+::: {.panel-tabset}
+
+#### Threshold rationale
+
+For DAPI, warning/fail cutoffs are set to tolerate biologically expected heterogeneity in FFPE tissue (acellular stroma, adipose, necrotic areas, vessel-rich regions), where many tissue-overlapping tiles can be genuinely dim. Current defaults use **warn = 0.15** and **fail = 0.35** (fraction of tiles below channel threshold), which is less aggressive than very tight universal cutoffs. These values should still be reviewed by tissue context (for example, dense brain tissue may justify stricter limits than adipose/fibrotic samples).
+
+#### Correlation caveat (boundary/intRNA vs DAPI)
+
+Low tile-level DAPI correlation is not always technical failure. In lymphoid tissue (diffuse CD45), stromal/fibrotic regions, multinucleated/syncytial structures, or mixed tissue-background tiles, membrane/RNA signals can decouple from nuclear density even when imaging is acceptable. Treat boundary/intRNA correlation WARNs as **context-dependent** and interpret with morphology maps and tissue architecture.
+
+#### IntRNA caveat
+
+Interior RNA (18S) is often the most tissue-dependent channel. White matter, adipose regions, and necrotic tumour areas can produce many low-intRNA tiles in otherwise valid slides, while pancreas or highly cellular epithelia can be much brighter. For this reason, intRNA intensity cutoffs are intentionally more permissive and should be interpreted against tissue composition, not in isolation.
+
+:::
+
+:::
+
+
+```{python fig-intensity}
+#| echo: false
+display(fig_html("figures/intensity_assessment.png"))
+```
+
+::: {.callout-tip collapse="true" title="Interpretation"}
+Look for channels that are globally too dim, heavily saturated, or spatially inconsistent. Use this figure together with the table above to decide whether weak downstream performance is likely driven by **signal level/exposure** rather than focus.
+:::
+
+
+## 8. Signal-to-Noise-Ratio (SNR) — tile / imaging / transcripts {#sec-snr-roi}
+
+Even with **good focus and intensity**, **target signal** must stand above **noise and control probes** for expression- and neighbourhood-based analysis to be meaningful. This block is **signal-to-noise style checks** that mostly **do not need** the cell × gene matrix:
+(1) **contrast on morphology** in dB-like units from tile summaries,
+(2) **decoded transcripts** vs negative controls **binned by tile**, and
+(3) whether **negative-probe burden** is **spatially patchy** (quadrants / optional Moran).
+
+
+```{python snr-overall}
+#| echo: false
+
+if not snr_summary:
+    print("_No SNR block found (run image QC with SNR enabled, or add snr_metrics.json)._")
+else:
+    comp = snr_summary.get("components", {}) if isinstance(snr_summary.get("components", {}), dict) else {}
+    roi_keys = ("SNR_image_roi_quartile_db", "SNR_image_otsu", "SNR_roi_tx", "SNR_roi_neg_spatial")
+    matrix_keys = ("SNR_slide_plummer", "SNR_slide_spatialqm")
+
+    rank = {"PASS": 0, "WARN": 1, "FAIL": 2}
+    def _display_verdict(payload):
+        reason = str((payload or {}).get("reason", "") or (payload or {}).get("moran_note", "")).lower()
+        if "modulenotfounderror" in reason or "no module named" in reason:
+            return "N/A"
+        return str((payload or {}).get("verdict", "")).upper()
+    def _rollup(keys):
+        vals = []
+        for k in keys:
+            vu = _display_verdict(comp.get(k) or {}) if isinstance(comp.get(k), dict) else ""
+            if vu in rank:
+                vals.append(vu)
+        if not vals:
+            return "NOT_COMPUTED"
+        return max(vals, key=lambda x: rank[x])
+
+    roi_ov = _rollup(roi_keys)
+    matrix_ov = _rollup(matrix_keys)
+    render_status_note(
+        "SNR verdict — tile / imaging / transcripts",
+        str(roi_ov),
+        "Summary across 4 components: SNR_image_roi_quartile_db, SNR_image_otsu, SNR_roi_tx, SNR_roi_neg_spatial.",
+    )
+```
+
+```{python snr-components}
+#| echo: false
+
+# Tile / image / transcript SNR only — matrix-level metrics are in section 9.
+_SNR_ROI_KEYS = (
+    "SNR_image_roi_quartile_db",
+    "SNR_image_otsu",
+    "SNR_roi_tx",
+    "SNR_roi_neg_spatial",
+)
+
+if snr_summary and "components" in snr_summary:
+    comp = snr_summary["components"]
+    recs = []
+    for name in sorted(_SNR_ROI_KEYS):
+        payload = comp.get(name)
+        if not isinstance(payload, dict):
+            continue
+        reason = str(payload.get("reason", "") or payload.get("moran_note", ""))
+        display_verdict = _display_verdict(payload)
+        recs.append(
+            {
+                "component": name,
+                "status": payload.get("status", ""),
+                "verdict": display_verdict,
+                "method": payload.get("method", payload.get("method_primary", "")),
+                "note": reason[:120],
+            }
+        )
+    if recs:
+        display_status_table(pd.DataFrame(recs), ["status", "verdict"])
+    else:
+        print("_No tile-level SNR components in JSON (check SNR enabled and inputs)._")
+
+    # Notes for specific components
+    quartile = comp.get("SNR_image_roi_quartile_db") or {}
+    if quartile.get("status") == "skipped" and quartile.get("reason") in ("too_few_tissue_rois",):
+        tissue_qc = roi_metrics.get("tissue_mask_qc") or {}
+        if not tissue_qc.get("tissue_mask_generated", True):
+            display(Markdown(
+                "> **Note:** Quartile image SNR was skipped because tissue mask generation "
+                "failed (0 tissue tiles detected). This metric requires tissue-filtered tiles "
+                "to separate foreground from background intensity. Review the tissue mask in "
+                "section 5."
+            ))
+
+    neg_spatial = comp.get("SNR_roi_neg_spatial") or {}
+    report_note = neg_spatial.get("report_note")
+    if report_note:
+        display(Markdown(f"> **Note:** {report_note}"))
+```
+
+### Detailed metrics
+
+::: {.panel-tabset}
+#### SNR_image_roi_quartile_db {#tab-snr-image-roi-quartile-db}
+
+**What it is:** image-derived SNR from tile-level DAPI signal using robust upper/lower intensity quartiles.
+**How calculated (concise):** compute representative high-signal and low-signal tile intensity summaries, then convert their contrast ratio to a dB-like score.
+**Interpretation:** lower values mean weaker optical contrast between signal-rich and background-like regions.
+
+```{python snr-roi-image-quartile-tab}
+#| echo: false
+comp = snr_summary.get("components", {}) if snr_summary else {}
+sub = comp.get("SNR_image_roi_quartile_db")
+if isinstance(sub, dict):
+    display_kv_table(sub)
+else:
+    print("_Metric not available for this run._")
+```
+
+#### SNR_image_otsu {#tab-snr-image-otsu}
+
+**What it is:** image-derived SNR using Otsu thresholding to split foreground-like vs background-like pixels/tiles.
+**How calculated (concise):** estimate an Otsu intensity cut-point, summarize signal and background groups, and convert separation to a dB-like SNR statistic.
+**Interpretation:** lower values indicate poorer separation of tissue signal from low-intensity background.
+
+```{python snr-roi-image-otsu-tab}
+#| echo: false
+comp = snr_summary.get("components", {}) if snr_summary else {}
+sub = comp.get("SNR_image_otsu")
+if isinstance(sub, dict):
+    display_kv_table(sub)
+else:
+    print("_Metric not available for this run._")
+```
+
+#### SNR_roi_tx {#tab-snr-roi-tx}
+
+**What it is:** transcript-based tile SNR from decoded targets versus negative controls in spatial bins.
+**How calculated (concise):** assign transcripts to the tile grid, compute per-tile target-to-negative ratios (and negative burden), then summarize those distributions at slide level.
+**Interpretation:** low ratios or high negative fractions suggest weak molecular separation in decoded transcript space.
+
+```{python snr-roi-tx-tab}
+#| echo: false
+comp = snr_summary.get("components", {}) if snr_summary else {}
+sub = comp.get("SNR_roi_tx")
+if isinstance(sub, dict):
+    sub_display = {k: v for k, v in sub.items() if k != "per_roi_table_file"}
+    display_kv_table(sub_display)
+else:
+    print("_Metric not available for this run._")
+```
+
+#### SNR_roi_neg_spatial {#tab-snr-roi-neg-spatial}
+
+**What it is:** spatial uniformity check for negative-control burden across the tile map.
+**How calculated (concise):** quantify dispersion/clustering of negative-control signal across quadrants (and optional Moran's I when available), then map to verdict cutoffs.
+**Interpretation:** higher spatial unevenness suggests localized technical artefacts rather than uniform background.
+
+```{python snr-roi-neg-spatial-tab}
+#| echo: false
+comp = snr_summary.get("components", {}) if snr_summary else {}
+sub = comp.get("SNR_roi_neg_spatial")
+if isinstance(sub, dict):
+    display_kv_table(sub)
+else:
+    print("_Metric not available for this run._")
+```
+:::
+
+### SNR Spatial Heatmap
+
+Spatial distribution of transcript-level noise across the slide. **Left:** fraction of negative-control probes per tile (`neg_pct`) — red regions have high noise burden. **Right:** real-to-negative transcript ratio per tile (log scale) — red regions have low signal separation. Dashed/solid lines on colorbars mark WARN/FAIL thresholds from the thresholds configuration.
+
+```{python snr-heatmap-fig}
+#| echo: false
+display(fig_html("figures/snr_heatmap.png"))
+```
+
+### Cross-section concordance: image quality vs transcript SNR
+
+How do different quality lenses relate? These scatter plots show per-tile relationships between image-derived and transcript-derived quality metrics, revealing whether optical quality predicts molecular readout.
+
+```{python concordance-fig}
+#| echo: false
+_concordance_path = base / "figures" / "cross_section_concordance.png"
+if _concordance_path.exists():
+    display(fig_html("figures/cross_section_concordance.png"))
+    display(Markdown(
+        "::: {.callout-tip collapse=\"true\" title=\"Interpretation\"}\n\n"
+        "**Left panel — Optical quality vs transcript quality:** Each point is one tissue tile. "
+        "The x-axis shows `log₁₊(focus_score)` (image sharpness), and the y-axis shows "
+        "`log₁₊(roi_tx_snr_ratio)` (real-to-negative transcript ratio). "
+        "A positive correlation (ρ > 0.3) suggests that out-of-focus regions also have poorer "
+        "transcript detection — image quality is constraining molecular readout. "
+        "A weak correlation (ρ < 0.2) means image and transcript quality are largely independent, "
+        "which is the ideal scenario.\n\n"
+        "**Right panel — Signal strength vs noise contamination:** The x-axis shows "
+        "`log₁₊(DAPI intensity)` (raw signal strength), and the y-axis shows `neg_pct` "
+        "(fraction of negative-control probes per tile). A negative correlation indicates "
+        "that dim regions accumulate more noise — expected behaviour, since low-signal tiles "
+        "have less real transcript signal to dominate negative controls. "
+        "Points coloured by GMM blur classification (blue = in-focus, red = blurred) "
+        "show whether blurred tiles cluster in the high-noise / low-signal region.\n\n"
+        "**Threshold lines** mark WARN (orange dashed) and FAIL (red dashed) from the thresholds configuration.\n\n"
+        ":::"
+    ))
+else:
+    display(Markdown("*Cross-section concordance plot not available (requires both focus scores and transcript SNR).*"))
+```
+
+# Part B — Cell-level extension {.unnumbered}
+
+Sections 9–10 require **cell segmentation** outputs. Tile-level blur and focus scores are propagated to individual cells via their centroid position, and cell-level metrics (CCFS, transcript counts) add a complementary quality lens. These sections are omitted when running in bundle-only / no-cells mode.
+
+## 9. Signal-to-Noise Ratio — cell-level {#sec-snr-cell-matrix}
+
+This section is **cell matrix-centric**, not morphology-centric. It uses **`cell_feature_matrix.h5`**: each cell is a row and each gene is a column. We summarise whether target counts sit clearly above negative controls and background at panel level—complementary to Section 8 (Signal-to-Noise-Ratio (SNR) — tile / imaging / transcripts), which uses images, decoded spots, and tile bins and does not require the matrix.
+
+These SNR metrics are generated from the cell count matrix (Plummer-style and SpatialQM-style) and report panel-level molecular signal/noise. Section 10 (Cell-level QC) reports microscopy-derived per-cell focus/blur metrics (for example, `CCFS_DAPI`). Units and scale here are not comparable to tile-level image dB in section 8.
+
+```{python snr-matrix-summary}
+#| echo: false
+
+_SNR_MATRIX_KEYS = ("SNR_slide_plummer", "SNR_slide_spatialqm")
+
+if snr_summary and "components" in snr_summary:
+    comp = snr_summary["components"]
+    rank = {"PASS": 0, "WARN": 1, "FAIL": 2}
+    def _display_verdict(payload):
+        reason = str((payload or {}).get("reason", "") or (payload or {}).get("moran_note", "")).lower()
+        if "modulenotfounderror" in reason or "no module named" in reason:
+            return "N/A"
+        return str((payload or {}).get("verdict", "")).upper()
+    vals = []
+    for k in _SNR_MATRIX_KEYS:
+        vu = _display_verdict(comp.get(k) or {}) if isinstance(comp.get(k), dict) else ""
+        if vu in rank:
+            vals.append(vu)
+    matrix_ov = max(vals, key=lambda x: rank[x]) if vals else "NOT_COMPUTED"
+    render_status_note(
+        "SNR verdict — cell × gene matrix",
+        str(matrix_ov),
+        "Summary across 2 components: SNR_slide_plummer, SNR_slide_spatialqm.",
+    )
+    recs = []
+    for name in _SNR_MATRIX_KEYS:
+        payload = comp.get(name)
+        if not isinstance(payload, dict):
+            continue
+        reason = str(payload.get("reason", "") or payload.get("moran_note", ""))
+        recs.append(
+            {
+                "component": name,
+                "status": payload.get("status", ""),
+                "verdict": _display_verdict(payload),
+                "method": payload.get("method", payload.get("method_primary", "")),
+                "note": reason[:120],
+            }
+        )
+    if recs:
+        display_status_table(pd.DataFrame(recs), ["status", "verdict"])
+    else:
+        print(
+            "_No matrix-level SNR components (need cell_feature_matrix.h5 and successful SNR run)._"
+        )
+```
+
+### Detailed metrics
+
+::: {.panel-tabset}
+#### SNR_slide_plummer {#tab-snr-slide-plummer}
+
+**What it is:** slide-level matrix SNR from per-cell target counts vs negative-control features.
+**How calculated (concise):** aggregate per-cell UMI signal and negative/background burden to a panel-level ratio-style score, then map to PASS/WARN/FAIL cutoffs.
+**Interpretation:** lower values mean weaker matrix-level separation between biological signal and controls.
+
+```{python snr-slide-plummer-tab}
+#| echo: false
+comp = snr_summary.get("components", {}) if snr_summary else {}
+sub = comp.get("SNR_slide_plummer")
+if isinstance(sub, dict):
+    display_kv_table(sub)
+else:
+    print("_Metric not available for this run._")
+```
+
+#### SNR_slide_spatialqm {#tab-snr-slide-spatialqm}
+
+**What it is:** panel-level matrix SNR built from per-gene corrected signal/noise summaries.
+**How calculated (concise):** compute gene-level corrected SNR-like values across cells, then aggregate across genes to a run-level mean statistic used for PASS/WARN/FAIL.
+**Interpretation:** lower values suggest many genes are close to background after correction.
+
+```{python snr-slide-spatialqm-tab}
+#| echo: false
+comp = snr_summary.get("components", {}) if snr_summary else {}
+sub = comp.get("SNR_slide_spatialqm")
+if isinstance(sub, dict):
+    display_kv_table(sub)
+else:
+    print("_Metric not available for this run._")
+```
+:::
+
+## 10. Cell-level QC {#sec-cell-level-qc}
+
+**After** tile + SNR (sections 7-9): when segmentation exists, you can sanity-check that **per-cell** optics line up with **tile-level** blur/focus calls—large disagreement can mean **boundary cells**, **registration**, or **segmentation** issues worth investigating before heavy single-cell work. This section is **microscopy-focused** per-cell QC, while section 9 is **count-matrix SNR** from **`cell_feature_matrix.h5`**. Shown when **`image_qc_metrics.json`** is present. **`CCFS_DAPI`** is the **per-cell** focus score (same **CCFS** construction as in **tile focus and blur**, averaged over each **cell/nucleus mask**). Figures **compare** that view to **tile-level** focus (e.g. tile at the cell centroid) for **agreement**, not as a duplicate primary gate in this tile-first report.
+
+```{python cell-section}
+#| echo: false
+
+if cell_metrics is None:
+    print("_No cell-level image QC metrics for this run (expected for bundle-only / no cells path)._")
+else:
+    display(Markdown("### Per-cell summary"))
+    def _fmt_cell_value(v):
+        if isinstance(v, (int, np.integer)):
+            return f"{int(v):,}"
+        if isinstance(v, (float, np.floating)) and np.isfinite(float(v)):
+            return f"{float(v):,.3f}"
+        return v
+    # --- General cell metrics ---
+    summary_keys = (
+        "total_cells",
+        "cells_with_transcripts",
+        "mean_transcript_count",
+        "median_transcript_count",
+        "mean_ccfs_dapi",
+        "median_ccfs_dapi",
+        "cells_near_edge",
+        "cells_near_holes",
+        "cells_with_artifacts",
+    )
+    summary_rows = []
+    for k in summary_keys:
+        if k in cell_metrics:
+            summary_rows.append(
+                {
+                    "Metric": k.replace("_", " "),
+                    "Value": _fmt_cell_value(cell_metrics[k]),
+                }
+            )
+    if "clusters_present" in cell_metrics:
+        summary_rows.append(
+            {
+                "Metric": "clusters present",
+                "Value": cell_metrics["clusters_present"],
+            }
+        )
+    if summary_rows:
+        _df_cell = pd.DataFrame(summary_rows)
+        _sty_cell = (
+            _df_cell.style
+            .set_table_styles(
+                [
+                    {"selector": "th", "props": "text-align:left; background-color:#F8FAFC;"},
+                    {"selector": "td", "props": "text-align:left; vertical-align:top;"},
+                ]
+            )
+            .set_properties(subset=["Metric"], **{"min-width": "20em"})
+            .set_properties(subset=["Value"], **{"min-width": "14em"})
+            .hide(axis="index")
+        )
+        display(HTML(_sty_cell.to_html()))
+
+    # --- Cell quality metrics: CCFS nuclear texture (absolute) vs GMM tile blur (relative) ---
+    display(Markdown("### Cell quality: nuclear texture (CCFS) vs tile blur (GMM)"))
+
+    _n = cell_metrics.get("total_cells", 0)
+    _blur_rows = []
+    if "cells_low_nuclear_texture" in cell_metrics:
+        _thr = cell_metrics.get("ccfs_low_texture_threshold", "N/A")
+        _pct = cell_metrics.get("pct_low_nuclear_texture")
+        if _pct is None and _n > 0:
+            _pct = round(100.0 * cell_metrics["cells_low_nuclear_texture"] / _n, 2)
+        _blur_rows.append({
+            "Method": "CCFS nuclear texture (absolute)",
+            "Cells flagged": f'{cell_metrics["cells_low_nuclear_texture"]:,}',
+            "% flagged": f"{_pct:.2f}%" if _pct is not None else "N/A",
+            "Threshold": f"CCFS_DAPI ≤ {_thr}",
+        })
+    if "cells_blurred_gmm_2d_roi" in cell_metrics:
+        _pct_gmm = cell_metrics.get("pct_blurred_gmm_2d_roi")
+        if _pct_gmm is None and _n > 0:
+            _pct_gmm = round(100.0 * cell_metrics["cells_blurred_gmm_2d_roi"] / _n, 2)
+        _blur_rows.append({
+            "Method": "GMM tile blur (relative)",
+            "Cells flagged": f'{cell_metrics["cells_blurred_gmm_2d_roi"]:,}',
+            "% flagged": f"{_pct_gmm:.2f}%" if _pct_gmm is not None else "N/A",
+            "Threshold": "P(blur component) > 0.5",
+        })
+    if "ccfs_gmm_agreement_pct" in cell_metrics:
+        _blur_rows.append({
+            "Method": "CCFS ↔ GMM agreement",
+            "Cells flagged": "",
+            "% flagged": f'{cell_metrics["ccfs_gmm_agreement_pct"]:.1f}%',
+            "Threshold": "(note: CCFS measures nuclear texture, not optical blur — low agreement is expected)",
+        })
+    if _blur_rows:
+        _df_blur = pd.DataFrame(_blur_rows)
+        _sty_blur = (
+            _df_blur.style
+            .set_table_styles(
+                [
+                    {"selector": "th", "props": "text-align:left; background-color:#F8FAFC;"},
+                    {"selector": "td", "props": "text-align:left; vertical-align:top;"},
+                ]
+            )
+            .hide(axis="index")
+        )
+        display(HTML(_sty_blur.to_html()))
+
+    display(Markdown(
+        "> **CCFS nuclear texture** uses an absolute threshold on per-cell nuclear contrast "
+        "(std²/mean averaged over the nucleus mask, normalised by p99 intensity). "
+        "Cells below the threshold show >50% transcript loss in calibration samples. "
+        "**GMM tile blur** is a relative classification: a 2D Gaussian Mixture Model "
+        "on tile-level (focus_score, Laplacian variance) identifies the lower-scoring "
+        "population on each slide. Even well-focused slides show 15–30% GMM-blurred "
+        "tiles because the method always splits the distribution. "
+        "**Both metrics are informative but measure different things:** CCFS captures "
+        "individual cells with genuinely degraded contrast; GMM captures regions that "
+        "are relatively less sharp.\n>\n"
+        "> ⚠ **Brain / neural tissue caveat:** CCFS is confounded by nucleus size — "
+        "large neurons score lower CCFS despite high transcript counts. "
+        "Interpret CCFS low-texture calls with caution for neural samples.\n>\n"
+        "> ⚠ **GMM tile blur on brain / diffuse tissues:** Neuropil and diffuse "
+        "morphology produce naturally lower Laplacian variance, which reduces GMM "
+        "component separation and inflates the GMM-blurred tile fraction. Check the "
+        "component separation (Cohen's d) in Section 6 — if WARN or FAIL, the GMM "
+        "blur % is unreliable for this tissue type. Prefer the Laplacian absolute "
+        "floor and spatial heatmaps for focus assessment."
+    ))
+
+    # --- Per-cluster blur breakdown ---
+    _cluster_blur = cell_metrics.get("cluster_blur")
+    if isinstance(_cluster_blur, dict) and _cluster_blur:
+        display(Markdown("### Per-cluster blur breakdown"))
+        _blur_method = cell_metrics.get("cluster_blur_method", "is_blurred_gmm_2d_roi")
+        display(Markdown(
+            f"Blur classification method: **{_blur_method}**. "
+            "Clusters where blur rate is >2× the sample-wide average (and ≥10%) "
+            "are flagged as outliers — this indicates spatially biased quality loss "
+            "affecting a specific cell population."
+        ))
+        _cl_rows = []
+        _sample_pct = cell_metrics.get(
+            "pct_blurred_gmm_2d_roi",
+            cell_metrics.get("pct_low_nuclear_texture", 0.0),
+        )
+        _outlier_thr = max(float(_sample_pct) * 2.0, 10.0) if isinstance(_sample_pct, (int, float)) else 10.0
+        for cl_id in sorted(_cluster_blur.keys(), key=lambda k: int(k)):
+            info = _cluster_blur[cl_id]
+            is_outlier = (
+                info["pct_blurred"] > _outlier_thr
+                and info["n_cells"] >= 50
+            )
+            _cl_rows.append({
+                "Cluster": f"C{cl_id}",
+                "Cells": f'{info["n_cells"]:,}',
+                "Blurred": f'{info["n_blurred"]:,}',
+                "% blurred": f'{info["pct_blurred"]:.1f}%',
+                "Median CCFS": f'{info["median_ccfs_dapi"]:.3f}',
+                "Outlier": "⚠ YES" if is_outlier else "",
+            })
+        _df_cl = pd.DataFrame(_cl_rows)
+        # Style: highlight outlier rows
+        def _outlier_row_css(row):
+            if "YES" in str(row.get("Outlier", "")):
+                return ["background-color:#FFEDD5;"] * len(row)
+            return [""] * len(row)
+        _sty_cl = (
+            _df_cl.style
+            .set_table_styles([
+                {"selector": "th", "props": "text-align:left; background-color:#F8FAFC;"},
+                {"selector": "td", "props": "text-align:left; vertical-align:top;"},
+            ])
+            .hide(axis="index")
+            .apply(_outlier_row_css, axis=1)
+        )
+        display(HTML(_sty_cl.to_html()))
+
+        _outlier_clusters = cell_metrics.get("cluster_blur_outliers")
+        if isinstance(_outlier_clusters, dict) and _outlier_clusters:
+            _ol_names = ", ".join(f"C{k}" for k in sorted(_outlier_clusters.keys(), key=int))
+            display(Markdown(
+                f"> ⚠ **Cluster outlier(s) detected: {_ol_names}.** "
+                "These clusters have disproportionately high blur rates, suggesting "
+                "spatially concentrated quality loss that may affect downstream analysis "
+                "of the corresponding cell populations. Check the spatial blur heatmap "
+                "(Section 6) to see whether these clusters overlap with physically "
+                "blurred regions, and consider excluding or flagging affected cells."
+            ))
+
+    display(Markdown("### Cell-level blur and focus (GMM-based)"))
+    display(Markdown(
+        "These figures use the **tile-level GMM blur classification** propagated to cells "
+        "(`is_blurred_gmm_2d_roi`). This is the primary blur metric — it detects optical "
+        "defocus using a 2D Gaussian Mixture Model on tile focus scores and Laplacian variance."
+    ))
+
+    display(Markdown("#### Cell-level focus score distribution"))
+    display(Markdown(
+        "Distribution of per-cell focus scores (tile focus score assigned to each cell via "
+        "spatial overlap).\n\n"
+        "- **Top-left:** Overall histogram of tile focus scores across all cells\n"
+        "- **Top-right:** Histogram split by GMM blur classification (blue = in focus, red = blurred)\n"
+        "- **Bottom-left:** Focus score density by expression cluster\n"
+        "- **Bottom-right:** GMM blur probability density by cluster (threshold at 0.5)\n\n"
+        "::: {.callout-tip collapse=\"true\" title=\"Interpretation\"}\n"
+        "- **Clear bimodal split (top-right):** GMM separates blur from focus well — trustworthy\n"
+        "- **Overlapping distributions:** GMM separation is weak — check component separation (d) in section 6\n"
+        "- **Cluster-specific shifts (bottom panels):** Some clusters living in blurred regions "
+        "suggests spatially biased quality loss, not biological signal\n"
+        ":::"
+    ))
+    display(fig_html("figures/cell_focus_distribution.png"))
+
+    display(Markdown("#### Tile blur proportions by cluster (GMM)"))
+    display(Markdown(
+        "For each expression cluster (k-means), shows the fraction of cells classified "
+        "as blurred vs in-focus by the **2D GMM tile-level model**.\n\n"
+        "- **Y-axis:** Expression clusters\n"
+        "- **X-axis:** Proportion blurred (red) vs in-focus (blue)\n\n"
+        "::: {.callout-tip collapse=\"true\" title=\"Interpretation\"}\n"
+        "- **Uniform proportions:** All clusters have similar blur fractions — quality is spatially even\n"
+        "- **Cluster-specific enrichment:** Clusters with >2x average blur rate may be confounded "
+        "by imaging artefacts rather than biology\n"
+        ":::"
+    ))
+    display(fig_html("figures/tile_blur_proportions_roi.png"))
+
+    display(Markdown("#### GMM focus score vs transcript counts"))
+    display(Markdown(
+        "Scatter plot of tile-level focus score (propagated to cells) vs transcript "
+        "counts per cell, coloured by GMM blur classification.\n\n"
+        "::: {.callout-tip collapse=\"true\" title=\"Interpretation\"}\n"
+        "- **Clear vertical separation:** Blurred cells (red) cluster at lower focus scores "
+        "regardless of transcript count — blur is an imaging artefact, not biology\n"
+        "- **Transcript loss in blurred cells:** If blurred cells shift left (fewer transcripts), "
+        "blur is actively degrading data quality\n"
+        "- **No transcript loss:** If blurred and in-focus cells have similar transcript "
+        "distributions, the GMM may be over-splitting — check component separation\n"
+        ":::"
+    ))
+    display(fig_html("figures/gmm_focus_vs_transcripts.png"))
+
+    display(Markdown("### Nuclear texture (CCFS)"))
+    display(Markdown(
+        "::: {.callout-note collapse=\"true\" title=\"What is CCFS?\"}\n"
+        "CCFS (Coefficient of Contrast Focus Score) measures **per-cell nuclear contrast** "
+        "(local_var/local_mean over the nuclear mask). It is **not** a blur metric — it captures "
+        "nuclear texture quality, which is influenced by nuclear morphology, staining intensity, "
+        "and cell type. CCFS and GMM tile blur measure fundamentally different things and are "
+        "expected to show low concordance.\n"
+        ":::"
+    ))
+
+    display(Markdown("#### CCFS spatial map"))
+    display(Markdown("Spatial map of per-cell CCFS nuclear texture values."))
+    display(fig_html("figures/ccfs_spatial.png"))
+    display(Markdown(
+        "::: {.callout-tip collapse=\"true\" title=\"Interpretation\"}\n"
+        "Coherent low-CCFS patches may indicate regional imaging issues or areas with "
+        "morphologically distinct nuclei (e.g. large neurons, stromal cells).\n"
+        ":::"
+    ))
+
+    display(Markdown("#### CCFS thresholded map"))
+    display(Markdown("Per-cell classification using the nuclear texture threshold."))
+    display(fig_html("figures/ccfs_thresholded.png"))
+    display(Markdown(
+        "::: {.callout-tip collapse=\"true\" title=\"Interpretation\"}\n"
+        "Low-texture cell calls that cluster in specific regions may reflect tissue-specific "
+        "nuclear morphology rather than imaging artefacts.\n"
+        ":::"
+    ))
+
+    display(Markdown("#### Spatial comparison: CCFS vs tile focus"))
+    display(Markdown(
+        "Each cell coloured by the difference between its CCFS rank and its tile's focus rank.\n\n"
+        "::: {.callout-tip collapse=\"true\" title=\"Interpretation\"}\n"
+        "- **Uniform colour:** Both metrics agree across the slide\n"
+        "- **Spatially structured disagreement:** Bands or patches often mark tile boundaries "
+        "or regions where nuclear morphology differs from the surrounding tissue texture\n"
+        ":::"
+    ))
+    display(fig_html("figures_cell_centred/spatial_comparison_nuclei_vs_roi.png"))
+
+    display(Markdown("#### CCFS vs tile focus: correlation"))
+    display(Markdown(
+        "Four-panel comparison of per-cell CCFS and tile-level focus score. "
+        "ρ > 0.6 indicates strong concordance; ρ < 0.3 suggests the two metrics "
+        "capture different aspects of image quality."
+    ))
+    display(fig_html("figures/ccfs_vs_roi_comparison.png"))
+
+    display(Markdown("#### Nuclear texture proportions by cluster"))
+    display(Markdown(
+        "Fraction of cells above/below the CCFS nuclear texture threshold per cluster.\n\n"
+        "::: {.callout-tip collapse=\"true\" title=\"Interpretation\"}\n"
+        "Clusters should have similar texture proportions. Cluster-specific bias may "
+        "reflect nuclear morphology differences between cell types.\n"
+        ":::"
+    ))
+    display(fig_html("figures/nuclear_texture_proportions.png"))
+
+    display(Markdown("#### Nuclear texture density by cluster"))
+    display(Markdown(
+        "Distribution of per-cell CCFS values by cluster.\n\n"
+        "::: {.callout-tip collapse=\"true\" title=\"Interpretation\"}\n"
+        "CCFS captures nuclear contrast, not optical blur. Cluster separation by texture "
+        "may reflect cell-type-specific nuclear morphology.\n"
+        ":::"
+    ))
+    display(fig_html("figures/nuclear_texture_density.png"))
+
+    display(Markdown("#### Nuclear texture vs transcript count (log scale)"))
+    display(Markdown(
+        "Per-cell relationship between nuclear texture quality and transcript detection.\n\n"
+        "::: {.callout-tip collapse=\"true\" title=\"Interpretation\"}\n\n"
+        "| Pattern | Meaning |\n"
+        "|---------|--------|\n"
+        "| Positive correlation | Higher texture → better detection — expected |\n"
+        "| Threshold effects | Very low-texture cells typically show >50% transcript loss |\n"
+        "| Weak correlation | Technical and biological factors well-separated |\n\n"
+        ":::"
+    ))
+    display(fig_html("figures/nuclear_texture_vs_transcripts_log.png"))
+```
+
+## 11. Reproducibility
+
+```{python versions}
+#| echo: false
+
+import html as _html
+
+if versions_text:
+    display(
+        HTML(
+            "<pre style='font-size:0.85em;overflow:auto;'>"
+            + _html.escape(versions_text.rstrip())
+            + "</pre>"
+        )
+    )
+else:
+    print("_versions.yml not found._")
+```

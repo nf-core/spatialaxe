@@ -1,0 +1,36 @@
+nextflow_process {
+
+    name "Test Process TRANSCRIPT_QC_PROCESSING"
+    script "../main.nf"
+    process "TRANSCRIPT_QC_PROCESSING"
+    config "./nextflow.config"
+
+    tag "modules"
+    tag "modules_local"
+    tag "transcript_qc"
+
+    test("transcript qc processing stub") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [id: "test"],
+                    [],
+                    file("${moduleTestDir}/fixtures/bundle", checkIfExists: true)
+                ]
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.outdir[0][1]).exists() },
+                { assert file(process.out.outdir[0][1] + "/transcript_qc_metrics.json").exists() }
+            )
+        }
+    }
+}

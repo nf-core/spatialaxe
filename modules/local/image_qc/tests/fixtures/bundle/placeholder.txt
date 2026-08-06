@@ -1,0 +1,1 @@
+placeholder xenium bundle file for -stub tests

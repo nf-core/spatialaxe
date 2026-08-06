@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "qc"
+description: Quality-control layer for a Xenium bundle; runs image QC and transcript QC and emits their outputs
+keywords:
+  - spatial
+  - xenium
+  - quality control
+  - image
+  - transcript
+  - QC
+components:
+  - image_qc
+  - transcript_qc
+input:
+  - ch_bundle:
+      description: |
+        input channel with the Xenium bundle to run QC on
+        Structure: [ val(meta), path(xenium_bundle) ]
+output:
+  - image_qc_outdir:
+      description: |
+        the image QC analysis output directory (metrics and figures)
+        Structure: [ val(meta), path(outdir) ]
+  - image_qc_report:
+      description: |
+        the rendered image QC HTML report
+        Structure: [ val(meta), path(html) ]
+  - transcript_qc_outdir:
+      description: |
+        the transcript QC analysis output directory (metrics and figures)
+        Structure: [ val(meta), path(outdir) ]
+  - transcript_qc_report:
+      description: |
+        the rendered transcript QC HTML report
+        Structure: [ val(meta), path(html) ]
+authors:
+  - "@an-altosian"
+maintainers:
+  - "@an-altosian"

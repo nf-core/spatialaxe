@@ -132,6 +132,58 @@
                     "description": "Whether to run the off-target probe tracking.",
                     "default": false
                 },
+                "num_gpus": {
+                    "type": "integer",
+                    "description": "Number of GPUs to request for the image QC analysis. null = CPU only (no accelerator); N = request N GPUs."
+                },
+                "stain_names": {
+                    "type": "string",
+                    "description": "Semicolon-separated stain/channel names for the morphology image. null = use image QC defaults."
+                },
+                "neg_control_prefix": {
+                    "type": "string",
+                    "description": "Prefix for Xenium negative-control features, matching both NegControlProbe_* and NegControlCodeword_* (passed to transcript QC as --non-gene-prefix; use ';' to separate multiple).",
+                    "default": "NegControl"
+                },
+                "roi_image_qc_thresholds_yaml": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to the ROI threshold config YAML for image QC. null = use the bundled conf/roi_image_qc_thresholds.yaml."
+                },
+                "legacy_focus": {
+                    "type": "boolean",
+                    "description": "Image QC: use the CPU for-loop focus score instead of the GPU convolution.",
+                    "default": false
+                },
+                "image_qc_no_snr": {
+                    "type": "boolean",
+                    "description": "Image QC: skip signal-to-noise (SNR) metrics.",
+                    "default": false
+                },
+                "image_qc_snr_no_roi_tx_table": {
+                    "type": "boolean",
+                    "description": "Image QC: do not write the per-ROI transcript SNR table.",
+                    "default": false
+                },
+                "image_qc_snr_otsu_max_rois": {
+                    "type": "integer",
+                    "description": "Image QC: cap the number of Otsu-selected ROIs for SNR. null = no cap."
+                },
+                "image_qc_snr_no_moran": {
+                    "type": "boolean",
+                    "description": "Image QC: skip Moran's I spatial autocorrelation (default on; set false to opt in to Moran).",
+                    "default": true
+                },
+                "image_qc_save_dapi_maps_tiff": {
+                    "type": "boolean",
+                    "description": "Image QC: also save DAPI focus maps as TIFF.",
+                    "default": false
+                },
+                "image_qc_lap_sigma": {
+                    "type": "number",
+                    "description": "Image QC: Gaussian sigma for the Laplacian-of-Gaussian focus score.",
+                    "default": 1.0
+                },
                 "segmentation_refinement": {
                     "type": "boolean",
                     "description": "Whether to run refinement on the image-based segmentation methods. Runs coordinate-based methods after the initial image-based segmentation run."

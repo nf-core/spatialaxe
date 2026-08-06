@@ -1,0 +1,6 @@
+---
+title: "Placeholder QC Report"
+format: html
+---
+
+Placeholder Quarto document for -stub tests.

@@ -1,0 +1,84 @@
+name: "image_qc_analysis"
+description: Image-based quality control for a Xenium bundle (focus / SNR / morphology metrics and figures)
+keywords:
+  - spatial
+  - xenium
+  - quality control
+  - image
+  - QC
+tools:
+  - "image_qc":
+      description: "Custom Python image-QC analysis for 10x Genomics Xenium morphology images (focus score, signal-to-noise, ROI metrics and figures)"
+      homepage: "https://github.com/nf-core/spatialaxe"
+      documentation: "https://github.com/nf-core/spatialaxe"
+      tool_dev_url: "https://github.com/nf-core/spatialaxe"
+      licence: ["MIT"]
+      identifier: ""
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          (sample id)
+    - parameters:
+        type: list
+        description: |
+          Flat key/value list of analysis parameters (collated by the module),
+          e.g. XENIUM_BUNDLE_DIR, STAIN_NAMES, ROI_SIZE
+    - input_files:
+        type: file
+        description: |
+          Input file(s) for the analysis; the first element is the Xenium bundle directory
+        pattern: "*"
+        ontologies: []
+  - roi_thresholds_yaml:
+      type: file
+      description: |
+        ROI threshold config YAML for image QC. Pass an empty placeholder (NO_FILE)
+        to use the bundled default.
+      pattern: "*.{yml,yaml}"
+      ontologies: []
+output:
+  outdir:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            [sample id]
+      - "${outdir}":
+          type: directory
+          description: Output directory with image QC metrics (JSON/CSV) and figures
+          pattern: "${prefix}"
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - python:
+          type: string
+          description: The name of the tool
+      - "python3 --version | sed 's/Python //'":
+          type: eval
+          description: The expression to obtain the version of the tool
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - numpy:
+          type: string
+          description: The name of the tool
+      - "python3 -c 'import numpy; print(numpy.__version__)'":
+          type: eval
+          description: The expression to obtain the version of the tool
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - scikit-image:
+          type: string
+          description: The name of the tool
+      - "python3 -c 'import skimage; print(skimage.__version__)'":
+          type: eval
+          description: The expression to obtain the version of the tool
+authors:
+  - "@an-altosian"
+maintainers:
+  - "@an-altosian"
