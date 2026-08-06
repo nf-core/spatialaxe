@@ -65,7 +65,7 @@ def reassign_dropped(csv_path: str, dropped_cells: set) -> None:
 
     with open(csv_path) as f:
         reader = csv.DictReader(f)
-        fieldnames = reader.fieldnames
+        fieldnames = reader.fieldnames or []
         rows = list(reader)
 
     reassigned = 0
@@ -87,8 +87,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Clean stitched GeoJSON polygons and reconcile transcript CSV."
     )
-    parser.add_argument("--geojson", required=True, help="Path to xr-cell-polygons.geojson")
-    parser.add_argument("--csv", required=True, help="Path to xr-transcript-metadata.csv")
+    parser.add_argument(
+        "--geojson", required=True, help="Path to xr-cell-polygons.geojson"
+    )
+    parser.add_argument(
+        "--csv", required=True, help="Path to xr-transcript-metadata.csv"
+    )
     return parser.parse_args()
 
 
