@@ -17,6 +17,7 @@ include { paramsSummaryMap                                 } from 'plugin/nf-sch
 
 // nf-core modules
 include { UNTAR                                            } from '../modules/nf-core/untar/main'
+include { UNZIP                                            } from '../modules/nf-core/unzip/main'
 
 // coordinate-based segmentation subworklfows
 include { SEGGER_CREATE_TRAIN_PREDICT                      } from '../subworkflows/local/segger_create_train_predict/main'
@@ -139,25 +140,46 @@ workflow SPATIALAXE {
     if (workflow.profile.contains('test')) {
 
         // get sample, xenium bundle and image path
-        ch_input_untar = ch_samplesheet.map { meta, bundle, _image, _annotation, _stainings ->
+        ch_input_compressed = ch_samplesheet.map { meta, bundle, _image, _annotation, _stainings ->
             return [meta, bundle]
         }
 
-        // get testdata
-        UNTAR(ch_input_untar)
+        if (workflow.profile.contains('test_full')) {
 
-        ch_untar_outs = UNTAR.out.untar.map { meta, bundle ->
-            // use toUriString() (not toString()) so the URI scheme (e.g. s3://)
-            // is preserved when the work dir is on object storage
-            return [meta, bundle.toUriString()]
-        }
+            // get testdata
+            UNZIP(ch_input_compressed)
 
-        ch_samplesheet
-            .combine(ch_untar_outs, by: 0)
-            .map { meta, _url, image, annotation, stainings, test_bundle ->
-                return [meta, test_bundle, image, annotation, stainings]
+            ch_unzip_outs = UNZIP.out.unzipped_archive.map { meta, bundle ->
+                // use toUriString() (not toString()) so the URI scheme (e.g. s3://)
+                // is preserved when the work dir is on object storage
+                return [meta, bundle.toUriString()]
             }
-            .set { ch_input }
+
+            ch_samplesheet
+                .combine(ch_unzip_outs, by: 0)
+                .map { meta, _url, image, annotation, stainings, test_bundle ->
+                    return [meta, test_bundle, image, annotation, stainings]
+                }
+                .set { ch_input }
+                
+        } else {
+
+            // get testdata
+            UNTAR(ch_input_compressed)
+
+            ch_untar_outs = UNTAR.out.untar.map { meta, bundle ->
+                // use toUriString() (not toString()) so the URI scheme (e.g. s3://)
+                // is preserved when the work dir is on object storage
+                return [meta, bundle.toUriString()]
+            }
+
+            ch_samplesheet
+                .combine(ch_untar_outs, by: 0)
+                .map { meta, _url, image, annotation, stainings, test_bundle ->
+                    return [meta, test_bundle, image, annotation, stainings]
+                }
+                .set { ch_input }
+        }
     }
     else {
         // for all other profile runs
