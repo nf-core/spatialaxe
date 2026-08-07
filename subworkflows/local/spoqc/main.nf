@@ -148,13 +148,13 @@ workflow SPOQC {
 
     SPOQC_HQPR_REFINEMENT(
         ch_spatialdata_stainings,
-        "hqpr_refinement",  
+        "hqpr_refinement",
         SPOQC_HQPR_CLUSTERING.out.mask,
     )
 
     SPOQC_HQPR_BOUNDING_BOX(
         ch_spatialdata_stainings,
-        "hqpr_bounding_box",  
+        "hqpr_bounding_box",
         SPOQC_HQPR_REFINEMENT.out.mask_smoothed,
     )
 
@@ -164,7 +164,7 @@ workflow SPOQC {
     // SPOQC_HQPR_CELLTYPE(
     //     ch_spatialdata_stainings,
     //     ch_annotation_stainings,
-    //     "hqpr_celltype",  
+    //     "hqpr_celltype",
     //     SPOQC_GENERAL.out.tmp.combine(ch_stainings),
     //     SPOQC_BUBBLE.out.tmp.combine(ch_stainings),
     //     SPOQC_DOUBLET.out.tmp.combine(ch_stainings),
@@ -202,20 +202,20 @@ workflow SPOQC {
 
     SPOQC_HQTR_REFINEMENT(
         ch_sd_bundle,
-        "hqtr_refinement",  
+        "hqtr_refinement",
         SPOQC_HQTR_CLUSTERING.out.mask,
     )
 
     SPOQC_HQTR_BOUNDING_BOX(
         ch_sd_bundle,
-        "hqtr_bounding_box",  
+        "hqtr_bounding_box",
         SPOQC_HQTR_REFINEMENT.out.mask_smoothed,
     )
 
     // SPOQC_HQTR_CELLTYPE(
     //     ch_sd_bundle,
     //     ch_annotation_path,
-    //     "hqtr_celltype",  
+    //     "hqtr_celltype",
     //     SPOQC_GENERAL.out.tmp,
     //     SPOQC_BUBBLE.out.tmp,
     //     SPOQC_DOUBLET.out.tmp,

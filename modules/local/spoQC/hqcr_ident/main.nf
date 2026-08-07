@@ -5,7 +5,7 @@ process SPOQC_HQCR_IDENT {
     label 'process_high_mem'
     label 'process_low_time'
     label 'spoqc'
-    
+
 
     container "heylf/spoqc:0.0.1"
 
@@ -32,7 +32,7 @@ process SPOQC_HQCR_IDENT {
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
         error("SPOQC_HQCR_IDENT module does not support Conda. Please use Docker / Singularity / Podman instead.")
     }
-    
+
     def args = task.ext.args ?: ''
 
     """
@@ -59,4 +59,3 @@ process SPOQC_HQCR_IDENT {
     touch ./spoQC_tmp/hqcr_output_mask_smoothed_raw.parquet
     """
 }
-    

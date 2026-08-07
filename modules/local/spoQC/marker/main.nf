@@ -4,7 +4,7 @@ process SPOQC_MARKER {
     label 'process_low_mem'
     label 'process_tiny_time'
     label 'spoqc'
-    
+
 
     container "heylf/spoqc:0.0.1"
 
@@ -25,7 +25,7 @@ process SPOQC_MARKER {
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
         error("SPOQC_MARKER module does not support Conda. Please use Docker / Singularity / Podman instead.")
     }
-    
+
     def args = task.ext.args ?: ''
     def annotation_arg = annotation ? "-a ${annotation}" : ""
 
@@ -52,4 +52,3 @@ process SPOQC_MARKER {
     """
 
 }
-    

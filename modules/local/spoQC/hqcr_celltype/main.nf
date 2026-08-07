@@ -5,7 +5,7 @@ process SPOQC_HQCR_CELLTYPE {
     label 'process_high_mem'
     label 'process_tiny_time'
     label 'spoqc'
-    
+
 
     container "heylf/spoqc:0.0.1"
 
@@ -32,7 +32,7 @@ process SPOQC_HQCR_CELLTYPE {
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
         error("SPOQC_HQCR_CELLTYPE module does not support Conda. Please use Docker / Singularity / Podman instead.")
     }
-    
+
     def args = task.ext.args ?: ''
     def annotation_arg = annotation ? "-a ${annotation}" : ""
 
@@ -61,4 +61,3 @@ process SPOQC_HQCR_CELLTYPE {
     """
 
 }
-    

@@ -5,7 +5,7 @@ process SPOQC_TRANSCRIPT {
     label 'process_low_mem'
     label 'process_tiny_time'
     label 'spoqc'
-    
+
 
     container "heylf/spoqc:0.0.1"
 
@@ -26,7 +26,7 @@ process SPOQC_TRANSCRIPT {
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
         error("SPOQC_TRANSCRIPT module does not support Conda. Please use Docker / Singularity / Podman instead.")
     }
-    
+
     def args = task.ext.args ?: ''
     def annotation_arg = annotation ? "-a ${annotation}" : ""
 
@@ -53,4 +53,3 @@ process SPOQC_TRANSCRIPT {
     """
 
 }
-    

@@ -25,7 +25,7 @@ process SPOQC_AMBIENT {
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
         error("SPOQC_AMBIENT module does not support Conda. Please use Docker / Singularity / Podman instead.")
     }
-    
+
     def args = task.ext.args ?: ''
 
     """
@@ -52,4 +52,3 @@ process SPOQC_AMBIENT {
     """
 
 }
-    

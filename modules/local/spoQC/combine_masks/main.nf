@@ -4,7 +4,7 @@ process SPOQC_COMBINE_MASKS {
     label 'process_xl_mem'
     label 'process_low_time'
     label 'spoqc'
-    
+
 
     container "heylf/spoqc:0.0.1"
 
@@ -56,4 +56,3 @@ process SPOQC_COMBINE_MASKS {
     """
 
 }
-    

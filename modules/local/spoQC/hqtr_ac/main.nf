@@ -5,7 +5,7 @@ process SPOQC_HQTR_AC {
     label 'process_xl_mem'
     label 'process_mid_time'
     label 'spoqc'
-    
+
 
     container "heylf/spoqc:0.0.1"
 
@@ -53,4 +53,3 @@ process SPOQC_HQTR_AC {
     """
 
 }
-    

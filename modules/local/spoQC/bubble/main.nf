@@ -5,7 +5,7 @@ process SPOQC_BUBBLE {
     label 'process_tiny_mem'
     label 'process_tiny_time'
     label 'spoqc'
-    
+
 
     container "heylf/spoqc:0.0.1"
 
@@ -52,4 +52,3 @@ process SPOQC_BUBBLE {
     touch ./spoQC_tmp/bubbleqc_output_hqcr.parquet
     """
 }
-    

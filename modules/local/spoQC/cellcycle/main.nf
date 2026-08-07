@@ -5,7 +5,7 @@ process SPOQC_CELLCYCLE {
     label 'process_low_mem'
     label 'process_tiny_time'
     label 'spoqc'
-    
+
 
     container "heylf/spoqc:0.0.1"
 
@@ -22,7 +22,7 @@ process SPOQC_CELLCYCLE {
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
         error("SPOQC_CELLCYCLE module does not support Conda. Please use Docker / Singularity / Podman instead.")
     }
-    
+
     def args = task.ext.args ?: ''
 
     """
@@ -47,4 +47,3 @@ process SPOQC_CELLCYCLE {
     """
 
 }
-    

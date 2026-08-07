@@ -4,7 +4,7 @@ process SPOQC_MODEL {
     label 'process_low_mem'
     label 'process_tiny_time'
     label 'spoqc'
-    
+
 
     container "heylf/spoqc:0.0.1"
 
@@ -24,7 +24,7 @@ process SPOQC_MODEL {
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
         error("SPOQC_MODEL module does not support Conda. Please use Docker / Singularity / Podman instead.")
     }
-    
+
     def args = task.ext.args ?: ''
 
     """
@@ -49,4 +49,3 @@ process SPOQC_MODEL {
     """
 
 }
-    

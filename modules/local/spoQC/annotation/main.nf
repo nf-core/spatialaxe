@@ -5,7 +5,7 @@ process SPOQC_ANNOTATION {
     label 'process_mid_mem'
     label 'process_high_time'
     label 'spoqc'
-    
+
 
     container "heylf/spoqc:0.0.1"
 
@@ -52,4 +52,3 @@ process SPOQC_ANNOTATION {
     touch ./report/annotation/unsupervised_cell_annotation.tsv
     """
 }
-    

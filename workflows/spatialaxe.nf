@@ -161,7 +161,7 @@ workflow SPATIALAXE {
                     return [meta, test_bundle, image, annotation, stainings]
                 }
                 .set { ch_input }
-                
+
         } else {
 
             // get testdata
@@ -388,7 +388,7 @@ workflow SPATIALAXE {
     // get annotation
     ch_annotation = ch_input.map { _meta, _bundle, _image, annotation, _stainings ->
         annotation
-    }   
+    }
 
     /*
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -5,13 +5,13 @@ process SPOQC_GENERAL {
     label 'process_low_mem'
     label 'process_tiny_time'
     label 'spoqc'
-    
+
 
     container "heylf/spoqc:0.0.1"
 
     input:
     tuple val(meta), path(spatialdata, stageAs: "*")
-    path(annotation, stageAs: "*")  
+    path(annotation, stageAs: "*")
     val(step)
 
     output:
@@ -56,4 +56,3 @@ process SPOQC_GENERAL {
     """
 
 }
-    

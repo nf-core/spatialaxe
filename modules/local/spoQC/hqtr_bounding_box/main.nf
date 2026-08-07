@@ -4,7 +4,7 @@ process SPOQC_HQTR_BOUNDING_BOX {
     label 'process_high_mem'
     label 'process_low_time'
     label 'spoqc'
-    
+
 
     container "heylf/spoqc:0.0.1"
 
@@ -50,4 +50,3 @@ process SPOQC_HQTR_BOUNDING_BOX {
     """
 
 }
-    

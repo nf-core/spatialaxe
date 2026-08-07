@@ -5,7 +5,7 @@ process SPOQC_HQPR_METRICES {
     label 'process_xl_mem'
     label 'process_mid_time'
     label 'spoqc'
-    
+
 
     container "heylf/spoqc:0.0.1"
 
@@ -57,4 +57,3 @@ process SPOQC_HQPR_METRICES {
     """
 
 }
-    

@@ -59,7 +59,7 @@ workflow SPATIALDATA_WRITE_META_MERGE {
     )
 
     if (mode != 'qc') {
-    
+
         // write spatialdata object after running IMP_SEG
         SPATIALDATA_WRITE_REDEFINED_BUNDLE(
             ch_redefined_bundle,

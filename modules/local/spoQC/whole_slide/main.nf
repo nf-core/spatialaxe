@@ -5,7 +5,7 @@ process SPOQC_WHOLE_SLIDE {
     label 'process_low_mem'
     label 'process_tiny_time'
     label 'spoqc'
-    
+
 
     container "heylf/spoqc:0.0.1"
 
@@ -50,4 +50,3 @@ process SPOQC_WHOLE_SLIDE {
     """
 
 }
-    

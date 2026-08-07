@@ -5,7 +5,7 @@ process SPOQC_HQTR_CLUSTERING {
     label 'process_xl_mem'
     label 'process_xl_time'
     label 'spoqc'
-    
+
 
     container "heylf/spoqc:0.0.1"
 
@@ -29,7 +29,7 @@ process SPOQC_HQTR_CLUSTERING {
     if (workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1) {
         error("SPOQC_HQTR_CLUSTERING module does not support Conda. Please use Docker / Singularity / Podman instead.")
     }
-    
+
     def args = task.ext.args ?: ''
 
     """
@@ -55,4 +55,3 @@ process SPOQC_HQTR_CLUSTERING {
     """
 
 }
-    
