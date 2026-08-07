@@ -41,7 +41,7 @@ workflow QC {
     image_qc_notebook = file("${projectDir}/assets/notebooks/xenium_image_qc_report.qmd", checkIfExists: true)
     IMAGE_QC(
         imageqc_input_ch,
-        [[id: image_qc_notebook.getBaseName()], image_qc_notebook],
+        image_qc_notebook,
     )
 
     // -------------------------- Transcript QC ---------------------------
@@ -57,7 +57,7 @@ workflow QC {
     transcript_qc_notebook = file("${projectDir}/assets/notebooks/transcript_qc.qmd", checkIfExists: true)
     TRANSCRIPT_QC(
         transcriptqc_input_ch,
-        [[id: transcript_qc_notebook.getBaseName()], transcript_qc_notebook],
+        transcript_qc_notebook,
     )
 
     emit:

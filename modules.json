@@ -35,6 +35,11 @@
                         "installed_by": ["modules"],
                         "patch": "modules/nf-core/opt/track/opt-track.diff"
                     },
+                    "quartonotebook": {
+                        "branch": "master",
+                        "git_sha": "6d46786420b4d7bc88eba026eb389c0c5535d120",
+                        "installed_by": ["modules"]
+                    },
                     "stardist": {
                         "branch": "master",
                         "git_sha": "4e783502ab661bed13f15189401b73c93966831f",

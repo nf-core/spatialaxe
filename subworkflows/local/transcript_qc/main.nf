@@ -2,31 +2,45 @@
 // TRANSCRIPT_QC: transcript / molecule-level quality control for a Xenium bundle.
 //
 // Runs the transcript QC analysis (per-transcript and per-cell QC metrics +
-// figures) and renders an HTML report from the analysis outputs with Quarto.
-// Versions are reported via the `versions` topic channel by each module.
+// figures) and renders an HTML report from the analysis outputs with the
+// nf-core QUARTONOTEBOOK module. Versions are reported via the `versions`
+// topic channel by each module.
 //
 
 include { TRANSCRIPT_QC_PROCESSING as ANALYSIS } from '../../../modules/local/transcript_qc/main'
-include { QUARTO as REPORT } from '../../../modules/local/quarto/main'
+include { QUARTONOTEBOOK as REPORT             } from '../../../modules/nf-core/quartonotebook/main'
 
 workflow TRANSCRIPT_QC {
     take:
-    ch_input    // channel: [ val(meta), val(parameters), path(input_files) ]
-    ch_notebook // channel: [ val(meta2), path(qmd_file) ]
+    ch_input // channel: [ val(meta), val(parameters), path(input_files) ]
+    notebook // path: the transcript QC report .qmd
 
     main:
     // Run computational processing
     ANALYSIS(ch_input)
 
-    // Generate report using the Quarto module. Transcript QC has no ROI
-    // thresholds, so the ROI YAML input is an empty placeholder.
+    // Render the report with QUARTONOTEBOOK. Its four inputs are separate
+    // channels paired by emission order, so all per-sample channels are derived
+    // from the same upstream channel to guarantee alignment. The analysis
+    // output directory is staged as an input file; the notebook's parameters
+    // cell receives its staged name via params.yml.
+    ch_report = ANALYSIS.out.outdir.map { meta, outdir ->
+        def parameters = [
+            INDIR                  : outdir.name,
+            SAMPLE_NAME            : meta.id,
+            XENIUM_BUNDLE          : meta.samplesheet_xenium_bundle ?: '',
+            SAMPLE_PUBLISHED_OUTDIR: meta.samplesheet_xenium_bundle ? "${params.outdir}/${params.mode}/qc/transcript_qc" : '',
+        ]
+        [meta, parameters, outdir]
+    }
     REPORT(
-        ANALYSIS.out.outdir,
-        ch_notebook,
+        ch_report.map { meta, parameters, outdir -> [meta, notebook] },
+        ch_report.map { meta, parameters, outdir -> parameters },
+        ch_report.map { meta, parameters, outdir -> outdir },
         [],
     )
 
     emit:
     outdir = ANALYSIS.out.outdir // channel: [ val(meta), path(outdir) ]
-    report = REPORT.out.report   // channel: [ val(meta), path(html) ]
+    report = REPORT.out.html     // channel: [ val(meta), path(html) ]
 }

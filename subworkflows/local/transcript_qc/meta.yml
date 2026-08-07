@@ -11,16 +11,16 @@ keywords:
   - quarto
 components:
   - transcript_qc
-  - quarto
+  - quartonotebook
 input:
   - ch_input:
       description: |
         input channel for the transcript QC analysis
         Structure: [ val(meta), val(parameters), path(input_files) ]
-  - ch_notebook:
+  - notebook:
       description: |
-        Quarto notebook used to render the transcript QC report
-        Structure: [ val(meta2), path(qmd_file) ]
+        Quarto notebook (.qmd) used to render the transcript QC report
+        Structure: path(qmd_file)
 output:
   - outdir:
       description: |
