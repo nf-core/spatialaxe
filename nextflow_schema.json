@@ -226,8 +226,7 @@
                         "type": "string",
                         "enum": ["cellpose", "xeniumranger", "baysor", "stardist"]
                     },
-                    "description": "List of image-based segmentation methods.",
-                    "default": "['cellpose', 'xeniumranger', 'baysor', 'stardist']"
+                    "description": "List of image-based segmentation methods."
                 },
                 "transcript_seg_methods": {
                     "type": "array",
@@ -235,8 +234,7 @@
                         "type": "string",
                         "enum": ["proseg", "segger", "baysor"]
                     },
-                    "description": "List of transcript-based segmentation methods.",
-                    "default": "['proseg', 'segger', 'baysor']"
+                    "description": "List of transcript-based segmentation methods."
                 },
                 "segfree_methods": {
                     "type": "array",
@@ -244,8 +242,7 @@
                         "type": "string",
                         "enum": ["ficture", "baysor"]
                     },
-                    "description": "List of segmentation-free methods.",
-                    "default": "['ficture', 'baysor']"
+                    "description": "List of segmentation-free methods."
                 },
                 "negative_control_regex": {
                     "type": "string",
