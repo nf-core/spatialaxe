@@ -1,7 +1,7 @@
 
 process SPOQC_AMBIENT {
     tag "$meta.id"
-    label 'process_high'
+    label 'process_xlcpu_lowmem'
     label 'spoqc'
 
     container "heylf/spoqc:0.0.1"

@@ -1,6 +1,6 @@
 process SPOQC_HQTR_BOUNDING_BOX {
     tag "$meta.id"
-    label 'process_xl'
+    label 'process_high_memory'
     label 'spoqc'
     
 

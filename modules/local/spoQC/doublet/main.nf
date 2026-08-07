@@ -1,7 +1,7 @@
 
 process SPOQC_DOUBLET {
     tag "$meta.id"
-    label 'process_xl'
+    label 'process_xlcpu_lowmem'
     label 'spoqc'
     
 

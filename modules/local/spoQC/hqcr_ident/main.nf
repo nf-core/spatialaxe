@@ -1,7 +1,7 @@
 
 process SPOQC_HQCR_IDENT {
     tag "$meta.id"
-    label 'process_xl'
+    label 'process_lowcpu_highmem'
     label 'spoqc'
     
 

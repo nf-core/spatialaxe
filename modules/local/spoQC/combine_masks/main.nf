@@ -1,6 +1,6 @@
 process SPOQC_COMBINE_MASKS {
     tag "${meta.id}_${staining}"
-    label 'process_xl'
+    label 'process_medcpu_xlmem'
     label 'spoqc'
     
 

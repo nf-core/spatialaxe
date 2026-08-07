@@ -1,7 +1,7 @@
 
 process SPOQC_WHOLE_SLIDE {
     tag "$meta.id"
-    label 'process_xl'
+    label 'process_low'
     label 'spoqc'
     
 

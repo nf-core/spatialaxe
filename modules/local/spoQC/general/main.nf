@@ -1,7 +1,7 @@
 
 process SPOQC_GENERAL {
     tag "$meta.id"
-    label 'process_xl'
+    label 'process_medium'
     label 'spoqc'
     
 

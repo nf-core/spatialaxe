@@ -1,6 +1,6 @@
 process SPOQC_ANALYSIS_CATEGORY {
     tag "${meta.id}"
-    label 'process_xl'
+    label 'process_medcpu_xlmem'
     label 'spoqc'
     
 

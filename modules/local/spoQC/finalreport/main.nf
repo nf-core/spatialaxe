@@ -1,6 +1,6 @@
 process SPOQC_FINALREPORT {
     tag "${meta.id}"
-    label 'process_xl'
+    label 'process_medium'
     label 'spoqc'
 
 
