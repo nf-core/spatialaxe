@@ -33,6 +33,11 @@ dependencies:
   - conda-forge::papermill=2.6.0
   - conda-forge::napari-simpleitk-image-processing=0.4.9
   - conda-forge::napari-skimage-regionprops=0.10.1
+  # GL ES runtime for the napari->vispy import chain pulled in by the two napari
+  # plugins above. Never used for actual rendering (headless run); vispy merely
+  # dlopens libGLESv2 at import. The container sets ES2_LIBRARY to this library
+  # so vispy finds it without ldconfig visibility of /opt/conda/lib.
+  - conda-forge::libgles=1.7.0
   # Spatial autocorrelation (Moran's I) for the ROI / SNR QC metrics
   - conda-forge::libpysal=4.14.1
   - conda-forge::esda=2.9.0

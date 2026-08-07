@@ -52,19 +52,6 @@ from sklearn.mixture import GaussianMixture
 
 import snr_metrics
 
-# Shared segmentation-software label helpers. xenium_helpers is pip-installed in
-# the container image; in CI (and any run that sets XENIUM_HELPERS_PATH) prepend
-# the repo source so the current package is used instead of the baked-in one.
-# Mirrors the XENIUM_HELPERS_PATH mechanism in the other module scripts
-# (module-binaries safe: no reliance on a co-located bin/ tree).
-if "XENIUM_HELPERS_PATH" in os.environ:
-    sys.path.insert(0, os.environ["XENIUM_HELPERS_PATH"])
-
-from xenium_helpers.utils import (  # noqa: E402
-    read_xenium_analysis_sw_version,
-    read_xenium_major_version,
-    resolve_segmentation_software,
-)
 
 # Set matplotlib to use a non-interactive backend
 import matplotlib
@@ -87,6 +74,130 @@ try:
     HAS_CUPY = True
 except ImportError:
     HAS_CUPY = False
+
+# ---------------------------------------------------------------------------
+# Segmentation-software label helpers, inlined from the upstream
+# nf-xenium-processing `xenium_helpers.utils` (dev d71e0cd) so this script is
+# self-contained — this pipeline does not ship the xenium_helpers package.
+# Logic is unchanged from upstream; only annotations were modernised to the
+# `X | None` style (the module uses `from __future__ import annotations`).
+# ---------------------------------------------------------------------------
+
+# Pretty names for pipeline segmentation tools used as a fallback when no
+# component/version breakdown is available.
+SEGMENTATION_PRETTY = {
+    "cellpose": "Cellpose",
+    "cellpose_baysor": "Cellpose + Baysor",
+    "proseg": "Proseg",
+    "segger": "Segger",
+}
+
+# Per-method component tools as (display name, versions.yml key) pairs. The key
+# is the tool name as it appears inside the segmentation modules' versions.yml
+# (e.g. ``cellpose: 3.0.6``). Order defines how multi-tool labels read.
+SEGMENTATION_TOOL_KEYS = {
+    "cellpose": [("Cellpose", "cellpose")],
+    "cellpose_baysor": [("Cellpose", "cellpose"), ("Baysor", "baysor")],
+    "proseg": [("Proseg", "proseg")],
+    "segger": [("Segger", "segger")],
+}
+
+
+def _tool_label(display: str, key: str, tool_versions: dict[str, str] | None) -> str:
+    """``"Cellpose"`` + version -> ``"Cellpose v3.0.6"`` (name only if absent)."""
+    version = (tool_versions or {}).get(key)
+    return f"{display} v{version}" if version else display
+
+
+def read_xenium_analysis_sw_version(bundle_dir) -> str | None:
+    """Read ``analysis_sw_version`` from ``experiment.xenium`` (e.g.
+    ``"xenium-4.0.1.0"``). Returns ``None`` on missing file, missing key, or
+    malformed JSON. Mirrors ``read_xenium_pixel_size_um`` in bin/snr_metrics.py.
+    """
+    exp = Path(bundle_dir) / "experiment.xenium"
+    if not exp.is_file():
+        return None
+    try:
+        with open(exp, encoding="utf-8") as f:
+            meta = json.load(f)
+        version = meta.get("analysis_sw_version")
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return None
+    if not version or not isinstance(version, str):
+        return None
+    return version
+
+
+def _parse_xenium_version(analysis_sw_version: str | None) -> str | None:
+    """``"xenium-4.0.1.0"`` -> ``"4.0.1"`` (major.minor.patch). Returns ``None``
+    if no leading numeric components can be parsed."""
+    if not analysis_sw_version:
+        return None
+    tail = analysis_sw_version.split("-", 1)[-1]  # drop a 'xenium-' style prefix
+    nums = []
+    for part in tail.split("."):
+        if part.isdigit():
+            nums.append(part)
+        else:
+            break
+    if not nums:
+        return None
+    return ".".join(nums[:3])
+
+
+def read_xenium_major_version(bundle_dir) -> int | None:
+    """Major XOA version for a bundle, read from ``experiment.xenium``
+    (``"xenium-4.0.1.0"`` -> ``4``). Returns ``None`` when the file is absent or
+    the version cannot be parsed. Used to pick XOA-version-specific QC floors
+    (e.g. intensity gates differ sharply between XOA 3.x and 4.0)."""
+    parsed = _parse_xenium_version(read_xenium_analysis_sw_version(bundle_dir))
+    if not parsed:
+        return None
+    first = parsed.split(".", 1)[0]
+    return int(first) if first.isdigit() else None
+
+
+def resolve_segmentation_software(
+    bundle_dir,
+    pipeline_segmentation: str = "skip",
+    is_resegmented: bool = False,
+    tool_versions: dict[str, str] | None = None,
+) -> str:
+    """Human-readable label for the segmentation software that produced the
+    bundle a QC report describes.
+
+    - Un-resegmented / pre-seg / ``skip``: the onboard analysis version from the
+      bundle's ``experiment.xenium`` -> ``"Xenium Onboard Analysis v4.0.1"``.
+    - Pipeline ``xr`` resegmentation: the reseg bundle's own
+      ``analysis_sw_version`` -> ``"Xenium Ranger v4.0.1 (resegmentation)"``.
+    - Other pipeline tools (cellpose / cellpose_baysor / proseg / segger): the
+      tool name plus its version from ``tool_versions`` (parsed from the
+      segmentation ``versions.yml``), e.g. ``"Cellpose v3.0.6"`` or
+      ``"Cellpose v3.0.6 + Baysor v0.6.2"``. Falls back to name-only when the
+      version is unavailable. Their reseg bundle is packaged via ``xeniumranger
+      import-segmentation``, so its ``experiment.xenium`` would mislabel them as
+      Xenium Ranger; the pipeline tool name is authoritative here.
+    """
+    seg = (pipeline_segmentation or "skip").strip()
+    parsed = _parse_xenium_version(read_xenium_analysis_sw_version(bundle_dir))
+
+    if not is_resegmented or seg == "skip":
+        if parsed:
+            return f"Xenium Onboard Analysis v{parsed}"
+        return "Xenium Onboard Analysis (version unknown)"
+
+    if seg == "xr":
+        if parsed:
+            return f"Xenium Ranger v{parsed} (resegmentation)"
+        return "Xenium Ranger (resegmentation)"
+
+    components = SEGMENTATION_TOOL_KEYS.get(seg)
+    if components:
+        return " + ".join(
+            _tool_label(display, key, tool_versions) for display, key in components
+        )
+    return SEGMENTATION_PRETTY.get(seg, seg)
+
 
 # Xenium pixel size in micrometers (used for coordinate conversions)
 XENIUM_PIXEL_SIZE_UM = 0.2125

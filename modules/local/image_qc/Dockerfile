@@ -20,4 +20,5 @@ ENV PATH="/opt/conda/bin:$PATH" \
     QUARTO_TYPST=/opt/conda/bin/typst \
     QUARTO_DART_SASS=/opt/conda/bin/sass \
     QUARTO_SHARE_PATH=/opt/conda/share/quarto \
-    QUARTO_CONDA_PREFIX=/opt/conda
+    QUARTO_CONDA_PREFIX=/opt/conda \
+    ES2_LIBRARY=/opt/conda/lib/libGLESv2.so.2
