@@ -17,7 +17,6 @@ Initial release of nf-core/spatialaxe, created with the [nf-core](https://nf-co.
 - `conf/base.config`: adding combinatorial label system — separate `process_{tiny,low,mid,high,xl}_cpus`, `_mem`, and `_time` labels, each scaling with `task.attempt`.
 - Added `nf-core/unzip` module usage so the pipeline can unpack the larger test dataset.
 - samplesheet redefinition: `sample,bundle,image,annotation,stainings`, samplesheet allows for two additional optional columns `annotation,stainings` that are useful for the QC subworkflow.
-- : Change to subworkflow to account for new `qc` mode.
 - `spatialdata_write_meta_merge/main.nf`: Change to subworkflow to account for proper `qc` mode.
 
 ### `Fixed`
