@@ -1,7 +1,9 @@
 
 process SPOQC_ANNOTATION {
     tag "$meta.id"
-    label 'process_xlcpu_lowmem'
+    label 'process_xl_cpus'
+    label 'process_mid_mem'
+    label 'process_high_time'
     label 'spoqc'
     
 

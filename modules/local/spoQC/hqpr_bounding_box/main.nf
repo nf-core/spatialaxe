@@ -1,7 +1,9 @@
 
 process SPOQC_HQPR_BOUNDING_BOX {
     tag "${meta.id}_${staining}"
-    label 'process_high_memory'
+    label 'process_high_cpus'
+    label 'process_high_mem'
+    label 'process_low_time'
     label 'spoqc'
     
 

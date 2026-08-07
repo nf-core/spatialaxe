@@ -1,7 +1,9 @@
 
 process SPOQC_HQPR_CELLTYPE {
     tag "${meta.id}_${staining}"
-    label 'process_xl'
+    label 'process_tiny_cpus'
+    label 'process_high_mem'
+    label 'process_tiny_time'
     label 'spoqc'
     
 

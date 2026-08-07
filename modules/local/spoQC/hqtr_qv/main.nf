@@ -1,7 +1,9 @@
 
 process SPOQC_HQTR_QV {
     tag "$meta.id"
-    label 'process_xl'
+    label 'process_xl_cpus'
+    label 'process_xl_mem'
+    label 'process_mid_time'
     label 'spoqc'
     
 

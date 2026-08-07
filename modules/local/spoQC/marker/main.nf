@@ -1,6 +1,8 @@
 process SPOQC_MARKER {
     tag "$meta.id"
-    label 'process_medium'
+    label 'process_tiny_cpus'
+    label 'process_low_mem'
+    label 'process_tiny_time'
     label 'spoqc'
     
 

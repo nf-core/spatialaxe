@@ -1,7 +1,9 @@
 
 process SPOQC_VOID {
     tag "$meta.id"
-    label 'process_xlcpu_lowmem'
+    label 'process_xl_cpus'
+    label 'process_low_mem'
+    label 'process_low_time'
     label 'spoqc'
     
 

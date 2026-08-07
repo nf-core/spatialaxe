@@ -1,6 +1,8 @@
 process SPOQC_ANALYSIS_CATEGORY {
     tag "${meta.id}"
-    label 'process_medcpu_xlmem'
+    label 'process_high_cpus'
+    label 'process_xl_mem'
+    label 'process_mid_time'
     label 'spoqc'
     
 

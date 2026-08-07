@@ -1,7 +1,9 @@
 
 process SPOQC_HQCR_CELLTYPE {
     tag "$meta.id"
-    label 'process_high'
+    label 'process_tiny_cpus'
+    label 'process_high_mem'
+    label 'process_tiny_time'
     label 'spoqc'
     
 
