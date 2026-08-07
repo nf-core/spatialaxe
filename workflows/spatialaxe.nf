@@ -625,7 +625,7 @@ workflow SPATIALAXE {
     */
 
     // run spatialdata modules to generate sd objects in image or coordinate mode
-    if (mode == 'image' || mode == 'coordinate') {
+    if (mode == 'image' || mode == 'coordinate' || mode == 'qc') {
 
         SPATIALDATA_WRITE_META_MERGE(
             ch_bundle_path,
@@ -634,6 +634,7 @@ workflow SPATIALAXE {
             cell_segmentation_only,
             mode,
             nucleus_segmentation_only,
+            run_qc,
         )
     }
 
@@ -659,7 +660,7 @@ workflow SPATIALAXE {
 
         if (spoqc){
             SPOQC (
-                ch_bundle_path,
+                SPATIALDATA_WRITE_META_MERGE.out.sd_raw_bundle,
                 ch_annotation,
                 ch_stainings,
             )
