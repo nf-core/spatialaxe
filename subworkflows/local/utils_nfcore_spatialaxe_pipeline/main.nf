@@ -231,7 +231,7 @@ def validateInputParameters(
     }
 
     // check if the samplesheet provided with the test config is assets/samplesheet.csv
-    if (workflow.profile.contains('test') && !"${input}".endsWith("assets/samplesheet.csv")) {
+    if (workflow.profile.contains('test') && !"${input}".endsWith("assets/samplesheet.csv") && !workflow.profile.contains('test_full')) {
         error("❌ Error: Use the samplesheet at: ${projectDir}/assets/samplesheet.csv with `--input` when running the pipeline in test profile.")
     }
 
