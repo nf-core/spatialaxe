@@ -1,42 +1,15 @@
 {
     "spoqc finalreport": {
         "content": [
-            {
-                "0": [
-                    "report.html:md5,1d23046fd5ff12a3b221c61820b05f14"
-                ],
-                "1": [
-                    "report_part1.html:md5,c26aabf93e17a7184c200fcafedf8155"
-                ],
-                "2": [
-                    "report_part2.html:md5,06b2993eb6eb7d0728aa4927b36cc637"
-                ],
-                "3": [
-                    [
-                        "SPOQC_FINALREPORT",
-                        "spoqc",
-                        "0.1.0"
-                    ]
-                ],
-                "report": [
-                    "report.html:md5,1d23046fd5ff12a3b221c61820b05f14"
-                ],
-                "report_part1": [
-                    "report_part1.html:md5,c26aabf93e17a7184c200fcafedf8155"
-                ],
-                "report_part2": [
-                    "report_part2.html:md5,06b2993eb6eb7d0728aa4927b36cc637"
-                ],
-                "versions_spoqc": [
-                    [
-                        "SPOQC_FINALREPORT",
-                        "spoqc",
-                        "0.1.0"
-                    ]
+            [
+                [
+                    "SPOQC_FINALREPORT",
+                    "spoqc",
+                    "0.1.0"
                 ]
-            }
+            ]
         ],
-        "timestamp": "2026-07-31T18:03:50.950157578",
+        "timestamp": "2026-08-06T21:48:10.095497666",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.04.6"
@@ -44,42 +17,15 @@
     },
     "spoqc finalreport stub": {
         "content": [
-            {
-                "0": [
-                    "report.html:md5,d41d8cd98f00b204e9800998ecf8427e"
-                ],
-                "1": [
-                    "report_part1.html:md5,d41d8cd98f00b204e9800998ecf8427e"
-                ],
-                "2": [
-                    "report_part2.html:md5,d41d8cd98f00b204e9800998ecf8427e"
-                ],
-                "3": [
-                    [
-                        "SPOQC_FINALREPORT",
-                        "spoqc",
-                        "0.1.0"
-                    ]
-                ],
-                "report": [
-                    "report.html:md5,d41d8cd98f00b204e9800998ecf8427e"
-                ],
-                "report_part1": [
-                    "report_part1.html:md5,d41d8cd98f00b204e9800998ecf8427e"
-                ],
-                "report_part2": [
-                    "report_part2.html:md5,d41d8cd98f00b204e9800998ecf8427e"
-                ],
-                "versions_spoqc": [
-                    [
-                        "SPOQC_FINALREPORT",
-                        "spoqc",
-                        "0.1.0"
-                    ]
+            [
+                [
+                    "SPOQC_FINALREPORT",
+                    "spoqc",
+                    "0.1.0"
                 ]
-            }
+            ]
         ],
-        "timestamp": "2026-07-31T18:11:52.965248252",
+        "timestamp": "2026-08-06T21:55:15.338056358",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.04.6"
