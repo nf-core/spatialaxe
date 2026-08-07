@@ -63,7 +63,7 @@
                     },
                     "unzip": {
                         "branch": "master",
-                        "git_sha": "4dd9d8439a429c7ee566e0e2347f76ddeef27e66",
+                        "git_sha": "1c43a7e22f04cf19c9f9d3de7e7e5a3addd9382a",
                         "installed_by": [
                             "modules"
                         ],
