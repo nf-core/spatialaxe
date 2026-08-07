@@ -1,0 +1,150 @@
+name: spoqc_finalreport
+description: |
+  Generate the final combined spoQC HTML report, combining all upstream spoQC outputs.
+keywords:
+  - spatial transcriptomics
+  - quality control
+  - spoqc
+  - xenium
+  - downstream analysis
+tools:
+  - "spoqc":
+      description: |
+        spoQC is a custom quality-control toolkit for spatial single-cell and single-transcript
+        segmentation QC of spatial omics (10x Xenium) data, operating on SpatialData objects.
+      homepage: https://github.com/heylf/spoQC
+      documentation: https://github.com/heylf/spoQC
+      tool_dev_url:
+      licence: []
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'sample' ]
+    - spatialdata:
+        type: folder
+        description: Path to the SpatialData zarr store to run QC on
+  - step:
+      type: string
+      description: Name of the spoQC step to run, passed to `spoqc -s`
+  - report_general:
+      type: directory
+      description: Report fragment from SPOQC_GENERAL
+      pattern: "report/generalqc"
+  - report_doublet:
+      type: directory
+      description: Report fragment from SPOQC_DOUBLET
+      pattern: "report/doubletqc"
+  - report_void:
+      type: directory
+      description: Report fragment from SPOQC_VOID
+      pattern: "report/voidqc"
+  - report_cell:
+      type: directory
+      description: Report fragment from SPOQC_CELL
+      pattern: "report/cellqc"
+  - report_hqcr_ident:
+      type: directory
+      description: Report fragment from SPOQC_HQCR_IDENT
+      pattern: "report/hqcr/hqcr_ident"
+  - report_hqcr_celltype:
+      type: directory
+      description: Report fragment from SPOQC_HQCR_CELLTYPE
+      pattern: "report/hqcr/hqcr_celltype"
+  - report_hqpr_metrices:
+      type: directory
+      description: Collected per-staining report fragments from SPOQC_HQPR_METRICES
+      pattern: "report/hqpr/metrices/*"
+  - report_hqpr_clustering:
+      type: directory
+      description: Collected per-staining report fragments from SPOQC_HQPR_CLUSTERING
+      pattern: "report/hqpr/clustering/*"
+  - report_hqpr_refinement:
+      type: directory
+      description: Collected per-staining report fragments from SPOQC_HQPR_REFINEMENT
+      pattern: "report/hqpr/refinement/*"
+  - report_hqpr_bounding_box:
+      type: directory
+      description: Collected per-staining report fragments from SPOQC_HQPR_BOUNDING_BOX
+      pattern: "report/hqpr/bounding_box/*"
+  - report_hqtr_metrices:
+      type: directory
+      description: Report fragment from SPOQC_HQTR_METRICES
+      pattern: "report/hqtr/hqtr_metrices"
+  - report_hqtr_ac:
+      type: directory
+      description: Report fragment from SPOQC_HQTR_AC
+      pattern: "report/hqtr/hqtr_ac"
+  - report_hqtr_qv:
+      type: directory
+      description: Report fragment from SPOQC_HQTR_QV
+      pattern: "report/hqtr/hqtr_qv"
+  - report_hqtr_clustering:
+      type: directory
+      description: Report fragment from SPOQC_HQTR_CLUSTERING
+      pattern: "report/hqtr/hqtr_clustering"
+  - report_hqtr_refinement:
+      type: directory
+      description: Report fragment from SPOQC_HQTR_REFINEMENT
+      pattern: "report/hqtr/hqtr_refinement"
+  - report_hqtr_bounding_box:
+      type: directory
+      description: Report fragment from SPOQC_HQTR_BOUNDING_BOX
+      pattern: "report/hqtr/hqtr_bounding_box"
+  - report_combine_masks:
+      type: directory
+      description: Collected per-staining report fragments from SPOQC_COMBINE_MASKS
+      pattern: "report/combine_masks/*"
+  - report_transcript:
+      type: directory
+      description: Report fragment from SPOQC_TRANSCRIPT
+      pattern: "report/transcriptqc"
+  - report_cellcycle:
+      type: directory
+      description: Report fragment from SPOQC_CELLCYCLE
+      pattern: "report/cellcycleqc"
+  - report_model:
+      type: directory
+      description: Report fragment from SPOQC_MODEL
+      pattern: "report/modelqc"
+  - report_analysis_overview:
+      type: directory
+      description: Report fragment from SPOQC_ANALYSIS_OVERVIEW
+      pattern: "report/analysis/overview"
+  - report_analysis_category:
+      type: directory
+      description: Report fragment from SPOQC_ANALYSIS_CATEGORY
+      pattern: "report/analysis/category"
+  - report_analysis_cluster:
+      type: directory
+      description: Report fragment from SPOQC_ANALYSIS_CLUSTER
+      pattern: "report/analysis/cluster"
+output:
+  - report:
+      type: file
+      description: Final combined spoQC HTML report
+      pattern: "report/report.html"
+  - versions_spoqc:
+      - - "${task.process}":
+            type: string
+            description: The process the versions were collected from
+        - spoqc:
+            type: string
+            description: The tool name
+        - "spoqc --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown":
+            type: eval
+            description: The expression to obtain the version of the tool
+topics:
+  versions:
+    - - "${task.process}":
+          type: string
+          description: The process the versions were collected from
+      - spoqc:
+          type: string
+          description: The tool name
+      - "spoqc --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown":
+          type: eval
+          description: The expression to obtain the version of the tool
+authors:
+  - "@heylf"

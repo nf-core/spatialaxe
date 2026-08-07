@@ -1,0 +1,123 @@
+name: spoqc_analysis_category
+description: |
+  Generate a downstream per-category QC analysis report, combining all upstream spoQC outputs.
+keywords:
+  - spatial transcriptomics
+  - quality control
+  - spoqc
+  - xenium
+  - downstream analysis
+tools:
+  - "spoqc":
+      description: |
+        spoQC is a custom quality-control toolkit for spatial single-cell and single-transcript
+        segmentation QC of spatial omics (10x Xenium) data, operating on SpatialData objects.
+      homepage: https://github.com/heylf/spoQC
+      documentation: https://github.com/heylf/spoQC
+      tool_dev_url:
+      licence: []
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'sample' ]
+    - spatialdata:
+        type: folder
+        description: Path to the SpatialData zarr store to run QC on
+  - annotation:
+      type: file
+      description: |
+        Optional cell-type annotation file. When empty/absent, spoqc is run without the `-a` flag.
+      pattern: "*.tsv"
+  - step:
+      type: string
+      description: Name of the spoQC step to run, passed to `spoqc -s`
+  - tmp_general:
+      type: file
+      description: General QC parquet output from SPOQC_GENERAL
+      pattern: "generalqc_output_hqcr.parquet"
+  - tmp_bubble:
+      type: file
+      description: Bubble QC parquet output from SPOQC_BUBBLE
+      pattern: "bubbleqc_output_hqcr.parquet"
+  - tmp_doublet:
+      type: file
+      description: Doublet QC parquet output from SPOQC_DOUBLET
+      pattern: "doubletqc_output_hqcr.parquet"
+  - tmp_void:
+      type: file
+      description: Void QC parquet output from SPOQC_VOID
+      pattern: "voidqc_output_hqcr.parquet"
+  - tmp_cell:
+      type: file
+      description: Cell QC parquet output from SPOQC_CELL
+      pattern: "cellqc_output_hqcr.parquet"
+  - mask_hqcr:
+      type: file
+      description: HQCR raw mask from SPOQC_HQCR_IDENT
+      pattern: "hqcr_output_mask_raw.parquet"
+  - mask_smoothed_hqcr:
+      type: file
+      description: Smoothed HQCR mask from SPOQC_HQCR_IDENT
+      pattern: "hqcr_output_mask_smoothed_raw.parquet"
+  - qv:
+      type: file
+      description: HQTR quality-value probability output from SPOQC_HQTR_QV
+      pattern: "hqtr_output_qv_prob"
+  - ac:
+      type: file
+      description: HQTR ambient-contamination probability output from SPOQC_HQTR_AC
+      pattern: "hqtr_output_ac_prob"
+  - metrices_hqtr:
+      type: directory
+      description: HQTR metrics directory from SPOQC_HQTR_METRICES
+      pattern: "spoQC_tmp/metrices/hqtr"
+  - mask_smoothed_hqtr:
+      type: file
+      description: Smoothed HQTR mask from SPOQC_HQTR_REFINEMENT
+      pattern: "hqtr_output_mask_smoothed_raw"
+  - mask_hqtr:
+      type: file
+      description: HQTR raw mask from SPOQC_HQTR_CLUSTERING
+      pattern: "hqtr_output_mask_raw"
+  - metrices_hqpr:
+      type: directory
+      description: Collected per-staining HQPR metrics directories from SPOQC_HQPR_METRICES
+      pattern: "spoQC_tmp/metrices/hqpr/*"
+  - mask_smoothed_hqpr:
+      type: file
+      description: Collected per-staining smoothed HQPR masks from SPOQC_HQPR_REFINEMENT
+      pattern: "spoQC_tmp/*"
+  - mask_hqpr:
+      type: file
+      description: Collected per-staining raw HQPR masks from SPOQC_HQPR_CLUSTERING
+      pattern: "spoQC_tmp/*"
+output:
+  - report:
+      type: directory
+      description: HTML/plot per-category analysis report directory
+      pattern: "report/analysis/category"
+  - versions_spoqc:
+      - - "${task.process}":
+            type: string
+            description: The process the versions were collected from
+        - spoqc:
+            type: string
+            description: The tool name
+        - "spoqc --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown":
+            type: eval
+            description: The expression to obtain the version of the tool
+topics:
+  versions:
+    - - "${task.process}":
+          type: string
+          description: The process the versions were collected from
+      - spoqc:
+          type: string
+          description: The tool name
+      - "spoqc --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown":
+          type: eval
+          description: The expression to obtain the version of the tool
+authors:
+  - "@heylf"

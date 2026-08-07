@@ -48,6 +48,7 @@ The pipeline supports the following tools:
 - QC methods:
   - [MultiQC Xenium Extra Plugin](https://github.com/MultiQC/xenium-extra)
   - [OPT](https://github.com/JEFworks-Lab/off-target-probe-tracker)
+  - [spoQC](https://github.com/heylf/spoQC)
 
 ## Usage
 
