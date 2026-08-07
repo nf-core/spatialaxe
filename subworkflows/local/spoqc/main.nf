@@ -45,43 +45,11 @@ include { SPOQC_FINALREPORT       } from '../../../modules/local/spoQC/finalrepo
 workflow SPOQC {
 
     take:
-    ch_bundle_path          // channel: [ val(meta), [ "path-to-xenium-bundle" ] ]
+    ch_sd_bundle            // channel: [ val(meta), [ "path-to-spatialdata-bundle" ] ]
     ch_annotation_src       // channel: [ [ "path-to-annotation-file" ] ]
     ch_stainings            // channel: [ [ 1,2,.... ] ]
 
     main:
-
-    if ( params.nucleus_segmentation_only && params.cell_segmentation_only ) {
-
-        ch_segmented_object = channel.value('cells_and_nuclei')
-
-    }       
-
-    else if ( params.nucleus_segmentation_only ) {
-
-        ch_segmented_object = channel.value('nuclei')
-
-    }
-
-    else if ( params.cell_segmentation_only ) {
-
-        ch_segmented_object = channel.value('cells')
-
-    } else {
-
-        ch_segmented_object = channel.value([])
-
-    }
-
-    ch_coordinate_space = channel.value("all")
-
-    // write spatialdata object from the raw xenium bundle
-    SPATIALDATA_WRITE_RAW_BUNDLE (
-        ch_bundle_path,
-        'spatialdata_raw',
-        ch_segmented_object,
-        ch_coordinate_space,
-    )
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // General
@@ -91,46 +59,46 @@ workflow SPOQC {
     ch_annotation_present = ch_annotation_src.filter { a -> a && (!(a instanceof List) || !a.isEmpty()) }
 
     SPOQC_ANNOTATION(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         ch_annotation_src,
         "annotation",
     )
     ch_annotation_path = ch_annotation_present.mix( SPOQC_ANNOTATION.out.annotation )
 
     SPOQC_GENERAL(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         ch_annotation_path,
         "generalqc",
     )
 
     SPOQC_WHOLE_SLIDE(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         "whole_slide_qc",
     )
 
     SPOQC_BUBBLE(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         "bubbleqc",
     )
 
     SPOQC_DOUBLET(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         ch_annotation_path,
         "doubletqc",
     )
 
     SPOQC_VOID(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         "voidqc",
     )
 
     SPOQC_CELL(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         "cellqc",
     )
 
     SPOQC_AMBIENT(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         "ambientqc",
     )
 
@@ -139,7 +107,7 @@ workflow SPOQC {
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     SPOQC_HQCR_IDENT(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         "hqcr_ident",
         SPOQC_GENERAL.out.tmp,
         SPOQC_BUBBLE.out.tmp,
@@ -149,7 +117,7 @@ workflow SPOQC {
     )
 
     SPOQC_HQCR_CELLTYPE(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         ch_annotation_path,
         "hqcr_celltype",
         SPOQC_GENERAL.out.tmp,
@@ -164,12 +132,12 @@ workflow SPOQC {
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     SPOQC_HQPR_METRICES(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         ch_stainings,
         "hqpr_metrices",
     )
 
-    ch_spatialdata_stainings = SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata.combine(ch_stainings)
+    ch_spatialdata_stainings = ch_sd_bundle.combine(ch_stainings)
     ch_annotation_stainings = ch_annotation_path.combine(ch_stainings)
 
     SPOQC_HQPR_CLUSTERING(
@@ -209,23 +177,23 @@ workflow SPOQC {
     // HQTR
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     SPOQC_HQTR_METRICES(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         "hqtr_metrices",
     )
 
     SPOQC_HQTR_AC(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         "hqtr_ac",
         SPOQC_AMBIENT.out.tmp,
     )
 
     SPOQC_HQTR_QV(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         "hqtr_qv",
     )
 
     SPOQC_HQTR_CLUSTERING(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         "hqtr_clustering",
         SPOQC_HQTR_METRICES.out.metrices,
         SPOQC_HQTR_QV.out.tmp,
@@ -233,19 +201,19 @@ workflow SPOQC {
     )
 
     SPOQC_HQTR_REFINEMENT(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         "hqtr_refinement",  
         SPOQC_HQTR_CLUSTERING.out.mask,
     )
 
     SPOQC_HQTR_BOUNDING_BOX(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         "hqtr_bounding_box",  
         SPOQC_HQTR_REFINEMENT.out.mask_smoothed,
     )
 
     // SPOQC_HQTR_CELLTYPE(
-    //     SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+    //     ch_sd_bundle,
     //     ch_annotation_path,
     //     "hqtr_celltype",  
     //     SPOQC_GENERAL.out.tmp,
@@ -273,23 +241,23 @@ workflow SPOQC {
     )
 
     SPOQC_TRANSCRIPT(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         ch_annotation_path,
         "transcriptqc",
     )
 
     SPOQC_CELLCYCLE(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         "cellcycleqc",
     )
 
     SPOQC_MODEL(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         "modelqc",
     )
 
     // SPOQC_MARKER(
-    //     SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+    //     ch_sd_bundle,
     //     ch_annotation_path,
     //     "markerqc"
     // )
@@ -311,7 +279,7 @@ workflow SPOQC {
         .collect()
 
     SPOQC_ANALYSIS_OVERVIEW(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         ch_annotation_path,
         "analysis_overview",
         SPOQC_GENERAL.out.tmp,
@@ -332,7 +300,7 @@ workflow SPOQC {
     )
 
     SPOQC_ANALYSIS_CATEGORY(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         ch_annotation_path,
         "analysis_category",
         SPOQC_GENERAL.out.tmp,
@@ -353,7 +321,7 @@ workflow SPOQC {
     )
 
     SPOQC_ANALYSIS_CLUSTER(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         ch_annotation_path,
         "analysis_cluster",
         SPOQC_GENERAL.out.tmp,
@@ -385,7 +353,7 @@ workflow SPOQC {
     ch_report_combine_masks     = SPOQC_COMBINE_MASKS.out.report.collect()
 
     SPOQC_FINALREPORT(
-        SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata,
+        ch_sd_bundle,
         "final_report",
         SPOQC_GENERAL.out.report,
         SPOQC_DOUBLET.out.report,
@@ -420,5 +388,5 @@ workflow SPOQC {
 
     emit:
 
-    ch_sd_raw       = SPATIALDATA_WRITE_RAW_BUNDLE.out.spatialdata         // channel: [ val(meta), "spatialdata_raw" ]
+    ch_sd_raw       = ch_sd_bundle         // channel: [ val(meta), "spatialdata_raw" ]
 }
