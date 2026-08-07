@@ -67,12 +67,12 @@ with open(metrics_file, 'r') as f:
     qc_metrics = json.load(f)
 
 print("=== TRANSCRIPT QC SUMMARY ===")
-print(f"Total molecules: {qc_metrics['total_molecules']:,}")
-print(f"Selected molecules: {qc_metrics['selected_molecules']:,}")
+print(f"Total molecules: {qc_metrics['total_transcripts']:,}")
+print(f"Selected molecules: {qc_metrics['selected_transcripts']:,}")
 print(f"Total features: {qc_metrics['total_features']:,}")
 print(f"Total cells: {qc_metrics['total_cells']:,}")
 print(f"Analyzed genes: {qc_metrics['analyzed_genes']:,}")
-print(f"Min molecules per cell: {qc_metrics['min_molecules_per_cell']:,}")
+print(f"Min molecules per cell: {qc_metrics['min_transcripts_per_cell']:,}")
 print(f"Min genes per cell: {qc_metrics['min_genes_per_cell']:,}")
 ```
 
@@ -167,7 +167,7 @@ Next, we examine the distribution of molecules assigned to each feature across t
 
 ```{python display-molecules-per-feature}
 #| echo: false
-display_figure("num_molecules_per_feature.png")
+display_figure("num_transcripts_per_feature.png")
 ```
 
 **Molecule count distribution interpretation:**
@@ -211,7 +211,7 @@ This plot shows the fraction of detected RNA molecules that are located within t
 
 ```{python display-nucleus-rna-fraction}
 #| echo: false
-display_figure("nucleus_molecule_fraction_per_cell_distribution.png")
+display_figure("nucleus_transcript_fraction_per_cell_distribution.png")
 ```
 
 **Nucleus RNA fraction interpretation:**
@@ -249,7 +249,7 @@ We first show a histogram of molecules per cell. The distribution pattern is cru
 
 ```{python display-molecules-per-cell}
 #| echo: false
-display_figure("num_molecules_per_cell.png")
+display_figure("num_transcripts_per_cell.png")
 ```
 
 **Distribution patterns and their meanings:**
@@ -278,7 +278,7 @@ Similarly, we examine the number of unique genes detected per cell, which is ano
 
 ```{python display-genes-per-cell}
 #| echo: false
-display_figure("num_transcripts_per_cell.png")
+display_figure("num_genes_per_cell.png")
 ```
 
 **Gene detection patterns:**

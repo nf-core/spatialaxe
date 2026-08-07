@@ -399,10 +399,14 @@ def main():
     plt.title("Distribution of molecules per feature", fontsize=14, pad=20)
     plt.tight_layout()
     plt.savefig(
-        f"{output_fig_dir}/num_molecules_per_feature.pdf", dpi=300, bbox_inches="tight"
+        f"{output_fig_dir}/num_transcripts_per_feature.pdf",
+        dpi=300,
+        bbox_inches="tight",
     )
     plt.savefig(
-        f"{output_fig_dir}/num_molecules_per_feature.png", dpi=300, bbox_inches="tight"
+        f"{output_fig_dir}/num_transcripts_per_feature.png",
+        dpi=300,
+        bbox_inches="tight",
     )
     plt.close(fig)
 
@@ -410,7 +414,7 @@ def main():
     df_molecules_per_feature = n_mols_per_gene_df.copy()
     df_molecules_per_feature["n_mols_threshold"] = n_mols_threshold
     df_molecules_per_feature.to_csv(
-        figures_source_dir / "num_molecules_per_feature.csv", index=True
+        figures_source_dir / "num_transcripts_per_feature.csv", index=True
     )
 
     retained_genes = n_mols_per_gene_df.query(
@@ -501,14 +505,14 @@ def main():
     # Save the plot
     plt.savefig(
         os.path.join(
-            outdir, "figures", "nucleus_molecule_fraction_per_cell_distribution.pdf"
+            outdir, "figures", "nucleus_transcript_fraction_per_cell_distribution.pdf"
         ),
         dpi=300,
         bbox_inches="tight",
     )
     plt.savefig(
         os.path.join(
-            outdir, "figures", "nucleus_molecule_fraction_per_cell_distribution.png"
+            outdir, "figures", "nucleus_transcript_fraction_per_cell_distribution.png"
         ),
         dpi=300,
         bbox_inches="tight",
@@ -524,7 +528,7 @@ def main():
         }
     )
     df_nucleus_fraction.to_csv(
-        figures_source_dir / "nucleus_molecule_fraction_per_cell_distribution.csv",
+        figures_source_dir / "nucleus_transcript_fraction_per_cell_distribution.csv",
         index=False,
     )
     del cells_parquet
@@ -597,10 +601,10 @@ def main():
     plt.title("Distribution of molecules per Cell", fontsize=14, pad=20)
     plt.tight_layout()
     plt.savefig(
-        f"{output_fig_dir}/num_molecules_per_cell.pdf", dpi=300, bbox_inches="tight"
+        f"{output_fig_dir}/num_transcripts_per_cell.pdf", dpi=300, bbox_inches="tight"
     )
     plt.savefig(
-        f"{output_fig_dir}/num_molecules_per_cell.png", dpi=300, bbox_inches="tight"
+        f"{output_fig_dir}/num_transcripts_per_cell.png", dpi=300, bbox_inches="tight"
     )
     plt.close(fig)
     print(f"Threshold for molecules per cell: {n_mols_threshold_cell}")
@@ -613,7 +617,7 @@ def main():
         }
     )
     df_molecules_per_cell.to_csv(
-        figures_source_dir / "num_molecules_per_cell.csv", index=False
+        figures_source_dir / "num_transcripts_per_cell.csv", index=False
     )
 
     # Convert numpy array to pandas DataFrame
@@ -635,10 +639,10 @@ def main():
     plt.title("Distribution of number of detected genes per Cell", fontsize=14, pad=20)
     plt.tight_layout()
     plt.savefig(
-        f"{output_fig_dir}/num_transcripts_per_cell.pdf", dpi=300, bbox_inches="tight"
+        f"{output_fig_dir}/num_genes_per_cell.pdf", dpi=300, bbox_inches="tight"
     )
     plt.savefig(
-        f"{output_fig_dir}/num_transcripts_per_cell.png", dpi=300, bbox_inches="tight"
+        f"{output_fig_dir}/num_genes_per_cell.png", dpi=300, bbox_inches="tight"
     )
     plt.close(fig)
 
@@ -646,9 +650,7 @@ def main():
     df_genes_per_cell = pd.DataFrame(
         {"n_genes_per_cell": n_genes_per_cell, "n_genes_threshold": n_genes_threshold}
     )
-    df_genes_per_cell.to_csv(
-        figures_source_dir / "num_transcripts_per_cell.csv", index=False
-    )
+    df_genes_per_cell.to_csv(figures_source_dir / "num_genes_per_cell.csv", index=False)
 
     # Convert numpy array to pandas DataFrame
     n_genes_per_cell_df = pd.DataFrame(n_genes_per_cell, columns=["num_of_genes"])
@@ -659,14 +661,14 @@ def main():
 
     # EXACT CODE FROM ORIGINAL NOTEBOOK - Save metrics
     metrics = {
-        "total_molecules": int(num_molecules),
-        "selected_molecules": int(num_selected_molecules),
+        "total_transcripts": int(num_molecules),
+        "selected_transcripts": int(num_selected_molecules),
         "total_features": int(df_spatial.feature_name.nunique()),
         "codeword_category_counts": {
             str(k): int(v) for k, v in codeword_category_counts.items()
         },
         "neg_control_quantile": int(n_mols_threshold),
-        "min_molecules_per_cell": int(n_mols_threshold_cell),
+        "min_transcripts_per_cell": int(n_mols_threshold_cell),
         "min_genes_per_cell": int(n_genes_threshold),
         "retained_genes_count": len(retained_genes),
         "total_cells": int(ad.shape[0]),

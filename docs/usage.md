@@ -71,6 +71,22 @@ nextflow run nf-core/spatialaxe \
    --mode segfree
 ```
 
+### QC mode
+
+`IMAGE_QC ➔ TRANSCRIPT_QC`
+
+Runs the quality-control layer only — image QC (focus / SNR / morphology) and transcript QC (per-transcript and per-cell metrics), each producing an HTML report. The QC layer also runs as part of the other modes (`run_qc = true` by default).
+
+```bash
+nextflow run nf-core/spatialaxe \
+   -profile <docker/singularity/.../institute> \
+   --input samplesheet.csv \
+   --outdir <OUTDIR> \
+   --mode qc
+```
+
+Image QC is GPU-optional: leave `--num_gpus` unset for CPU, or set `--num_gpus N` to request and use N GPUs (requires a GPU-enabled profile/queue).
+
 ### Preview mode <br>
 
 `BAYSOR_PREVIEW`

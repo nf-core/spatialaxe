@@ -56,12 +56,20 @@ process IMAGE_QC_ANALYSIS {
         args << "--stain-names 'DAPI;Boundary (ATP1A1/E-Cadherin/CD45);Interior - RNA (18S);Protein (alphaSMA/Vimentin)'"
     }
 
-    // ROI size parameter
-    if (param_map.containsKey('ROI_SIZE') && param_map['ROI_SIZE']) {
-        args << "--roi-size ${param_map['ROI_SIZE']}"
-    }
-    else {
-        args << "--roi-size 35"
+    // --roi-size comes from conf/modules.config ext.args (params.image_qc_roi_size),
+    // keeping this module parameter-agnostic.
+
+    // GPU cap: pass --num-gpus to the script only when the user set params.num_gpus.
+    // Mirror modules/local/segger/train pattern -- constrain CUDA_VISIBLE_DEVICES so
+    // the process never grabs more GPUs than requested (accelerator directive from
+    // conf/base.config process_gpu_qc already requests this many devices).
+    def num_gpus = params.num_gpus
+    def cuda_visible = ''
+    if (num_gpus != null) {
+        args << "--num-gpus ${num_gpus}"
+        cuda_visible = (num_gpus as int) > 0
+            ? "export CUDA_VISIBLE_DEVICES=" + (0..<(num_gpus as int)).join(',')
+            : "export CUDA_VISIBLE_DEVICES="
     }
 
     // Analysis-tuning flags (--legacy-focus, --no-snr, --snr-*, --save-dapi-maps-tiff,
@@ -72,6 +80,7 @@ process IMAGE_QC_ANALYSIS {
     export OPENBLAS_NUM_THREADS="${task.cpus}"
     export OMP_NUM_THREADS="${task.cpus}"
     export NUMBA_NUM_THREADS="${task.cpus}"
+    ${cuda_visible}
 
     image_qc.py \\
         ${args.join(' \\\n        ')} \\

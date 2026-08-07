@@ -8780,6 +8780,15 @@ def _check_cell_data_exists(xenium_bundle_dir):
     show_default=True,
     help="Gaussian sigma for Laplacian of Gaussian (LoG) pre-smoothing.",
 )
+@click.option(
+    "--num-gpus",
+    default=None,
+    type=int,
+    help=(
+        "Maximum number of GPUs to use. If not set, all visible GPUs are used. "
+        "Set to 0 to force the CPU backend."
+    ),
+)
 def main(
     xenium_bundle_dir,
     outdir,
@@ -8795,6 +8804,7 @@ def main(
     save_dapi_maps_tiff,
     roi_thresholds_yaml,
     lap_sigma,
+    num_gpus,
 ):
     """
     Combined Xenium Image QC pipeline.
@@ -8960,8 +8970,19 @@ def main(
     else:
         logging.info(f"Using tile size: {roi_size}px")
 
-    # Auto-detect available GPUs
+    # Auto-detect available GPUs, then cap to --num-gpus when requested
     available_gpus = detect_gpu_ids()
+    if num_gpus is not None:
+        if num_gpus <= 0:
+            logging.info("--num-gpus=%s requested, forcing CPU backend", num_gpus)
+            available_gpus = []
+        elif len(available_gpus) > num_gpus:
+            logging.info(
+                "Capping GPU usage to %d of %d visible device(s) (--num-gpus)",
+                num_gpus,
+                len(available_gpus),
+            )
+            available_gpus = available_gpus[:num_gpus]
     if available_gpus:
         logging.info(f"Detected {len(available_gpus)} GPU(s): {available_gpus}")
     else:

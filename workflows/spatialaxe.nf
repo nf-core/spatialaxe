@@ -614,6 +614,9 @@ workflow SPATIALAXE {
         // image QC + transcript QC on the validated Xenium bundle
         QC(ch_bundle_path)
 
+        // collect the rendered QC reports so the MultiQC layer can pick them up
+        ch_qc_reports = QC.out.image_qc_report.mix(QC.out.transcript_qc_report)
+
         if (offtarget_probe_tracking) {
 
             // run off-target probe tracking
