@@ -28,6 +28,10 @@ coordinate/spatialdata/meta/spatialdata/test_run/metadata/tables/**
 # xeniumranger's internal secondary analysis (clustering/PCA/UMAP/diffexp) and
 # resegmentation are not run-to-run reproducible; only existence is checked
 xeniumranger/test_run/**
+
+# spoQC generates thousands of non-deterministic plot/report files; only
+# folder existence is checked in spoqc.nf.test, not individual file content
+spoqc/**
 coordinate/untar/test_run/**
 coordinate/spatialdata/write/spatialdata/test_run/redefined_bundle/points/**
 coordinate/spatialdata/write/spatialdata/test_run/redefined_bundle/shapes/**
@@ -50,3 +54,20 @@ coordinate/spatialdata/write/spatialdata/test_run/raw_bundle/zarr.json
 coordinate/spatialdata/write/spatialdata/test_run/redefined_bundle/zarr.json
 coordinate/spatialdata/merge/spatialdata/test_run/merged_bundle/zarr.json
 coordinate/spatialdata/meta/spatialdata/test_run/metadata/zarr.json
+
+# spoQC (qc mode) MultiQC report embeds non-deterministic run data
+qc/multiqc/multiqc_data/llms-full.txt
+qc/multiqc/multiqc_data/multiqc.log
+qc/multiqc/multiqc_data/multiqc.parquet
+qc/multiqc/multiqc_data/multiqc_data.json
+qc/multiqc/multiqc_data/multiqc_sources.txt
+qc/multiqc/multiqc_plots/{svg,pdf,png}/*.{svg,pdf,png}
+qc/multiqc/multiqc_report.html
+
+# same spatialdata/write module as coordinate mode's raw_bundle: points/shapes/tables
+# parquet writers and the bundle-root zarr.json member ordering are not
+# run-to-run reproducible
+qc/spatialdata/write/spatialdata/test_run/spatialdata_raw/points/**
+qc/spatialdata/write/spatialdata/test_run/spatialdata_raw/shapes/**
+qc/spatialdata/write/spatialdata/test_run/spatialdata_raw/tables/**
+qc/spatialdata/write/spatialdata/test_run/spatialdata_raw/zarr.json
