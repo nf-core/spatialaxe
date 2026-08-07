@@ -69,7 +69,7 @@
                         ],
                         "patch": "modules/nf-core/unzip/unzip.diff"
                     },
-                    "xeniumranger/import-segmentation": {
+                    "xeniumranger/importsegmentation": {
                         "branch": "master",
                         "git_sha": "39365e944e936511e33b993cdd978e0f12adac9a",
                         "installed_by": [

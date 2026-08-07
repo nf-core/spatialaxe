@@ -3,11 +3,28 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 1.0.0dev - [date]
+## 1.0.1dev - [date]
 
 Initial release of nf-core/spatialaxe, created with the [nf-core](https://nf-co.re/) template.
 
 ### `Added`
+
+### `Fixed`
+
+### `Dependencies`
+
+### `Deprecated`
+
+## 1.0.1 - [06.08.2026]
+
+Hotfix to tackle some bugs
+
+### `Added`
+
+- Template update for nf-core/tools version 4.0.3
+- Adding new conf/tests folder
+- Adding new test for coordinate mode to check the bugfixes
+- Remove default outdir='results' for test profiles (tests)
 
 ### `Fixed`
 
