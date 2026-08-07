@@ -50,41 +50,106 @@ process IMAGE_QC_ANALYSIS {
     if (param_map.containsKey('STAIN_NAMES') && param_map['STAIN_NAMES']) {
         def stains_str = param_map['STAIN_NAMES'].toString()
         args << "--stain-names '${stains_str}'"
-    }
-    else {
-        // Module-level default stain/channel names when none are provided
-        args << "--stain-names 'DAPI;Boundary (ATP1A1/E-Cadherin/CD45);Interior - RNA (18S);Protein (alphaSMA/Vimentin)'"
-    }
-
-    // --roi-size comes from conf/modules.config ext.args (params.image_qc_roi_size),
-    // keeping this module parameter-agnostic.
-
-    // GPU cap: pass --num-gpus to the script only when the user set params.num_gpus.
-    // Mirror modules/local/segger/train pattern -- constrain CUDA_VISIBLE_DEVICES so
-    // the process never grabs more GPUs than requested (accelerator directive from
-    // conf/base.config process_gpu_qc already requests this many devices).
-    def num_gpus = params.num_gpus
-    def cuda_visible = ''
-    if (num_gpus != null) {
-        args << "--num-gpus ${num_gpus}"
-        cuda_visible = (num_gpus as int) > 0
-            ? "export CUDA_VISIBLE_DEVICES=" + (0..<(num_gpus as int)).join(',')
-            : "export CUDA_VISIBLE_DEVICES="
+    } else {
+        // Use params.stain_names from config if available, otherwise fall back to defaults
+        def default_stains_str = params.stain_names ?: "DAPI;Boundary (ATP1A1/E-Cadherin/CD45);Interior - RNA (18S);Protein (alphaSMA/Vimentin)"
+        args << "--stain-names '${default_stains_str}'"
     }
 
-    // Analysis-tuning flags (--legacy-focus, --no-snr, --snr-*, --save-dapi-maps-tiff,
-    // --lap-sigma) come from conf/modules.config ext.args, keeping this module
-    // parameter-agnostic.
+    // Tile size parameter (a.k.a. ROI size internally). Per-sample
+    // `parameters` map can override via ROI_SIZE; otherwise the top-level
+    // `params.tile_size` (Seqera-visible) is used. Default 35 px.
+    if (param_map.containsKey('ROI_SIZE') && param_map['ROI_SIZE']) {
+        args << "--roi-size ${param_map['ROI_SIZE']}"
+    } else {
+        args << "--roi-size ${params.tile_size ?: 35}"
+    }
+
+    // Legacy focus score mode (CPU for-loop instead of GPU convolution)
+    if (params.legacy_focus) {
+        args << "--legacy-focus"
+    }
+
+    if (params.image_qc_no_snr) {
+        args << '--no-snr'
+    }
+    if (params.image_qc_snr_no_roi_tx_table) {
+        args << '--snr-no-roi-tx-table'
+    }
+    if (params.image_qc_snr_otsu_max_rois != null) {
+        args << "--snr-otsu-max-rois ${params.image_qc_snr_otsu_max_rois}"
+    }
+    // image_qc_snr_no_moran true (default): Moran off — no flag. false: opt in to Moran.
+    if (!params.image_qc_snr_no_moran) {
+        args << '--snr-with-moran'
+    }
+    if (params.image_qc_save_dapi_maps_tiff) {
+        args << '--save-dapi-maps-tiff'
+    }
+    // Streaming is the script default: each tile is reduced and dropped, so no
+    // full-resolution pixel plane is written. The planes cost ~154 GB of scratch on
+    // a 5.5 gigapixel sample and their writeback to S3 is what pushed run
+    // 3nkeHOEV1ONlbK past the 4 h wall. Opt out only to reproduce the old path.
+    if (!params.image_qc_stream_tiles) {
+        args << '--no-stream-tiles'
+    }
+    // Per-figure figures_source/*.csv source-data exports are unused downstream
+    // (the QMD embeds only the PNGs) and the big ROI-table dumps cost ~80 s each.
+    // Off by default; opt in to write them.
+    if (params.image_qc_figure_source_tables) {
+        args << '--figure-source-tables'
+    }
+    // Figure generation master toggle. Off skips ALL figure rendering for a
+    // metrics-only fast run; metrics/JSON/parquet are always produced.
+    if (!params.image_qc_figures) {
+        args << '--no-figures'
+    }
+    // Cap the devices the script uses. `accelerator` only tells AWS Batch how many
+    // GPUs to request -- it does not restrict what CUDA can see, so a task asking
+    // for 1 GPU that lands on a 4-GPU instance would otherwise detect and use all
+    // four. Observed on run 3nkeHOEV1ONlbK: image_qc_gpus=1 placed on a
+    // g6e.12xlarge and the script reported "4 GPU(s)".
+    args << "--max-gpus ${params.image_qc_gpus}"
+    if (params.image_qc_lap_sigma != null) {
+        args << "--lap-sigma ${params.image_qc_lap_sigma}"
+    }
+
+    if (param_map.containsKey('PIPELINE_SEGMENTATION') && param_map['PIPELINE_SEGMENTATION']) {
+        args << "--pipeline-segmentation '${param_map['PIPELINE_SEGMENTATION']}'"
+    }
+
+    // Boolean flag — emit only when truthy (never '--is-resegmented false')
+    if (param_map.containsKey('IS_RESEGMENTED') && param_map['IS_RESEGMENTED'].toString() == 'true') {
+        args << "--is-resegmented"
+    }
+
     """
-    export MKL_NUM_THREADS="${task.cpus}"
-    export OPENBLAS_NUM_THREADS="${task.cpus}"
-    export OMP_NUM_THREADS="${task.cpus}"
-    export NUMBA_NUM_THREADS="${task.cpus}"
-    ${cuda_visible}
+    export MKL_NUM_THREADS="$task.cpus"
+    export OPENBLAS_NUM_THREADS="$task.cpus"
+    export OMP_NUM_THREADS="$task.cpus"
+    export NUMBA_NUM_THREADS="$task.cpus"
 
+    # Capture the analysis exit code without aborting (Nextflow runs with set -e).
+    # A very dim sample can make image_qc.py exit 1 (e.g. no tissue tiles clear the
+    # intensity gate); we still want a report, so on exit 1 we record a failed
+    # status and exit 0. The Quarto report reads image_qc_status.json and renders a
+    # QC-FAILED banner. Signal / OOM / preemption codes (104, 130-145) are re-raised
+    # so Nextflow's retry errorStrategy still fires.
+    rc=0
     image_qc.py \\
-        ${args.join(' \\\n        ')} \\
-        ${task.ext.args ?: ''}
+        ${args.join(' \\\n        ')} || rc=\$?
+
+    mkdir -p "${outdir}"
+
+    if [ "\$rc" -eq 0 ]; then
+        echo '{"status": "ok", "sample_id": "${meta.id}"}' > "${outdir}/image_qc_status.json"
+    elif [ "\$rc" -eq 1 ]; then
+        echo "WARNING: image_qc.py exited 1 (Python error); writing failed status for report" >&2
+        echo '{"status": "failed", "exit_code": 1, "sample_id": "${meta.id}"}' > "${outdir}/image_qc_status.json"
+    else
+        echo "image_qc.py exited \$rc (signal/OOM); propagating for errorStrategy" >&2
+        exit \$rc
+    fi
     """
 
     stub:
@@ -94,6 +159,5 @@ process IMAGE_QC_ANALYSIS {
     mkdir -p "${outdir}/figures"
     touch "${outdir}/image_qc_metrics.json"
     touch "${outdir}/image_qc_metrics.csv"
-    touch "${outdir}/versions.yml"
     """
 }

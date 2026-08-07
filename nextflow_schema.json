@@ -427,10 +427,11 @@
                     "description": "Whether to run the off-target probe tracking.",
                     "default": false
                 },
-                "num_gpus": {
+                "tile_size": {
                     "type": "integer",
-                    "minimum": 0,
-                    "description": "Number of GPUs to request for the image QC analysis. null = CPU only (no accelerator); N = request N GPUs."
+                    "minimum": 1,
+                    "default": 35,
+                    "description": "Image QC: tile edge length in native pixels for the tile-level focus / SNR analysis (passed as --roi-size)."
                 },
                 "stain_names": {
                     "type": "string",
@@ -446,11 +447,11 @@
                     "format": "file-path",
                     "description": "Path to the ROI threshold config YAML for image QC. null = use the bundled conf/roi_image_qc_thresholds.yaml."
                 },
-                "image_qc_roi_size": {
+                "image_qc_gpus": {
                     "type": "integer",
-                    "minimum": 1,
-                    "default": 35,
-                    "description": "Image QC: ROI tile size in pixels for the grid focus / SNR analysis."
+                    "minimum": 0,
+                    "default": 1,
+                    "description": "Image QC: number of GPUs each task requests and the cap CUDA actually uses (--max-gpus). The accelerator request is gated on use_gpu in conf/base.config."
                 },
                 "legacy_focus": {
                     "type": "boolean",
@@ -480,6 +481,21 @@
                     "type": "boolean",
                     "description": "Image QC: also save DAPI focus maps as TIFF.",
                     "default": false
+                },
+                "image_qc_stream_tiles": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Image QC: reduce each tile as it is computed instead of assembling full-resolution pixel planes. Set false (--no-stream-tiles) to restore the plane-based path."
+                },
+                "image_qc_figure_source_tables": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Image QC: write the per-figure figures_source/*.csv source-data exports (unused downstream; default off)."
+                },
+                "image_qc_figures": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Image QC: generate QC figures. Set false (--no-figures) for a metrics-only fast run; metric/JSON/parquet outputs are always produced."
                 },
                 "image_qc_lap_sigma": {
                     "type": "number",

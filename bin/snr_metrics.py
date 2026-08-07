@@ -14,12 +14,15 @@ import logging
 import math
 import os
 import re
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+import threading
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import pyarrow.parquet as pq
 
 logger = logging.getLogger(__name__)
 
@@ -42,19 +45,19 @@ SNR_ROI_TX_TABLE_BASENAME = "SNR_roi_tx"
 
 def snr_verdict_to_quality_status(snr_summary: dict) -> str:
     """
-    Convert SNR module verdict to the 'good'/'warning'/'critical' scale
-    used by assess_raw_intensity_quality() so the HTML report scorecard
-    can treat SNR like any other channel quality metric.
+    Convert SNR module verdict to the 'pass'/'warn'/'fail' scale used by
+    assess_raw_intensity_quality() so the HTML report scorecard can treat
+    SNR like any other channel quality metric.
 
-        PASS  → 'good'
-        WARN  → 'warning'
-        FAIL  → 'critical'
+        PASS  → 'pass'
+        WARN  → 'warn'
+        FAIL  → 'fail'
         NOT_COMPUTED / ERROR → 'not_available'
     """
     mapping = {
-        "PASS": "good",
-        "WARN": "warning",
-        "FAIL": "critical",
+        "PASS": "pass",
+        "WARN": "warn",
+        "FAIL": "fail",
     }
     overall = snr_summary.get("verdict", {}).get("overall_snr_verdict", "NOT_COMPUTED")
     return mapping.get(overall, "not_available")
@@ -138,8 +141,8 @@ def compute_image_snr_from_roi_df(
     snr_db = 20.0 * math.log10(max(ratio, eps))
     _t = snr_thresholds or {}
     _img = _t.get("image_snr_db") or {}
-    warn_db = float(_img.get("warn", 12.0))
-    fail_db = float(_img.get("fail", 8.0))
+    warn_db = float(_img.get("warn", 15.0))
+    fail_db = float(_img.get("fail", 10.0))
     verdict = "PASS" if snr_db >= warn_db else ("WARN" if snr_db >= fail_db else "FAIL")
 
     return {
@@ -185,95 +188,294 @@ def _otsu_threshold_uint16(arr: np.ndarray) -> float:
     return float(bin_centers[idx])
 
 
-# Module-level globals for multiprocessing (fork inherits these via COW).
-_MP_IMG: Optional[np.ndarray] = None
-_MP_X1A: Optional[np.ndarray] = None
-_MP_X2A: Optional[np.ndarray] = None
-_MP_Y1A: Optional[np.ndarray] = None
-_MP_Y2A: Optional[np.ndarray] = None
-_MP_USE_SKIMAGE: bool = False
+def roi_snr_db(tile: np.ndarray) -> float:
+    """SNR in dB for one ROI window: Otsu foreground mean over background stdev.
 
+    Returns NaN when the window cannot yield a value — too few pixels, an empty
+    foreground or background after thresholding, or a degenerate background with
+    zero spread. NaN rather than an exception because a slide legitimately
+    contains such windows (empty edge tissue) and they are reported as N/A.
 
-def _otsu_snr_chunk(
-    img: np.ndarray,
-    x1a: np.ndarray,
-    x2a: np.ndarray,
-    y1a: np.ndarray,
-    y2a: np.ndarray,
-    start: int,
-    end: int,
-    otsu_fn: Callable,
-) -> List[float]:
-    """Process a chunk of ROIs: Otsu threshold → SNR dB."""
-    h, w = img.shape[:2]
-    dbs: List[float] = []
-    for k in range(start, end):
-        x1, x2 = max(0, int(x1a[k])), min(w, int(x2a[k]))
-        y1, y2 = max(0, int(y1a[k])), min(h, int(y2a[k]))
-        if x2 <= x1 or y2 <= y1:
-            continue
-        tile = img[y1:y2, x1:x2]
-        if tile.size < 4:
-            continue
-        t = otsu_fn(tile)
-        fg = tile[tile >= t]
-        bg = tile[tile < t]
-        if fg.size < 2 or bg.size < 2:
-            continue
-        mean_fg = float(np.mean(fg))
-        std_bg = float(np.std(bg, ddof=1))
-        if std_bg < 1e-12:
-            continue
-        dbs.append(20.0 * math.log10(max(mean_fg / std_bg, 1e-12)))
-    return dbs
+    Factored out so the whole-map path and the streaming tile consumer
+    (``image_qc.RoiOtsuSnrAccumulator``) share one implementation: equivalence is
+    then structural rather than something a test has to keep rediscovering.
 
+    The window is reduced in **float64**. Production maps are float32, but the
+    batched (``roi_snr_db_batch``) and numba/GPU paths promote to float64, and a
+    float32 masked reduction is order-dependent so it cannot bit-match a batched
+    one. Computing every path in float64 makes CPU and GPU results identical to
+    float64 rounding instead of differing by ~2e-6 dB with the instance type.
+    """
+    if tile.size < 4:
+        return float("nan")
+    tile = np.asarray(tile, dtype=np.float64)
 
-def _mp_otsu_worker(chunk_range: Tuple[int, int]) -> List[float]:
-    """Multiprocessing worker: reads globals set before fork, returns SNR dBs for chunk."""
-    start, end = chunk_range
-    img = _MP_IMG
-    x1a, x2a, y1a, y2a = _MP_X1A, _MP_X2A, _MP_Y1A, _MP_Y2A
-    if img is None or x1a is None or x2a is None or y1a is None or y2a is None:
-        raise RuntimeError(
-            "_mp_otsu_worker called before multiprocessing globals were set"
-        )
-    otsu_fn: Callable[[np.ndarray], float]
-    if _MP_USE_SKIMAGE:
-        from skimage.filters import threshold_otsu as _sk_otsu
+    try:
+        from skimage.filters import threshold_otsu as _skimage_threshold_otsu  # type: ignore
+    except Exception:
+        _skimage_threshold_otsu = None
 
-        def _otsu_sk(tile: np.ndarray) -> float:
-            try:
-                return float(_sk_otsu(tile.astype(np.float64)))
-            except Exception:
-                return _otsu_threshold_uint16(tile)
-
-        otsu_fn = _otsu_sk
+    if _skimage_threshold_otsu is not None:
+        try:
+            threshold = float(_skimage_threshold_otsu(tile))
+        except Exception:
+            threshold = _otsu_threshold_uint16(tile)
     else:
-        otsu_fn = _otsu_threshold_uint16
-    return _otsu_snr_chunk(img, x1a, x2a, y1a, y2a, start, end, otsu_fn)
+        threshold = _otsu_threshold_uint16(tile)
+
+    foreground = tile[tile >= threshold]
+    background = tile[tile < threshold]
+    if foreground.size < 2 or background.size < 2:
+        return float("nan")
+
+    mean_fg = float(np.mean(foreground))
+    std_bg = float(np.std(background, ddof=1))
+    eps = 1e-12
+    if std_bg < eps:
+        return float("nan")
+    return 20.0 * math.log10(max(mean_fg / std_bg, eps))
+
+
+def roi_snr_db_batch(tiles: Any, xp: Any = np) -> Any:
+    """Vectorized ``roi_snr_db`` over a stack of equal-size ROI windows.
+
+    ``tiles`` is ``(K, h, w)`` or ``(K, N)``; returns a ``(K,)`` float64 array of
+    dB values, one per window, computed as a single batched reduction with **no
+    Python per-ROI loop**. Pass ``xp=cupy`` to run entirely on the GPU — every op
+    below (min/max, bincount, cumsum, argmax, masked reductions) exists in both
+    numpy and cupy, so the same code runs on either device. This is the form the
+    streaming tile pass uses when the tile's ``mean_map`` is already resident in
+    VRAM (``image_qc._compute_channel_maps_on_gpu``): the Otsu SNR is folded on
+    device and only the small ``(K,)`` dB vector returns to host.
+
+    Reproduces ``skimage.filters.threshold_otsu`` (256 bins over each window's own
+    min..max, the float-corrected uniform-bin assignment numpy uses) and the
+    ``foreground-mean / background-std(ddof=1)`` dB. Equivalence vs the per-ROI
+    ``roi_snr_db`` is exact to float64 rounding (max ~1e-14 dB, verified in
+    ``tests/test_roi_snr_db_batch.py``).
+
+    Assumes finite, full-size windows. Constant windows (zero span) return NaN,
+    matching the scalar path (an all-foreground split leaves the background empty).
+    Callers route edge-clipped or non-finite windows to the scalar ``roi_snr_db``.
+    """
+    nbins = 256
+    eps = 1e-12
+    flat = xp.asarray(tiles).reshape(xp.asarray(tiles).shape[0], -1).astype(xp.float64)
+    K, N = flat.shape[0], flat.shape[1]
+    out = xp.full(K, xp.nan, dtype=xp.float64)
+    if N < 4:
+        return out
+
+    mn = flat.min(axis=1)
+    mx = flat.max(axis=1)
+    ok = mx > mn  # constant windows -> NaN, as in roi_snr_db
+    if not bool(ok.any()):
+        return out
+    sub = flat[ok]
+    mn_s = mn[ok]
+    step = (mx[ok] - mn_s) / nbins
+
+    # numpy's uniform-bin assignment for np.histogram(row, nbins, (min, max)),
+    # including its float corrections against the arithmetic edge mn + idx*step.
+    idx = ((sub - mn_s[:, None]) / step[:, None]).astype(xp.intp)
+    idx = xp.where(idx == nbins, nbins - 1, idx)
+    idx = xp.clip(idx, 0, nbins - 1)
+    left = mn_s[:, None] + idx * step[:, None]
+    idx = xp.where(sub < left, idx - 1, idx)
+    idx = xp.clip(idx, 0, nbins - 1)
+    right = mn_s[:, None] + (idx + 1) * step[:, None]
+    idx = xp.where((sub >= right) & (idx != nbins - 1), idx + 1, idx)
+    idx = xp.clip(idx, 0, nbins - 1)
+
+    Ks = sub.shape[0]
+    flat_idx = (idx + xp.arange(Ks)[:, None] * nbins).reshape(-1)
+    counts = (
+        xp.bincount(flat_idx, minlength=Ks * nbins)
+        .reshape(Ks, nbins)
+        .astype(xp.float64)
+    )
+    centers = mn_s[:, None] + (xp.arange(nbins) + 0.5) * step[:, None]
+
+    # skimage.filters.threshold_otsu's histogram math, per row.
+    with np.errstate(invalid="ignore", divide="ignore"):
+        w1 = xp.cumsum(counts, axis=1)
+        w2 = xp.cumsum(counts[:, ::-1], axis=1)[:, ::-1]
+        cb = counts * centers
+        mean1 = xp.cumsum(cb, axis=1) / w1
+        mean2 = (xp.cumsum(cb[:, ::-1], axis=1) / w2[:, ::-1])[:, ::-1]
+    var12 = w1[:, :-1] * w2[:, 1:] * (mean1[:, :-1] - mean2[:, 1:]) ** 2
+    thr = centers[xp.arange(Ks), xp.argmax(var12, axis=1)]
+
+    fg = sub >= thr[:, None]
+    nfg = fg.sum(axis=1)
+    nbg = N - nfg
+    with np.errstate(invalid="ignore", divide="ignore"):
+        mean_fg = xp.where(fg, sub, 0.0).sum(axis=1) / nfg
+        mean_bg = xp.where(~fg, sub, 0.0).sum(axis=1) / nbg
+        ss_bg = xp.where(~fg, (sub - mean_bg[:, None]) ** 2, 0.0).sum(axis=1)
+        std_bg = xp.sqrt(ss_bg / (nbg - 1))
+    good = (nfg >= 2) & (nbg >= 2) & (std_bg >= eps)
+    db = xp.full(Ks, xp.nan, dtype=xp.float64)
+    ratio = xp.maximum(mean_fg / std_bg, eps)
+    db = xp.where(good, 20.0 * xp.log10(ratio), db)
+    out[ok] = db
+    return out
+
+
+try:
+    import numba as _numba
+
+    _HAS_NUMBA = True
+except Exception:  # numba is an optional accelerator; callers fall back otherwise
+    _HAS_NUMBA = False
+
+if _HAS_NUMBA:
+    # cache=False deliberately: each Nextflow task is a fresh process with an
+    # ephemeral work dir, so an on-disk cache never survives to be reused, and
+    # numba's cache key for a path-loaded module is "<dynamic>", which poisons a
+    # recompile with `ModuleNotFoundError: No module named '<dynamic>'`. Compiling
+    # once per task (~seconds) is negligible against the fold.
+    @_numba.njit(cache=False, fastmath=False)
+    def _roi_snr_db_one_numba(tile_flat, nbins):  # noqa: D401
+        """One ROI: skimage-Otsu threshold then fg-mean/bg-std dB, all float64.
+
+        Reproduces ``roi_snr_db`` for a finite, non-constant window; returns NaN
+        for the same degenerate cases (too small, constant, empty fg/bg, zero bg
+        spread). Compiled + released-GIL so ``prange`` scales across cores.
+        """
+        n = tile_flat.size
+        if n < 4:
+            return np.nan
+        mn = tile_flat[0]
+        mx = tile_flat[0]
+        for v in tile_flat:
+            if v < mn:
+                mn = v
+            if v > mx:
+                mx = v
+        if mx <= mn:
+            return np.nan
+        step = (mx - mn) / nbins
+        counts = np.zeros(nbins, dtype=np.float64)
+        for v in tile_flat:
+            b = int((v - mn) / step)
+            if b == nbins:
+                b = nbins - 1
+            if v < mn + b * step:
+                b -= 1
+            elif b != nbins - 1 and v >= mn + (b + 1) * step:
+                b += 1
+            if b < 0:
+                b = 0
+            elif b >= nbins:
+                b = nbins - 1
+            counts[b] += 1.0
+        w1 = np.cumsum(counts)
+        centers = np.empty(nbins, dtype=np.float64)
+        for j in range(nbins):
+            centers[j] = mn + (j + 0.5) * step
+        m1cum = np.cumsum(counts * centers)
+        total = w1[nbins - 1]
+        cbtot = m1cum[nbins - 1]
+        best_var = -1.0
+        best_idx = 0
+        for t in range(nbins - 1):
+            wa = w1[t]
+            wb = total - wa
+            if wa == 0.0 or wb == 0.0:
+                continue
+            ma = m1cum[t] / wa
+            mb = (cbtot - m1cum[t]) / wb
+            var = wa * wb * (ma - mb) ** 2
+            if var > best_var:
+                best_var = var
+                best_idx = t
+        thr = centers[best_idx]
+        sfg = 0.0
+        nfg = 0
+        sbg = 0.0
+        nbg = 0
+        for v in tile_flat:
+            if v >= thr:
+                sfg += v
+                nfg += 1
+            else:
+                sbg += v
+                nbg += 1
+        if nfg < 2 or nbg < 2:
+            return np.nan
+        mean_fg = sfg / nfg
+        mean_bg = sbg / nbg
+        ss = 0.0
+        for v in tile_flat:
+            if v < thr:
+                d = v - mean_bg
+                ss += d * d
+        std_bg = np.sqrt(ss / (nbg - 1))
+        if std_bg < 1e-12:
+            return np.nan
+        ratio = mean_fg / std_bg
+        if ratio < 1e-12:
+            ratio = 1e-12
+        return 20.0 * np.log10(ratio)
+
+    @_numba.njit(cache=False, parallel=True, fastmath=False)  # see cache note above
+    def _roi_snr_db_numba_kernel(stack2d, nbins):
+        K = stack2d.shape[0]
+        out = np.empty(K, dtype=np.float64)
+        for k in _numba.prange(K):
+            out[k] = _roi_snr_db_one_numba(stack2d[k], nbins)
+        return out
+
+
+def roi_snr_db_numba(tiles: Any) -> np.ndarray:
+    """CPU-parallel batched ``roi_snr_db`` (numba ``prange``).
+
+    The efficient path for **CPU** instances: ~50x the Python per-ROI loop on 8
+    cores, versus the pure-numpy ``roi_snr_db_batch(xp=np)`` which is memory-bound
+    and no faster than the loop. On **GPU** instances use ``roi_snr_db_batch(xp=cp)``
+    instead. Equivalent to ``roi_snr_db`` to float64 rounding.
+
+    Thread count follows ``numba.set_num_threads`` / ``NUMBA_NUM_THREADS``; the
+    caller must cap it so it does not oversubscribe against the tile worker pool.
+    """
+    if not _HAS_NUMBA:
+        raise RuntimeError("roi_snr_db_numba requires numba, which is not installed")
+    arr = np.asarray(tiles)
+    flat = np.ascontiguousarray(arr.reshape(arr.shape[0], -1), dtype=np.float64)
+    if flat.shape[1] < 4:
+        return np.full(flat.shape[0], np.nan, dtype=np.float64)
+    return _roi_snr_db_numba_kernel(flat, 256)
 
 
 def compute_image_snr_from_pixel_maps(
-    focus_maps: Dict[str, Any],
+    focus_maps: Optional[Dict[str, Any]],
     df_grid_roi: pd.DataFrame,
     map_key: str = "dapi_mean_map",
     max_rois: Optional[int] = None,
     snr_thresholds: Optional[Dict[str, Any]] = None,
+    precomputed_db: Optional[Any] = None,
 ) -> Dict[str, Any]:
     """
     Per-ROI SNR_dB from pixel tiles: Otsu foreground vs background std (SNR_plan accurate path).
     Uses ``dapi_mean_map`` (or ``map_key``) slices [y1:y2, x1:x2] per ROI row.
 
-    Parallelizes per-ROI Otsu across processes (fork inherits image via COW, no GIL).
+    ``precomputed_db`` supplies one dB value per ROI when the caller already
+    reduced them during a tiled pass, in which case no pixel map is needed. Both
+    paths get their dB from :func:`roi_snr_db`, so the aggregate statistics below
+    are computed identically either way.
     """
-    global _MP_IMG, _MP_X1A, _MP_X2A, _MP_Y1A, _MP_Y2A, _MP_USE_SKIMAGE
+    if precomputed_db is None:
+        arr = focus_maps.get(map_key) if focus_maps else None
+        if arr is None:
+            return {"status": "skipped", "reason": f"missing focus_maps[{map_key!r}]"}
 
-    arr = focus_maps.get(map_key) if focus_maps else None
-    if arr is None:
-        return {"status": "skipped", "reason": f"missing focus_maps[{map_key!r}]"}
+        # Keep the map lazy (do NOT force a whole-array float64 copy — for a
+        # full-res / memmap-backed map that materialises tens of GB). Each tile is
+        # sliced then converted per-tile below.
+        img = np.asarray(arr)
+        h, w = img.shape[:2]
 
-    img = np.asarray(arr, dtype=np.float64)
-    h, w = img.shape[:2]
     required = {"x1", "x2", "y1", "y2"}
     if not required.issubset(df_grid_roi.columns):
         return {"status": "skipped", "reason": f"df_grid_roi needs columns {required}"}
@@ -282,62 +484,51 @@ def compute_image_snr_from_pixel_maps(
     if max_rois is not None:
         df = df.iloc[: int(max_rois)]
 
-    otsu_fn: Callable[[np.ndarray], float]
-    try:
-        from skimage.filters import threshold_otsu as _sk_otsu  # type: ignore
-
-        has_skimage = True
-
-        def _otsu_sk(tile: np.ndarray) -> float:
-            try:
-                return float(_sk_otsu(tile.astype(np.float64)))
-            except Exception:
-                return _otsu_threshold_uint16(tile)
-
-        otsu_fn = _otsu_sk
-
-    except Exception:
-        has_skimage = False
-        otsu_fn = _otsu_threshold_uint16
-
     x1a = df["x1"].to_numpy(dtype=np.int64)
     x2a = df["x2"].to_numpy(dtype=np.int64)
     y1a = df["y1"].to_numpy(dtype=np.int64)
     y2a = df["y2"].to_numpy(dtype=np.int64)
 
-    n = len(df)
-    n_cpus = os.cpu_count() or 1
-    # Use up to half available CPUs, max 16 workers. Require ≥2000 ROIs for parallelism.
-    n_workers = min(16, max(1, n_cpus // 2), max(1, n // 2000))
-
-    if n_workers <= 1 or n < 2000:
-        dbs = _otsu_snr_chunk(img, x1a, x2a, y1a, y2a, 0, n, otsu_fn)
+    # Per-tile dB array aligned with df rows (NaN for skipped tiles).
+    # Used both for aggregate stats and to expose per-tile values to df_grid_roi
+    # downstream — the §3.4 cross-section-concordance scatter consumes this.
+    per_tile_db = np.full(len(df), np.nan, dtype=np.float64)
+    if precomputed_db is not None:
+        supplied = np.asarray(precomputed_db, dtype=np.float64)
+        if supplied.size < len(df):
+            return {
+                "status": "skipped",
+                "reason": f"precomputed_db has {supplied.size} values for {len(df)} tiles",
+            }
+        per_tile_db = supplied[: len(df)].copy()
+        dbs = [float(v) for v in per_tile_db[~np.isnan(per_tile_db)]]
     else:
-        # Set module globals before fork — child processes inherit via COW
-        _MP_IMG = img
-        _MP_X1A, _MP_X2A = x1a, x2a
-        _MP_Y1A, _MP_Y2A = y1a, y2a
-        _MP_USE_SKIMAGE = has_skimage
-        chunk_size = (n + n_workers - 1) // n_workers
-        chunks = [(i, min(i + chunk_size, n)) for i in range(0, n, chunk_size)]
-        try:
-            with ProcessPoolExecutor(max_workers=n_workers) as pool:
-                results = list(pool.map(_mp_otsu_worker, chunks))
-            dbs = []
-            for chunk_dbs in results:
-                dbs.extend(chunk_dbs)
-        finally:
-            # Clear globals to free memory
-            _MP_IMG = None
-            _MP_X1A = _MP_X2A = _MP_Y1A = _MP_Y2A = None
+        dbs = []
+        for k in range(len(df)):
+            x1, x2, y1, y2 = int(x1a[k]), int(x2a[k]), int(y1a[k]), int(y2a[k])
+            x1, y1 = max(0, x1), max(0, y1)
+            x2, y2 = min(w, x2), min(h, y2)
+            if x2 <= x1 or y2 <= y1:
+                continue
+            db_val = roi_snr_db(img[y1:y2, x1:x2])
+            if math.isnan(db_val):
+                continue
+            per_tile_db[k] = db_val
+            dbs.append(db_val)
+
+    # Write per-tile values back to the caller's df_grid_roi (in-place,
+    # parallel to how compute_roi_transcript_snr writes roi_tx_snr_ratio).
+    # df.index is a subset of df_grid_roi.index when max_rois is set; rows
+    # outside that subset retain NaN.
+    df_grid_roi.loc[df.index, "snr_image_otsu_db"] = per_tile_db
 
     if not dbs:
         return {"status": "skipped", "reason": "no_valid_roi_tiles"}
 
     _t = snr_thresholds or {}
     _img = _t.get("image_snr_db") or {}
-    warn_db = float(_img.get("warn", 12.0))
-    fail_db = float(_img.get("fail", 8.0))
+    warn_db = float(_img.get("warn", 15.0))
+    fail_db = float(_img.get("fail", 10.0))
     med_db = float(np.median(dbs))
     return {
         "status": "ok",
@@ -359,36 +550,39 @@ def compute_image_snr_from_pixel_maps(
 # ---------------------------------------------------------------------------
 
 
+#: Transcript rows per batch for the per-ROI SNR reduction. Bounded so the
+#: per-batch temporaries never approach the frame this replaces.
+ROI_TX_BATCH_ROWS = 2_000_000
+
+
 def load_transcripts(path: Path) -> pd.DataFrame:
     """Load minimal columns: feature_name, x_location, y_location, cell_id (optional).
 
-    For parquet files, pushes column selection to Arrow (reads only needed columns
-    from disk — avoids loading all 15-30 Xenium columns into memory).
+    Projects the columns at read time rather than after.  A Xenium transcript
+    table has ~20 columns and can run to several hundred million rows, and this
+    load happens while the full-resolution focus planes are still live — reading
+    everything and then slicing cost three overlapping copies of the full frame.
     """
     path = Path(path)
-    cols_required = ["feature_name", "x_location", "y_location"]
-    cols_optional = ["cell_id"]
+    cols_want = ["feature_name", "x_location", "y_location"]
+
     if path.suffix.lower() in (".parquet", ".pq"):
-        try:
-            import pyarrow.parquet as pq
+        available = set(pq.ParquetFile(path).schema_arrow.names)
+        missing = [c for c in cols_want if c not in available]
+        if missing:
+            raise ValueError(f"transcripts missing column(s) {missing!r}")
+        keep = cols_want + (["cell_id"] if "cell_id" in available else [])
+        return pd.read_parquet(path, columns=keep)
 
-            schema = pq.read_schema(path)
-            available = set(schema.names)
-            cols_read = [c for c in cols_required if c in available]
-            cols_read += [c for c in cols_optional if c in available]
-            df = pd.read_parquet(path, columns=cols_read)
-        except ImportError:
-            df = pd.read_parquet(path)
-    elif path.name.endswith(".csv.gz") or path.suffix.lower() == ".csv":
-        df = pd.read_csv(path)
-    else:
-        raise ValueError(f"Unsupported transcript format: {path}")
+    if path.name.endswith(".csv.gz") or path.suffix.lower() == ".csv":
+        available = set(pd.read_csv(path, nrows=0).columns)
+        missing = [c for c in cols_want if c not in available]
+        if missing:
+            raise ValueError(f"transcripts missing column(s) {missing!r}")
+        keep = cols_want + (["cell_id"] if "cell_id" in available else [])
+        return pd.read_csv(path, usecols=keep)
 
-    for c in cols_required:
-        if c not in df.columns:
-            raise ValueError(f"transcripts missing column {c!r}")
-    keep = cols_required + (["cell_id"] if "cell_id" in df.columns else [])
-    return df[keep].copy()
+    raise ValueError(f"Unsupported transcript format: {path}")
 
 
 def transcripts_um_to_px(df_tx: pd.DataFrame, pixel_size_um: float) -> pd.DataFrame:
@@ -442,6 +636,57 @@ def _infer_uniform_grid_strides(
     return sx, sy
 
 
+class _UniformRoiLookup:
+    """Prebuilt (iy, ix) -> roi_id lattice, so the streaming path builds it once.
+
+    `_roi_grid_assign_fast_uniform` derives the lattice from the ROI table on every
+    call, and its collision check is an `np.unique` over one entry per ROI -- 424 ms
+    for 4.49 M ROIs. Calling it per transcript batch would spend that repeatedly on a
+    lookup that cannot change: at 1,325,798,498 transcripts the reference sample is
+    663 batches, so ~291 s of pure rebuild.
+
+    Returns None from :meth:`build` when the ROI layout is not a simple lattice, so
+    the caller can fall back to the general path.
+    """
+
+    __slots__ = ("_grid", "_stride_x", "_stride_y", "_max_ix", "_max_iy")
+
+    def __init__(self, grid, stride_x, stride_y, max_ix, max_iy):
+        self._grid = grid
+        self._stride_x = stride_x
+        self._stride_y = stride_y
+        self._max_ix = max_ix
+        self._max_iy = max_iy
+
+    @classmethod
+    def build(
+        cls, df_grid_roi: pd.DataFrame, stride_x: int, stride_y: int
+    ) -> Optional["_UniformRoiLookup"]:
+        x1 = df_grid_roi["x1"].to_numpy(dtype=np.int64)
+        y1 = df_grid_roi["y1"].to_numpy(dtype=np.int64)
+        rids = df_grid_roi["roi_id"].to_numpy(dtype=np.int32)
+        ix = x1 // stride_x
+        iy = y1 // stride_y
+        max_ix, max_iy = int(ix.max()) + 1, int(iy.max()) + 1
+        flat_idx = iy.astype(np.int64) * max_ix + ix.astype(np.int64)
+        if len(np.unique(flat_idx)) != len(flat_idx):
+            return None
+        grid = np.full(max_iy * max_ix, -1, dtype=np.int32)
+        grid[flat_idx] = rids
+        return cls(grid.reshape(max_iy, max_ix), stride_x, stride_y, max_ix, max_iy)
+
+    def assign(self, x_px: np.ndarray, y_px: np.ndarray) -> np.ndarray:
+        """roi_id per point. Out-of-lattice coordinates clip to the edge ROI, which
+        is what `_roi_grid_assign_fast_uniform` has always done."""
+        xi = (x_px.astype(np.int64, copy=False) // self._stride_x).clip(
+            0, self._max_ix - 1
+        )
+        yi = (y_px.astype(np.int64, copy=False) // self._stride_y).clip(
+            0, self._max_iy - 1
+        )
+        return self._grid[yi, xi]
+
+
 def _roi_grid_assign_fast_uniform(
     df_grid_roi: pd.DataFrame,
     x_px: np.ndarray,
@@ -454,21 +699,10 @@ def _roi_grid_assign_fast_uniform(
 
     Returns None if ROI layout does not match a simple (iy, ix) lattice (collisions).
     """
-    x1 = df_grid_roi["x1"].to_numpy(dtype=np.int64)
-    y1 = df_grid_roi["y1"].to_numpy(dtype=np.int64)
-    rids = df_grid_roi["roi_id"].to_numpy(dtype=np.int32)
-    ix = x1 // stride_x
-    iy = y1 // stride_y
-    max_ix, max_iy = int(ix.max()) + 1, int(iy.max()) + 1
-    flat_idx = iy.astype(np.int64) * max_ix + ix.astype(np.int64)
-    if len(np.unique(flat_idx)) != len(flat_idx):
+    lookup = _UniformRoiLookup.build(df_grid_roi, stride_x, stride_y)
+    if lookup is None:
         return None
-    grid_flat = np.full(max_iy * max_ix, -1, dtype=np.int32)
-    grid_flat[flat_idx] = rids
-    grid = grid_flat.reshape(max_iy, max_ix)
-    xi = (x_px.astype(np.int64, copy=False) // stride_x).clip(0, max_ix - 1)
-    yi = (y_px.astype(np.int64, copy=False) // stride_y).clip(0, max_iy - 1)
-    return grid[yi, xi]
+    return lookup.assign(x_px, y_px)
 
 
 def _roi_grid_assign(
@@ -491,8 +725,8 @@ def _roi_grid_assign(
         if sx > 0 and sy > 0:
             fast = _roi_grid_assign_fast_uniform(df_grid_roi, x_px, y_px, sx, sy)
             if fast is not None:
-                logger.info(
-                    "SNR ROI assignment: fast path (caller stride %d×%d), %d transcripts",
+                logger.debug(
+                    "SNR ROI assignment: fast path (caller stride %d×%d), %d points",
                     sx,
                     sy,
                     int(x_px.shape[0]),
@@ -548,47 +782,263 @@ def _neg_mask_vectorized(feats: np.ndarray) -> np.ndarray:
     return s.str.match(pat, case=False).fillna(False).to_numpy(dtype=bool)
 
 
+def _neg_mask_for_column(values: pd.Series) -> np.ndarray:
+    """Negative-control mask for a transcript ``feature_name`` column.
+
+    When the column is dictionary-encoded -- which is how Xenium writes it, and what
+    ``ParquetFile.iter_batches`` hands back -- the regex runs over the ~13 k distinct
+    categories and the result is indexed by the codes, instead of materialising one
+    Python string per transcript. The mask is identical either way.
+    """
+    if isinstance(values.dtype, pd.CategoricalDtype):
+        cats = _neg_mask_vectorized(values.cat.categories.to_numpy())
+        codes = values.cat.codes.to_numpy()
+        out = np.zeros(codes.shape[0], dtype=bool)
+        known = codes >= 0
+        out[known] = cats[codes[known]]
+        return out
+    return _neg_mask_vectorized(values.astype(str).to_numpy())
+
+
+def _accumulate_roi_tx_counts(
+    df_grid_roi: pd.DataFrame,
+    row_ix: pd.Series,
+    x_px: np.ndarray,
+    y_px: np.ndarray,
+    is_neg: np.ndarray,
+    counters: Tuple[np.ndarray, np.ndarray, np.ndarray],
+    stride_xy: Optional[Tuple[int, int]],
+    lookup: Optional["_UniformRoiLookup"] = None,
+    roi_id_is_arange: bool = False,
+) -> None:
+    """Fold one batch of transcripts into the per-ROI counters.
+
+    ``np.bincount`` rather than ``np.add.at``: both count occurrences exactly, but
+    ``add.at`` is an order of magnitude slower, and this runs over every transcript.
+
+    Two count-preserving micro-opts:
+
+    * When ``roi_id_is_arange`` (``roi_id == arange(n_rois)``, how ``image_qc`` builds
+      the grid), the ``roi_id -> row index`` map is the identity: a valid id maps to
+      itself and an out-of-grid ``-1`` stays ``-1``. The pandas ``reindex`` is then a
+      no-op, so ``j`` is ``assign`` directly.
+    * ``real = total - neg`` instead of a third ``bincount``. Every counted transcript
+      is exactly one of neg / real, so this is the same integer per ROI -- two
+      ``bincount`` passes rather than three.
+    """
+    if lookup is not None:
+        assign = lookup.assign(x_px, y_px)
+    else:
+        assign = _roi_grid_assign(df_grid_roi, x_px, y_px, stride_xy=stride_xy)
+    assign = np.asarray(assign, dtype=np.int64)
+    if roi_id_is_arange:
+        j = assign
+    else:
+        j = row_ix.reindex(assign, fill_value=-1).to_numpy()
+    ok = (j >= 0) & (assign >= 0)
+    real_c, neg_c, total_c = counters
+    n = real_c.shape[0]
+    total_b = np.bincount(j[ok], minlength=n)
+    neg_b = np.bincount(j[ok & is_neg], minlength=n)
+    total_c += total_b
+    neg_c += neg_b
+    real_c += total_b - neg_b
+
+
+def _stream_roi_tx_counts(
+    df_grid_roi: pd.DataFrame,
+    row_ix: pd.Series,
+    path: Path,
+    pixel_size_um: float,
+    stride_xy: Optional[Tuple[int, int]],
+    batch_rows: int = ROI_TX_BATCH_ROWS,
+    roi_id_is_arange: bool = False,
+) -> Tuple[Tuple[np.ndarray, np.ndarray, np.ndarray], int]:
+    """Per-ROI real/neg/total transcript counts, read in batches, folded in parallel.
+
+    The whole-frame version materialised ``feature_name``, ``x_location`` and
+    ``y_location`` for every transcript, then ``transcripts_um_to_px`` copied the
+    frame and added two more float64 columns. On run 1ZyVIlaKBYxJrQ that OOM-killed
+    IMAGE_QC (exit 137) at the 180 GB tier *after* the tile pass had completed in
+    19.4 minutes. The outputs are three per-ROI int64 arrays, so nothing about this
+    needs the transcripts resident.
+
+    Batches are decoded (``batch.to_pandas``, which releases the GIL) and folded
+    (``np.bincount``, also GIL-releasing) on a thread pool sized to ``os.cpu_count()``.
+    Each worker thread owns a private ``(real, neg, total)`` counter triple and folds
+    every batch it draws into it via ``_accumulate_roi_tx_counts``; the per-thread
+    partials are summed on the main thread once the pool drains. Counts are additive,
+    so the sum is bit-identical to the serial fold no matter how the batches interleave
+    across threads -- there is no order dependence in integer addition. In-flight
+    batches are capped at the worker count, so peak memory is bounded exactly as the
+    serial loop's was (a handful of ``batch_rows`` batches, not the whole table).
+    """
+    n_rois = len(df_grid_roi)
+    ps = float(pixel_size_um)
+    if ps <= 0:
+        raise ValueError("pixel_size_um must be positive")
+
+    # Built once, not per batch: see _UniformRoiLookup. None means the ROI layout is
+    # not a lattice, and each batch falls back to the general assignment.
+    lookup = None
+    if stride_xy is not None and stride_xy[0] > 0 and stride_xy[1] > 0:
+        lookup = _UniformRoiLookup.build(
+            df_grid_roi, int(stride_xy[0]), int(stride_xy[1])
+        )
+    if lookup is None:
+        logger.info(
+            "SNR ROI assignment: no uniform lattice; assigning per batch (slower)"
+        )
+
+    handle = pq.ParquetFile(str(path))
+    columns = ["feature_name", "x_location", "y_location"]
+    max_workers = max(1, os.cpu_count() or 1)
+    logger.info(
+        "SNR ROI transcript counts: streaming %s rows in %s-row batches across %d threads",
+        f"{handle.metadata.num_rows:,}",
+        f"{batch_rows:,}",
+        max_workers,
+    )
+
+    # One counter triple per worker thread. Registered under a lock the first time a
+    # thread runs, so the main thread can sum them after the pool drains.
+    tls = threading.local()
+    partials: List[Tuple[np.ndarray, np.ndarray, np.ndarray]] = []
+    partials_lock = threading.Lock()
+
+    def _fold_one(batch) -> int:
+        thread_counters = getattr(tls, "counters", None)
+        if thread_counters is None:
+            thread_counters = (
+                np.zeros(n_rois, dtype=np.int64),
+                np.zeros(n_rois, dtype=np.int64),
+                np.zeros(n_rois, dtype=np.int64),
+            )
+            tls.counters = thread_counters
+            with partials_lock:
+                partials.append(thread_counters)
+        frame = batch.to_pandas()
+        _accumulate_roi_tx_counts(
+            df_grid_roi,
+            row_ix,
+            frame["x_location"].to_numpy(dtype=np.float64) / ps,
+            frame["y_location"].to_numpy(dtype=np.float64) / ps,
+            _neg_mask_for_column(frame["feature_name"]),
+            thread_counters,
+            stride_xy,
+            lookup=lookup,
+            roi_id_is_arange=roi_id_is_arange,
+        )
+        return len(frame)
+
+    n_used = 0
+    n_batches = 0
+    batch_iter = handle.iter_batches(batch_size=batch_rows, columns=columns)
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        # Cap outstanding futures at the worker count so at most ~max_workers batches
+        # are resident at once (the same memory envelope as the serial loop).
+        inflight: deque = deque()
+        for batch in batch_iter:
+            inflight.append(pool.submit(_fold_one, batch))
+            del batch
+            if len(inflight) >= max_workers:
+                n_used += inflight.popleft().result()
+                n_batches += 1
+        while inflight:
+            n_used += inflight.popleft().result()
+            n_batches += 1
+
+    real_c = np.zeros(n_rois, dtype=np.int64)
+    neg_c = np.zeros(n_rois, dtype=np.int64)
+    total_c = np.zeros(n_rois, dtype=np.int64)
+    for p_real, p_neg, p_total in partials:
+        real_c += p_real
+        neg_c += p_neg
+        total_c += p_total
+    logger.info(
+        "SNR ROI transcript counts: %s rows in %d batches across %d threads",
+        f"{n_used:,}",
+        n_batches,
+        len(partials),
+    )
+    return (real_c, neg_c, total_c), n_used
+
+
 def compute_roi_snr(
     df_grid_roi: pd.DataFrame,
-    df_tx: pd.DataFrame,
+    df_tx: Optional[pd.DataFrame] = None,
     x_col: str = "x_px",
     y_col: str = "y_px",
     roi_grid_stride: Optional[Tuple[int, int]] = None,
     snr_thresholds: Optional[Dict[str, Any]] = None,
+    *,
+    transcripts_path: Optional[Path] = None,
+    pixel_size_um: Optional[float] = None,
+    batch_rows: int = ROI_TX_BATCH_ROWS,
 ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
     """
     Per-ROI real vs neg transcript counts, ratio, neg_pct; **mutates** *df_grid_roi* in place
     (caller should pass a copy if the original must stay unchanged — ``run_snr_module`` does).
 
-    Expects df_tx with feature_name and pixel columns x_col, y_col (see transcripts_um_to_px).
+    Give either *df_tx* -- a frame with feature_name and pixel columns x_col, y_col,
+    see ``transcripts_um_to_px`` -- or *transcripts_path* plus *pixel_size_um*, in
+    which case the table is read in batches and never held whole. The counters are
+    additive, so both give identical results; the streaming form exists because the
+    whole-frame one OOM-killed IMAGE_QC on a production sample.
+
     ``roi_grid_stride`` should match the grid used in ``image_qc.py`` (typically
     ``(roi_size, roi_size)`` when stride defaults to roi_size).
     """
+    if (df_tx is None) == (transcripts_path is None):
+        raise ValueError("pass exactly one of df_tx or transcripts_path")
+
     df = df_grid_roi
     if "roi_id" not in df.columns:
         df = df.copy()
         df["roi_id"] = np.arange(len(df), dtype=np.int32)
 
-    feats = df_tx["feature_name"].astype(str).values
-    is_neg = _neg_mask_vectorized(feats)
-    x = df_tx[x_col].to_numpy(dtype=np.float64)
-    y = df_tx[y_col].to_numpy(dtype=np.float64)
-
-    assign = _roi_grid_assign(df, x, y, stride_xy=roi_grid_stride)
     n_rois = len(df)
     # Map roi_id → row index (avoids O(max(roi_id)) array if ids are sparse)
     row_ix = pd.Series(np.arange(n_rois, dtype=np.int32), index=df["roi_id"].values)
-    j = row_ix.reindex(np.asarray(assign, dtype=np.int64), fill_value=-1).to_numpy()
 
-    vv = assign >= 0
-    ok = (j >= 0) & vv
+    # image_qc builds the grid with roi_id == arange(n_rois); then row_ix is the
+    # identity and the per-batch reindex can be skipped (see _accumulate_roi_tx_counts).
+    roi_ids = df["roi_id"].to_numpy()
+    roi_id_is_arange = bool(
+        roi_ids.dtype.kind in ("i", "u")
+        and np.array_equal(roi_ids, np.arange(n_rois, dtype=roi_ids.dtype))
+    )
 
-    real_c = np.zeros(n_rois, dtype=np.int64)
-    neg_c = np.zeros(n_rois, dtype=np.int64)
-    total_c = np.zeros(n_rois, dtype=np.int64)
-    np.add.at(total_c, j[ok], 1)
-    np.add.at(neg_c, j[ok & is_neg], 1)
-    np.add.at(real_c, j[ok & ~is_neg], 1)
+    if transcripts_path is not None:
+        if pixel_size_um is None:
+            raise ValueError("pixel_size_um is required with transcripts_path")
+        counters, n_used = _stream_roi_tx_counts(
+            df,
+            row_ix,
+            Path(transcripts_path),
+            pixel_size_um,
+            roi_grid_stride,
+            batch_rows=batch_rows,
+            roi_id_is_arange=roi_id_is_arange,
+        )
+    else:
+        counters = (
+            np.zeros(n_rois, dtype=np.int64),
+            np.zeros(n_rois, dtype=np.int64),
+            np.zeros(n_rois, dtype=np.int64),
+        )
+        _accumulate_roi_tx_counts(
+            df,
+            row_ix,
+            df_tx[x_col].to_numpy(dtype=np.float64),
+            df_tx[y_col].to_numpy(dtype=np.float64),
+            _neg_mask_for_column(df_tx["feature_name"]),
+            counters,
+            roi_grid_stride,
+            roi_id_is_arange=roi_id_is_arange,
+        )
+        n_used = int(len(df_tx))
+    real_c, neg_c, total_c = counters
 
     df["snr_real_tx"] = real_c
     df["snr_neg_tx"] = neg_c
@@ -622,7 +1072,8 @@ def compute_roi_snr(
 
     summary = {
         "status": "ok",
-        "n_transcripts_used": int(len(df_tx)),
+        "method": "roi_tx_target_vs_neg",
+        "n_transcripts_used": int(n_used),
         "n_rois_with_tx": int(np.sum(total_c > 0)),
         "median_roi_tx_snr_ratio": med_ratio,
         "median_neg_pct": med_neg_pct,
@@ -1054,6 +1505,7 @@ def run_snr_module(
     df_grid_roi: pd.DataFrame,
     outdir: Path,
     focus_maps: Optional[Dict[str, Any]] = None,
+    roi_snr_db: Optional[Any] = None,
     intensity_threshold: float = 0.0,
     transcripts_path: Optional[Path] = None,
     cell_matrix_h5: Optional[Path] = None,
@@ -1078,22 +1530,33 @@ def run_snr_module(
     (same as ``roi_size`` when stride is unset). Enables O(n_tx) transcript-to-ROI assignment
     without scanning unique x1/y1 on huge grids.
     """
-    import time
-    from concurrent.futures import Future
-
-    _t0 = time.monotonic()
-
     outdir = Path(outdir)
     outdir.mkdir(parents=True, exist_ok=True)
     bundle = Path(xenium_bundle_dir) if xenium_bundle_dir else None
 
     df = df_grid_roi.copy()
     parts: Dict[str, Dict[str, Any]] = {}
-    timings: Dict[str, float] = {}
 
     thresholds = snr_thresholds or {}
 
-    # ── Resolve file paths before launching concurrent work ──
+    # 1) Image SNR (ROI df quartiles → dB)
+    parts[SNR_CKEY_IMAGE_ROI_QUARTILE_DB] = compute_image_snr_from_roi_df(
+        df, intensity_threshold=intensity_threshold, snr_thresholds=thresholds
+    )
+
+    # 2) Image SNR (Otsu)
+    if focus_maps or roi_snr_db is not None:
+        parts[SNR_CKEY_IMAGE_OTSU] = compute_image_snr_from_pixel_maps(
+            focus_maps,
+            df,
+            max_rois=otsu_max_rois,
+            snr_thresholds=thresholds,
+            precomputed_db=roi_snr_db,
+        )
+    else:
+        parts[SNR_CKEY_IMAGE_OTSU] = {"status": "skipped", "reason": "no focus_maps"}
+
+    # 3) ROI transcript SNR
     tx_path = transcripts_path
     if tx_path is None and bundle:
         cand = bundle / "transcripts.parquet"
@@ -1103,65 +1566,20 @@ def run_snr_module(
             cg = bundle / "transcripts.csv.gz"
             if cg.exists():
                 tx_path = cg
-
-    h5_path = cell_matrix_h5
-    if h5_path is None and bundle:
-        hp = bundle / "cell_feature_matrix.h5"
-        if hp.exists():
-            h5_path = hp
-
-    # ── Phase 1: launch I/O loads concurrently with CPU Otsu work ──
-    # GIL is released during pandas parquet reads and h5py reads, so
-    # threading overlaps I/O with CPU computation effectively.
-    tx_future: Optional[Future] = None
-    h5_future: Optional[Future] = None
-
-    io_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="snr_io")
-
-    _t_io = time.monotonic()
     if tx_path and tx_path.exists():
-        tx_future = io_pool.submit(load_transcripts, Path(tx_path))
-    if h5_path and Path(h5_path).exists():
-        h5_future = io_pool.submit(load_expression_matrix_h5, Path(h5_path))
-
-    # 1) Image SNR (ROI df quartiles → dB) — instant
-    _t1 = time.monotonic()
-    parts[SNR_CKEY_IMAGE_ROI_QUARTILE_DB] = compute_image_snr_from_roi_df(
-        df, intensity_threshold=intensity_threshold, snr_thresholds=thresholds
-    )
-    timings["roi_quartile_db"] = time.monotonic() - _t1
-
-    # 2) Image SNR (Otsu) — CPU-bound, multithreaded, runs while I/O loads above
-    _t2 = time.monotonic()
-    if focus_maps:
-        parts[SNR_CKEY_IMAGE_OTSU] = compute_image_snr_from_pixel_maps(
-            focus_maps, df, max_rois=otsu_max_rois, snr_thresholds=thresholds
-        )
-    else:
-        parts[SNR_CKEY_IMAGE_OTSU] = {"status": "skipped", "reason": "no focus_maps"}
-    timings["otsu_loop"] = time.monotonic() - _t2
-
-    # ── Phase 2: collect I/O results and run dependent computations ──
-
-    # 3) ROI transcript SNR
-    _t3 = time.monotonic()
-    if tx_future is not None:
         try:
-            df_tx = tx_future.result()
-            timings["tx_load_wait"] = time.monotonic() - _t3
-            _t3b = time.monotonic()
             if pixel_size_um is None:
                 parts[SNR_CKEY_ROI_TX] = {
                     "status": "skipped",
                     "reason": "pixel_size_um required to convert transcript coordinates to pixels",
                 }
             else:
-                df_txp = transcripts_um_to_px(df_tx, pixel_size_um)
+                # Streamed: see _stream_roi_tx_counts. Reading the table whole and
+                # then copying it in transcripts_um_to_px OOM-killed this step.
                 df, rtx = compute_roi_snr(
                     df,
-                    df_txp,
-                    x_col="x_px",
-                    y_col="y_px",
+                    transcripts_path=Path(tx_path),
+                    pixel_size_um=pixel_size_um,
                     roi_grid_stride=roi_grid_stride,
                     snr_thresholds=thresholds,
                 )
@@ -1170,7 +1588,6 @@ def run_snr_module(
                     if pth is not None:
                         rtx["per_roi_table_file"] = pth.name
                 parts[SNR_CKEY_ROI_TX] = rtx
-            timings["roi_tx_compute"] = time.monotonic() - _t3b
         except Exception as e:
             logger.exception("ROI transcript SNR failed")
             parts[SNR_CKEY_ROI_TX] = {"status": "error", "error": str(e)}
@@ -1178,19 +1595,20 @@ def run_snr_module(
         parts[SNR_CKEY_ROI_TX] = {"status": "skipped", "reason": "no transcripts file"}
 
     # 4) Slide SNR
-    _t4 = time.monotonic()
-    if h5_future is not None:
+    h5_path = cell_matrix_h5
+    if h5_path is None and bundle:
+        hp = bundle / "cell_feature_matrix.h5"
+        if hp.exists():
+            h5_path = hp
+    if h5_path and Path(h5_path).exists():
         try:
-            mat, names, _ftype, _meta = h5_future.result()
-            timings["h5_load_wait"] = time.monotonic() - _t4
-            _t4b = time.monotonic()
+            mat, names, _ftype, _meta = load_expression_matrix_h5(Path(h5_path))
             parts[SNR_CKEY_SLIDE_PLUMMER] = compute_slide_snr_plummer_corrected(
                 mat, names, snr_thresholds=thresholds
             )
             parts[SNR_CKEY_SLIDE_SPATIALQM] = compute_slide_snr_spatialqm_corrected(
                 mat, names, snr_thresholds=thresholds
             )
-            timings["slide_snr_compute"] = time.monotonic() - _t4b
         except Exception as e:
             logger.exception("Slide SNR failed")
             parts[SNR_CKEY_SLIDE_PLUMMER] = {"status": "error", "error": str(e)}
@@ -1205,10 +1623,7 @@ def run_snr_module(
             "reason": "no cell_feature_matrix.h5",
         }
 
-    io_pool.shutdown(wait=False)
-
     # 5) Neg spatial autocorrelation (needs neg_pct)
-    _t5 = time.monotonic()
     if "neg_pct" in df.columns:
         parts[SNR_CKEY_ROI_NEG_SPATIAL] = compute_neg_spatial_autocorrelation(
             df, include_moran=snr_include_moran, snr_thresholds=thresholds
@@ -1218,15 +1633,11 @@ def run_snr_module(
             "status": "skipped",
             "reason": "neg_pct not available",
         }
-    timings["neg_spatial"] = time.monotonic() - _t5
 
     verdict = aggregate_snr_verdict(parts)
-    timings["total"] = time.monotonic() - _t0
-    logger.info("SNR timings: %s", {k: f"{v:.1f}s" for k, v in timings.items()})
     summary = {
         "components": parts,
         "verdict": verdict,
-        "_timings_s": timings,
     }
 
     if write_snr_json:
@@ -1263,6 +1674,7 @@ def compute_snr_summary(
     bundle_dir: Path,
     outdir: Path,
     focus_maps: Optional[Dict[str, Any]] = None,
+    roi_snr_db: Optional[Any] = None,
     pixel_size_um: Optional[float] = None,
     intensity_threshold: float = 0.0,
     otsu_max_rois: Optional[int] = None,
@@ -1278,6 +1690,7 @@ def compute_snr_summary(
         df_grid_roi,
         outdir,
         focus_maps=focus_maps,
+        roi_snr_db=roi_snr_db,
         intensity_threshold=intensity_threshold,
         pixel_size_um=pixel_size_um,
         otsu_max_rois=otsu_max_rois,
