@@ -18,6 +18,7 @@ Initial release of nf-core/spatialaxe, created with the [nf-core](https://nf-co.
 - Added `nf-core/unzip` module usage so the pipeline can unpack the larger test dataset.
 - samplesheet redefinition: `sample,bundle,image,annotation,stainings`, samplesheet allows for two additional optional columns `annotation,stainings` that are useful for the QC subworkflow.
 - `spatialdata_write_meta_merge/main.nf`: Change to subworkflow to account for proper `qc` mode.
+- Change to `bin/spatialdata_write.py`: Adding an `all` mode to set all available features to `True`, which is important for QC.
 
 ### `Fixed`
 
@@ -32,7 +33,6 @@ Initial release of nf-core/spatialaxe, created with the [nf-core](https://nf-co.
 - `subworkflows/nf-core/utils_nextflow_pipeline/main.nf`: bumped the version.
 - `subworkflows/local/utils_nfcore_spatialaxe_pipeline/main.nf`: passes the new `cli_typecast` argument (`null`) through to `UTILS_NFSCHEMA_PLUGIN`.
 - `nextflow_schema.json`: cleanup driven by the new schema version.
-- Change to `bin/spatialdata_write.py`: Adding an `all` mode to set all available features to `True`, which is important for QC.
 
 ## 1.0.1 - [06.08.2026]
 
