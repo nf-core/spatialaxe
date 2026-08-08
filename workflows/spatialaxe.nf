@@ -45,6 +45,7 @@ include { SPATIALDATA_WRITE_META_MERGE                     } from '../subworkflo
 
 // qc layer subworkflows
 include { OPT_FLIP_TRACK_STAT                              } from '../subworkflows/local/opt_flip_track_stat/main'
+include { QC                                               } from '../subworkflows/local/qc/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -342,9 +343,14 @@ workflow SPATIALAXE {
             return [meta, gene_panel_file]
         }
     }
-    else {
+    else if (do_relabel) {
 
-        // gene panel to use if only --relabel_genes is provided
+        // Gene panel from the bundle, used when only --relabel_genes is provided.
+        // Guarded by do_relabel: the file(checkIfExists:) runs eagerly inside
+        // .map for every sample even when the channel is never consumed, so
+        // building this unconditionally fails any bundle without the optional
+        // gene_panel.json. When relabelling is off, ch_gene_panel keeps its
+        // channel.empty() initialisation.
         ch_gene_panel = ch_input.map { meta, bundle, _image ->
             def gene_panel_file = file(
                 file(bundle).toUriString().replaceFirst(/\/$/, '') + "/gene_panel.json",
@@ -609,6 +615,12 @@ workflow SPATIALAXE {
 
     // check to run the qc layer
     if (mode == 'qc' || run_qc) {
+
+        // image QC + transcript QC on the validated Xenium bundle
+        QC(ch_bundle_path)
+
+        // collect the rendered QC reports so the MultiQC layer can pick them up
+        ch_qc_reports = QC.out.image_qc_report.mix(QC.out.transcript_qc_report)
 
         if (offtarget_probe_tracking) {
 

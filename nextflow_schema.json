@@ -122,16 +122,6 @@
             "description": "Options for the segmentation layer of the spatialaxe pipeline",
             "default": "",
             "properties": {
-                "run_qc": {
-                    "type": "boolean",
-                    "description": "Whether to run the qc layer in the pipeline.",
-                    "default": true
-                },
-                "offtarget_probe_tracking": {
-                    "type": "boolean",
-                    "description": "Whether to run the off-target probe tracking.",
-                    "default": false
-                },
                 "segmentation_refinement": {
                     "type": "boolean",
                     "description": "Whether to run refinement on the image-based segmentation methods. Runs coordinate-based methods after the initial image-based segmentation run."
@@ -155,7 +145,7 @@
                 "expansion_distance": {
                     "type": "integer",
                     "default": 5,
-                    "description": "Nuclei boundary expansion distance in µm. Default: 5 (Min: 0, Max: 15 if either boundary-stain or interior-stain are enabled and 100 if nucleus-expansion only)"
+                    "description": "Nuclei boundary expansion distance in \u00b5m. Default: 5 (Min: 0, Max: 15 if either boundary-stain or interior-stain are enabled and 100 if nucleus-expansion only)"
                 },
                 "dapi_filter": {
                     "type": "integer",
@@ -422,6 +412,98 @@
                 }
             }
         },
+        "qc_options": {
+            "title": "QC options",
+            "type": "object",
+            "description": "Options for the image QC and transcript QC layer of the spatialaxe pipeline.",
+            "properties": {
+                "run_qc": {
+                    "type": "boolean",
+                    "description": "Whether to run the qc layer in the pipeline.",
+                    "default": true
+                },
+                "offtarget_probe_tracking": {
+                    "type": "boolean",
+                    "description": "Whether to run the off-target probe tracking.",
+                    "default": false
+                },
+                "tile_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 35,
+                    "description": "Image QC: tile edge length in native pixels for the tile-level focus / SNR analysis (passed as --roi-size)."
+                },
+                "stain_names": {
+                    "type": "string",
+                    "description": "Semicolon-separated stain/channel names for the morphology image. null = use image QC defaults."
+                },
+                "neg_control_prefix": {
+                    "type": "string",
+                    "description": "Prefix for Xenium negative-control features, matching both NegControlProbe_* and NegControlCodeword_* (passed to transcript QC as --non-gene-prefix; use ';' to separate multiple).",
+                    "default": "NegControl"
+                },
+                "roi_image_qc_thresholds_yaml": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to the ROI threshold config YAML for image QC. null = use the bundled conf/roi_image_qc_thresholds.yaml."
+                },
+                "image_qc_gpus": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 1,
+                    "description": "Image QC: number of GPUs each task requests and the cap CUDA actually uses (--max-gpus). The accelerator request is gated on use_gpu in conf/base.config."
+                },
+                "legacy_focus": {
+                    "type": "boolean",
+                    "description": "Image QC: use the CPU for-loop focus score instead of the GPU convolution.",
+                    "default": false
+                },
+                "image_qc_no_snr": {
+                    "type": "boolean",
+                    "description": "Image QC: skip signal-to-noise (SNR) metrics.",
+                    "default": false
+                },
+                "image_qc_snr_no_roi_tx_table": {
+                    "type": "boolean",
+                    "description": "Image QC: do not write the per-ROI transcript SNR table.",
+                    "default": false
+                },
+                "image_qc_snr_otsu_max_rois": {
+                    "type": "integer",
+                    "description": "Image QC: cap the number of Otsu-selected ROIs for SNR. null = no cap."
+                },
+                "image_qc_snr_no_moran": {
+                    "type": "boolean",
+                    "description": "Image QC: skip Moran's I spatial autocorrelation (default on; set false to opt in to Moran).",
+                    "default": true
+                },
+                "image_qc_save_dapi_maps_tiff": {
+                    "type": "boolean",
+                    "description": "Image QC: also save DAPI focus maps as TIFF.",
+                    "default": false
+                },
+                "image_qc_stream_tiles": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Image QC: reduce each tile as it is computed instead of assembling full-resolution pixel planes. Set false (--no-stream-tiles) to restore the plane-based path."
+                },
+                "image_qc_figure_source_tables": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Image QC: write the per-figure figures_source/*.csv source-data exports (unused downstream; default off)."
+                },
+                "image_qc_figures": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Image QC: generate QC figures. Set false (--no-figures) for a metrics-only fast run; metric/JSON/parquet outputs are always produced."
+                },
+                "image_qc_lap_sigma": {
+                    "type": "number",
+                    "description": "Image QC: Gaussian sigma for the Laplacian-of-Gaussian focus score.",
+                    "default": 1.0
+                }
+            }
+        },
         "institutional_config_options": {
             "title": "Institutional config options",
             "type": "object",
@@ -597,6 +679,9 @@
         },
         {
             "$ref": "#/$defs/segmentation_options"
+        },
+        {
+            "$ref": "#/$defs/qc_options"
         },
         {
             "$ref": "#/$defs/institutional_config_options"

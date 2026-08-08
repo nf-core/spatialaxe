@@ -20,6 +20,9 @@ nextflow_pipeline {
             // Only the tables' existence is checked below instead.
             // Xeniumranger's secondary analysis is skipped entirely on some runs (writing
             // a single note.txt instead of the clustering/diffexp/pca/umap tree).
+            // The pre/post-XR MultiQC _report_data file set is not run-to-run
+            // stable either (per-module stats tables are sometimes omitted);
+            // the report html itself remains name-asserted.
             def stable_name = getAllFilesFromDir(params.outdir, relative: true, includeDir: true, ignore: [
                 'pipeline_info/*.{html,json,txt}',
                 '**/proseg/preset/**',
@@ -29,6 +32,10 @@ nextflow_pipeline {
                 'coordinate/spatialdata/meta/spatialdata/test_run/metadata/tables/**',
                 'xeniumranger/test_run/**',
                 'coordinate/untar/test_run/**',
+                'coordinate/multiqc/*/MultiQC-*_report_data',
+                'coordinate/multiqc/*/MultiQC-*_report_data/**',
+                'coordinate/multiqc/*/MultiQC-*_report_plots',
+                'coordinate/multiqc/*/MultiQC-*_report_plots/**',
             ])
             // stable_path: All files in ${params.outdir}/ with stable content
             def stable_path = getAllFilesFromDir(params.outdir, ignoreFile: 'tests/.nftignore')

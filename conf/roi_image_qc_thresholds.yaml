@@ -1,0 +1,188 @@
+image_qc:
+  tile_size_um: 100
+  # Gaussian sigma for Laplacian of Gaussian (LoG) pre-smoothing.
+  # Controls the spatial scale of edges detected; suppresses noise below that scale.
+  # Higher values detect coarser edges and are more tolerant of noise; lower values
+  # are more sensitive to fine detail but noisier.  Stored in roi_qc_metrics.json
+  # for calibration tracking.
+  lap_sigma: 1.0
+  # --- Tile pre-filtering thresholds (these three are NOT redundant) ---
+  # 1) TISSUE GATE: Minimum mean DAPI intensity (16-bit, 0-65535) for a tile to
+  #    be treated as tissue in blur/focus classification.  Tiles below this are
+  #    auto-marked as background and excluded from GMM fitting, intensity QC, and
+  #    SNR calculations.  Prevents empty-slide / coverslip tiles from contaminating
+  #    focus statistics.
+  roi_intensity_threshold: 100.0
+  # 2) COVERAGE GATE: Minimum fraction of a tile that must overlap the binary
+  #    tissue mask to be included in per-channel intensity assessments (DAPI,
+  #    boundary, intRNA warn/fail percentages).  Partial-tissue tiles (e.g. at
+  #    tissue edges) are excluded so they do not artificially inflate the "dim
+  #    tile" fraction.  Does NOT affect blur/focus classification (which uses the
+  #    intensity gate above).
+  min_tissue_coverage_for_intensity_qc: 0.5
+  # 3) GMM FALLBACK: Percentile of raw focus scores (after excluding
+  #    low-intensity tiles) used as the blur/focus separation threshold ONLY when
+  #    GMM fitting fails (too few tiles, singular covariance, convergence failure).
+  #    In normal operation the GMM posterior probability (blur_prob_threshold
+  #    below) is used instead.
+  roi_focus_score_percentile: 5.0
+  # GMM posterior probability threshold: tile classified as blurred when
+  # P(blur_component) > this value.  This is the primary blur classification
+  # gate used during normal GMM operation.
+  blur_prob_threshold: 0.5
+  channels:
+    DAPI:
+      # Absolute minimum tile intensity (16-bit scale) below which the channel is
+      # considered too dim for reliable QC.  Used by assess_intensity_quality().
+      intensity_critical: 500
+      # Fraction of tissue tiles (coverage >= 0.5) below intensity_critical that
+      # triggers WARN / FAIL.  Calibrated on 11 samples (2026-04-02):
+      #   good  (lung_high, liver_303): 32-33% → PASS
+      #   moderate (liver_37, pancreas_254): 44-53% → WARN
+      #   bad   (pancreas_257, lung_low, brain): 55-84% → FAIL/CRITICAL
+      # Brain/neural tissue caveat: large diffuse nuclei produce inherently dim
+      # DAPI tiles (both brain samples score 71-75% regardless of actual quality).
+      # DAPI intensity WARN/FAIL should be interpreted with caution for neural
+      # tissue — cross-check with Laplacian floor and boundary/intRNA channels.
+      intensity_warn: 0.35
+      intensity_fail: 0.60
+      # Slightly relaxed for FFPE heterogeneity and field-to-field variation.
+      spatial_cv_warn: 0.40
+      spatial_cv_fail: 0.65
+      # Tile blur fraction (GMM-derived): relaxed warn/fail for practical runs.
+      focus_warn: 0.15
+      focus_fail: 0.30
+      # Agreement between focus_score and lap_var across tissue tiles.
+      # Low correlation can indicate one metric is unstable for that sample.
+      lap_focus_corr_warn: 0.50
+      lap_focus_corr_fail: 0.25
+    boundary:
+      intensity_critical: 100
+      # Boundary channel is biologically patchy across tissues (neural/stromal/immune).
+      intensity_warn: 0.15
+      intensity_fail: 0.35
+      # Tissue-type note (not parameterized yet):
+      #   - neural/stromal tissues may need further relaxation to 0.25 / 0.50
+      #   - epithelial tissues often tolerate stricter defaults
+      spatial_cv_warn: 0.45
+      spatial_cv_fail: 0.65
+      # Keep spatial_cv defaults unless tissue-type-specific config is introduced.
+      # Correlation with DAPI is tissue-dependent; use permissive thresholds.
+      dapi_corr_warn: 0.20
+      dapi_corr_fail: 0.05
+    intRNA:
+      intensity_critical: 300
+      # Most biology-dependent channel (necrosis/adipose/white matter strongly affect signal).
+      intensity_warn: 0.25
+      intensity_fail: 0.50
+      # Keep relatively permissive: high spatial variance is expected for intRNA in heterogeneous tissues.
+      spatial_cv_warn: 0.55
+      spatial_cv_fail: 0.75
+      # Very relaxed by design: intRNA↔DAPI coupling is weak in many valid mixed tissues.
+      dapi_corr_warn: 0.10
+      dapi_corr_fail: 0.02
+  slide_level:
+    # Definition note:
+    #   "multi_channel_fail_*" depends on how channel failure is counted.
+    #   - Any-one-channel critical fail per tile -> more sensitive (more WARN/FAIL calls).
+    #   - Two-or-more channels critical fail per tile -> more specific but stricter.
+    # Keep this explicit in code/report outputs when these thresholds are applied.
+    multi_channel_fail_warn: 0.10
+    multi_channel_fail_fail: 0.30
+    # NOTE: semantics matter.
+    # Recommended definition:
+    #   usable = tile is not blurred AND not below intensity threshold
+    #   usable_tissue_* should be computed as "% of tissue-overlapping tiles that are usable"
+    #   (not "% of all slide tiles"), so small inputs (TMA/biopsy) are not unfairly penalized.
+    usable_tissue_warn: 0.70
+    usable_tissue_fail: 0.50
+    # Contiguous bad-tile area >15% usually indicates a localized physical artefact (fold/chip/shadow).
+    cluster_zone_fail: 0.15
+  morphology:
+    # Coverage thresholds relaxed to avoid treating tiny/partially missing sections as acceptable.
+    tissue_coverage_warn: 0.30
+    tissue_coverage_fail: 0.10
+    # Sensible defaults; consider relaxing for small inputs (TMA/biopsy/needle cores) where edge-dominance is expected.
+    edge_zone_warn: 0.30
+    edge_zone_fail: 0.50
+    # Relaxed until hole mask better separates anatomical lumens from artefactual tears.
+    hole_area_warn: 0.25
+    hole_area_fail: 0.50
+  focus:
+    # Cell-level CCFS nuclear texture threshold: cells with CCFS_DAPI below
+    # this are classified as low nuclear texture quality.  CCFS measures per-cell
+    # nuclear contrast (local_var/local_mean), NOT optical blur — it is distinct
+    # from the tile-level GMM blur metric.
+    # Calibrated on 5 samples (2026-04-02): cells below 0.02 lose >50%
+    # transcripts vs top-50% CCFS cells in lung/liver.
+    # Brain/neural tissues: CCFS is confounded by nucleus size (large neurons
+    # score lower); interpret with caution.
+    ccfs_low_texture_threshold: 0.02
+    # Cell-level only: applies to per-cell CCFS nuclear texture calls
+    # (not tile-level GMM blur fractions).
+    # 10%/25% is a practical default for many tissues; review for very
+    # small-nucleus contexts (lymphoid / some brain regions) where cell-level
+    # CCFS can overcall low texture.
+    low_texture_cell_warn: 0.10
+    low_texture_cell_fail: 0.25
+    # Median raw DAPI focus score (std²/mean) across tissue tiles.
+    # Highly tissue-dependent: brain/small-nucleus tissues score lower than
+    # lung/liver.  Calibrated on 8 samples (2026-04-01):
+    #   bad (panc/brain): 0.95 - 126, moderate: 137 - 797, good (lung): 1079.
+    # WARN-only; no FAIL — insufficient cross-tissue data for a hard cutoff.
+    focus_median_warn: 100
+    morans_i_warn: 0.30
+    morans_i_fail: 0.60
+    # Absolute Laplacian variance floor (raw units, not normalised).
+    # Catches uniformly blurry slides where relative z-scores are all near 0.
+    # Calibrated on 6 samples (2026-04-01): critical samples 45-71, good 1123-3458.
+    lap_var_absolute_floor_warn: 100
+    lap_var_absolute_floor_fail: 50
+    # 2D GMM component separation (Cohen's d between blur and focus populations
+    # in log1p(lap_var) space). Low values indicate the GMM cannot reliably
+    # distinguish blurred from focused tiles.
+    # Calibrated range across 6 samples: 2.98-4.64 (all well-separated).
+    gmm_2d_laplacian_component_separation_warn: 1.0
+    gmm_2d_laplacian_component_separation_fail: 0.5
+  snr:
+    # Per-channel image SNR dB thresholds.
+    # RESERVED: not yet consumed by code (quartile/Otsu currently use
+    # image_snr_db fallback below). Will be wired in when per-channel
+    # SNR assessment is implemented.
+    dapi:
+      warn_db: 15
+      fail_db: 8
+    boundary:
+      warn_db: 10
+      fail_db: 5
+    intrna:
+      warn_db: 8
+      fail_db: 3
+    # Fallback image SNR dB thresholds when channel is not specified.
+    image_snr_db:
+      warn: 12.0
+      fail: 8.0
+    # Per-tile transcript SNR (target-to-negative ratio and negative fraction).
+    roi_tx:
+      ratio_warn: 3.0
+      ratio_fail: 1.5
+      neg_pct_warn: 0.15
+      neg_pct_fail: 0.30
+    # Negative-probe spatial autocorrelation (quadrant spread + Moran's I).
+    # Loosened from 0.3/0.6 — heterogeneous tissues (pancreas, liver) can
+    # produce biologically-driven spatial variation in negative probe rates.
+    neg_spatial:
+      quadrant_spread_warn: 0.5
+      quadrant_spread_fail: 1.0
+      moran_warn: 0.5
+      moran_fail: 1.0
+    # Slide-level Plummer SNR (log-ratio of real vs negative gene means).
+    slide_plummer:
+      pass_min: 0.12
+      fail_below: 0.10
+    # Slide-level SpatialQM — verdict based on pct_genes_above_neg (% of genes
+    # whose mean expression exceeds the mean negative-control level).
+    slide_spatialqm:
+      metric: pct_genes_above_neg
+      warn: 45
+      fail: 35

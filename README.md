@@ -172,6 +172,9 @@ We thank the following people for their extensive assistance in the development 
 - Matthias Hörtenhuber (mashehu)
 - Maxime Garcia (maxulysse)
 - Kübra Narcı (kubranarci)
+- Malwina Prater
+- Nell Nie
+- Christel Krueger
 
 ## Contributions and Support
 

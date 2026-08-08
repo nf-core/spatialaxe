@@ -9,6 +9,9 @@ Initial release of nf-core/spatialaxe, created with the [nf-core](https://nf-co.
 
 ### `Added`
 
+- Image QC and transcript QC subworkflow (`QC`): runs `IMAGE_QC_ANALYSIS` (focus / SNR / morphology metrics) and `TRANSCRIPT_QC_PROCESSING` (per-transcript and per-cell metrics), each rendering a Quarto HTML report via the nf-core `QUARTONOTEBOOK` module. New `image_qc` and `transcript_qc` local modules with pinned `environment.yml` and Dockerfiles.
+- GPU-optional image QC, and new QC parameters (image + transcript QC) with `nextflow_schema.json` entries.
+
 ### `Fixed`
 
 ### `Dependencies`

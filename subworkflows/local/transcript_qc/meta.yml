@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "transcript_qc"
+description: Run transcript / molecule-level quality control on a Xenium bundle and render an HTML report
+keywords:
+  - spatial
+  - xenium
+  - quality control
+  - transcript
+  - molecule
+  - QC
+  - quarto
+components:
+  - transcript_qc
+  - quartonotebook
+input:
+  - ch_input:
+      description: |
+        input channel for the transcript QC analysis
+        Structure: [ val(meta), val(parameters), path(input_files) ]
+  - notebook:
+      description: |
+        Quarto notebook (.qmd) used to render the transcript QC report
+        Structure: path(qmd_file)
+output:
+  - outdir:
+      description: |
+        the transcript QC analysis output directory (metrics and figures)
+        Structure: [ val(meta), path(outdir) ]
+  - report:
+      description: |
+        the rendered transcript QC HTML report
+        Structure: [ val(meta), path(html) ]
+authors:
+  - "@an-altosian"
+maintainers:
+  - "@an-altosian"

@@ -1,0 +1,78 @@
+name: "transcript_qc_processing"
+description: Transcript / molecule-level quality control for a Xenium bundle (per-transcript and per-cell QC metrics and figures)
+keywords:
+  - spatial
+  - xenium
+  - quality control
+  - transcript
+  - molecule
+  - QC
+tools:
+  - "transcript_qc":
+      description: "Custom Python transcript-QC analysis for 10x Genomics Xenium data (per-transcript and per-cell QC metrics and figures)"
+      homepage: "https://github.com/nf-core/spatialaxe"
+      documentation: "https://github.com/nf-core/spatialaxe"
+      tool_dev_url: "https://github.com/nf-core/spatialaxe"
+      licence: ["MIT"]
+      identifier: ""
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          (sample id)
+    - parameters:
+        type: list
+        description: |
+          Flat key/value list of analysis parameters (collated by the module),
+          e.g. XENIUM_BUNDLE_DIR, NON_GENE_PREFIX, STAIN_NAMES, NUM_ROW_GROUPS
+    - input_files:
+        type: file
+        description: |
+          Input file(s) for the analysis; the first element is the Xenium bundle directory
+        pattern: "*"
+        ontologies: []
+output:
+  outdir:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            [sample id]
+      - "${outdir}":
+          type: directory
+          description: Output directory with transcript QC metrics (JSON) and figures
+          pattern: "${prefix}"
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - python:
+          type: string
+          description: The name of the tool
+      - "python3 --version | sed 's/Python //'":
+          type: eval
+          description: The expression to obtain the version of the tool
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - scanpy:
+          type: string
+          description: The name of the tool
+      - "python3 -c 'import scanpy; print(scanpy.__version__)'":
+          type: eval
+          description: The expression to obtain the version of the tool
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - anndata:
+          type: string
+          description: The name of the tool
+      - "python3 -c 'import anndata; print(anndata.__version__)'":
+          type: eval
+          description: The expression to obtain the version of the tool
+authors:
+  - "@an-altosian"
+maintainers:
+  - "@an-altosian"

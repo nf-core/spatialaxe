@@ -2,11 +2,17 @@
     "-profile test": {
         "content": [
             {
+                "ANALYSIS": {
+                    "scikit-image": "0.25.2"
+                },
                 "PROSEG2BAYSOR": {
                     "proseg": "3.1.0"
                 },
                 "PROSEG": {
                     "proseg": "3.1.0"
+                },
+                "REPORT": {
+                    "quarto": "1.6.42"
                 },
                 "SPATIALDATA_MERGE_RAW_REDEFINED": {
                     "spatialdata": "0.7.2"
@@ -24,7 +30,7 @@
                     "untar": 1.34
                 },
                 "Workflow": {
-                    "nf-core/spatialaxe": "v1.0.1"
+                    "nf-core/spatialaxe": "v1.0.1dev"
                 },
                 "XENIUMRANGER_IMPORTSEGMENTATION": {
                     "xeniumranger": "4.0.1.1"
@@ -35,40 +41,97 @@
                 "coordinate/multiqc",
                 "coordinate/multiqc/raw_bundle",
                 "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report.html",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_data",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_data/llms-full.txt",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc.log",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc.parquet",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_citations.txt",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_data.json",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_general_stats.txt",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_software_versions.txt",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_sources.txt",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_xenium.txt",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_data/xenium_fov_quality_ranges.txt",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_data/xenium_segmentation.txt",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_data/xenium_transcript_quality_per_sample_table.txt",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_data/xenium_transcripts_per_gene.txt",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_plots",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_plots/pdf",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_plots/png",
-                "coordinate/multiqc/raw_bundle/MultiQC-Pre-Xeniumranger-import-segmentation-Run_multiqc_report_plots/svg",
                 "coordinate/multiqc/redefined_bundle",
                 "coordinate/multiqc/redefined_bundle/MultiQC-Post-Xeniumranger-import-segmentation-Run_multiqc_report.html",
-                "coordinate/multiqc/redefined_bundle/MultiQC-Post-Xeniumranger-import-segmentation-Run_multiqc_report_data",
-                "coordinate/multiqc/redefined_bundle/MultiQC-Post-Xeniumranger-import-segmentation-Run_multiqc_report_data/llms-full.txt",
-                "coordinate/multiqc/redefined_bundle/MultiQC-Post-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc.log",
-                "coordinate/multiqc/redefined_bundle/MultiQC-Post-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc.parquet",
-                "coordinate/multiqc/redefined_bundle/MultiQC-Post-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_citations.txt",
-                "coordinate/multiqc/redefined_bundle/MultiQC-Post-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_data.json",
-                "coordinate/multiqc/redefined_bundle/MultiQC-Post-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_software_versions.txt",
-                "coordinate/multiqc/redefined_bundle/MultiQC-Post-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_sources.txt",
                 "coordinate/proseg",
                 "coordinate/proseg/preset",
                 "coordinate/proseg/proseg2baysor",
                 "coordinate/proseg/proseg2baysor/test_run",
                 "coordinate/proseg/proseg2baysor/test_run/cell-polygons.geojson",
                 "coordinate/proseg/proseg2baysor/test_run/transcript-metadata.csv",
+                "coordinate/qc",
+                "coordinate/qc/image_qc",
+                "coordinate/qc/image_qc/SNR_roi_tx.parquet",
+                "coordinate/qc/image_qc/dense_intensity_regions_summary.csv",
+                "coordinate/qc/image_qc/figures",
+                "coordinate/qc/image_qc/figures/ccfs_thresholded.png",
+                "coordinate/qc/image_qc/figures/cell_flagged_maps.png",
+                "coordinate/qc/image_qc/figures/dapi_intensity_vs_transcripts_log.png",
+                "coordinate/qc/image_qc/figures/distance_map_edge.pdf",
+                "coordinate/qc/image_qc/figures/distance_map_edge.png",
+                "coordinate/qc/image_qc/figures/distance_map_holes.pdf",
+                "coordinate/qc/image_qc/figures/distance_map_holes.png",
+                "coordinate/qc/image_qc/figures/distance_maps.pdf",
+                "coordinate/qc/image_qc/figures/distance_maps.png",
+                "coordinate/qc/image_qc/figures/figures_methodology_assessment",
+                "coordinate/qc/image_qc/figures/gmm_focus_vs_transcripts.png",
+                "coordinate/qc/image_qc/figures/grid_roi_focus_heatmap.png",
+                "coordinate/qc/image_qc/figures/imageqc_masks.pdf",
+                "coordinate/qc/image_qc/figures/imageqc_masks.png",
+                "coordinate/qc/image_qc/figures/intensity_assessment.pdf",
+                "coordinate/qc/image_qc/figures/intensity_assessment.png",
+                "coordinate/qc/image_qc/figures/nuclear_texture_vs_transcripts_log.png",
+                "coordinate/qc/image_qc/figures/roi_focus_vs_intensity.pdf",
+                "coordinate/qc/image_qc/figures/roi_focus_vs_intensity.png",
+                "coordinate/qc/image_qc/figures/tile_blur_proportions_roi.png",
+                "coordinate/qc/image_qc/figures/tile_focus_gmm_spatial.png",
+                "coordinate/qc/image_qc/figures_cell_centred",
+                "coordinate/qc/image_qc/figures_cell_centred/cell_flagged_maps.png",
+                "coordinate/qc/image_qc/figures_cell_centred/dapi_intensity_vs_transcripts_log.png",
+                "coordinate/qc/image_qc/figures_cell_centred/gmm_focus_vs_transcripts.png",
+                "coordinate/qc/image_qc/figures_cell_centred/tile_blur_proportions_roi.png",
+                "coordinate/qc/image_qc/figures_cell_centred/tile_focus_gmm_spatial.png",
+                "coordinate/qc/image_qc/grid_roi_focus_scores.csv",
+                "coordinate/qc/image_qc/image_qc.html",
+                "coordinate/qc/image_qc/image_qc_cell_metrics.csv",
+                "coordinate/qc/image_qc/image_qc_cell_metrics.json",
+                "coordinate/qc/image_qc/image_qc_metrics.csv",
+                "coordinate/qc/image_qc/image_qc_metrics.json",
+                "coordinate/qc/image_qc/image_qc_status.json",
+                "coordinate/qc/image_qc/intensity_assessment.json",
+                "coordinate/qc/image_qc/roi_blur_threshold.json",
+                "coordinate/qc/image_qc/roi_count.txt",
+                "coordinate/qc/image_qc/roi_qc_metrics.json",
+                "coordinate/qc/image_qc/roi_size.txt",
+                "coordinate/qc/image_qc/snr_metrics.json",
+                "coordinate/qc/image_qc/versions.yml",
+                "coordinate/qc/transcript_qc",
+                "coordinate/qc/transcript_qc/df_spatial_quality.csv",
+                "coordinate/qc/transcript_qc/figures",
+                "coordinate/qc/transcript_qc/figures/genes_per_cell_distribution.pdf",
+                "coordinate/qc/transcript_qc/figures/genes_per_cell_distribution.png",
+                "coordinate/qc/transcript_qc/figures/nucleus_to_cell_size_fraction_per_cell_distribution.pdf",
+                "coordinate/qc/transcript_qc/figures/nucleus_to_cell_size_fraction_per_cell_distribution.png",
+                "coordinate/qc/transcript_qc/figures/nucleus_transcript_fraction_per_cell_distribution.pdf",
+                "coordinate/qc/transcript_qc/figures/nucleus_transcript_fraction_per_cell_distribution.png",
+                "coordinate/qc/transcript_qc/figures/num_genes_per_cell.pdf",
+                "coordinate/qc/transcript_qc/figures/num_genes_per_cell.png",
+                "coordinate/qc/transcript_qc/figures/num_transcripts_per_cell.pdf",
+                "coordinate/qc/transcript_qc/figures/num_transcripts_per_cell.png",
+                "coordinate/qc/transcript_qc/figures/num_transcripts_per_feature.pdf",
+                "coordinate/qc/transcript_qc/figures/num_transcripts_per_feature.png",
+                "coordinate/qc/transcript_qc/figures/quality_by_fov.pdf",
+                "coordinate/qc/transcript_qc/figures/quality_by_fov.png",
+                "coordinate/qc/transcript_qc/figures/quality_distribution_density.pdf",
+                "coordinate/qc/transcript_qc/figures/quality_distribution_density.png",
+                "coordinate/qc/transcript_qc/figures/quality_distributions_comprehensive.pdf",
+                "coordinate/qc/transcript_qc/figures/quality_distributions_comprehensive.png",
+                "coordinate/qc/transcript_qc/figures_source",
+                "coordinate/qc/transcript_qc/figures_source/genes_per_cell_distribution.csv",
+                "coordinate/qc/transcript_qc/figures_source/nucleus_to_cell_size_fraction_per_cell_distribution.csv",
+                "coordinate/qc/transcript_qc/figures_source/nucleus_transcript_fraction_per_cell_distribution.csv",
+                "coordinate/qc/transcript_qc/figures_source/num_genes_per_cell.csv",
+                "coordinate/qc/transcript_qc/figures_source/num_transcripts_per_cell.csv",
+                "coordinate/qc/transcript_qc/figures_source/num_transcripts_per_feature.csv",
+                "coordinate/qc/transcript_qc/figures_source/quality_by_fov.csv",
+                "coordinate/qc/transcript_qc/figures_source/quality_distribution_density.csv",
+                "coordinate/qc/transcript_qc/figures_source/quality_distributions_comprehensive.csv",
+                "coordinate/qc/transcript_qc/num_genes_per_cell.csv",
+                "coordinate/qc/transcript_qc/num_transcripts_per_cell.csv",
+                "coordinate/qc/transcript_qc/retained_genes.csv",
+                "coordinate/qc/transcript_qc/transcript_qc.html",
+                "coordinate/qc/transcript_qc/transcript_qc_metrics.json",
+                "coordinate/qc/transcript_qc/versions.yml",
                 "coordinate/spatialdata",
                 "coordinate/spatialdata/merge",
                 "coordinate/spatialdata/merge/spatialdata",
@@ -283,16 +346,64 @@
                 "xeniumranger/test_run"
             ],
             [
-                "multiqc_citations.txt:md5,4c806e63a283ec1b7e78cdae3a923d4f",
-                "multiqc_general_stats.txt:md5,e38eaaa52226a0d985578208b3261585",
-                "multiqc_software_versions.txt:md5,4c66c24e7c7ec9133e99bf68a3ab05f9",
-                "multiqc_xenium.txt:md5,f52e6ac3376565f7975e4e9fc23ed52a",
-                "xenium_fov_quality_ranges.txt:md5,153e0a905781d0b1b2f01b5ea6e384a8",
-                "xenium_segmentation.txt:md5,abd99ee57c53568a7f915bd10d2ee5af",
-                "xenium_transcript_quality_per_sample_table.txt:md5,d0135a0006f4ad3631b9f3906cc7ee0b",
-                "xenium_transcripts_per_gene.txt:md5,b46b3c414bc660e03e3df0345dd5e3e2",
-                "multiqc_citations.txt:md5,4c806e63a283ec1b7e78cdae3a923d4f",
-                "multiqc_software_versions.txt:md5,4c66c24e7c7ec9133e99bf68a3ab05f9",
+                "SNR_roi_tx.parquet:md5,c7af969730c7a2a922e1e0a3520e50c8",
+                "dense_intensity_regions_summary.csv:md5,cae928f6aa311af4b0e1bfc17fbd092e",
+                "ccfs_thresholded.png:md5,032f6b10b6878f403efbbe01af8b7110",
+                "cell_flagged_maps.png:md5,0ba882744ff82f34a1a6bbc83f976c8f",
+                "dapi_intensity_vs_transcripts_log.png:md5,d8fdf16b335d6b8b94d8a6267e0b033a",
+                "distance_map_edge.png:md5,1fd0072b0f726b8f2cab8488ced54ec6",
+                "distance_map_holes.png:md5,bec4e0e137dd6c6054f89f813628f392",
+                "distance_maps.png:md5,642f233c2f4069ff44b951dec56d407d",
+                "gmm_focus_vs_transcripts.png:md5,35691a2eed88ced2b178a2a2ca314e79",
+                "grid_roi_focus_heatmap.png:md5,fe63ecb24348e4b8c51a8abce368d39e",
+                "imageqc_masks.png:md5,406baa0d4058345872d4911669c633f5",
+                "intensity_assessment.png:md5,99926fba912f4b0c1e85c84c9dbed1da",
+                "nuclear_texture_vs_transcripts_log.png:md5,b0a8bfb561526af53b34033d43a18bab",
+                "roi_focus_vs_intensity.png:md5,7cd8798673ac7e95d69f7bdd33dc8f52",
+                "tile_blur_proportions_roi.png:md5,33c490285772c1fa921bb2a14de21854",
+                "tile_focus_gmm_spatial.png:md5,bd4dd734793fdc367d3920bb18d0efce",
+                "cell_flagged_maps.png:md5,0ba882744ff82f34a1a6bbc83f976c8f",
+                "dapi_intensity_vs_transcripts_log.png:md5,d8fdf16b335d6b8b94d8a6267e0b033a",
+                "gmm_focus_vs_transcripts.png:md5,35691a2eed88ced2b178a2a2ca314e79",
+                "tile_blur_proportions_roi.png:md5,9c37b7ea6e0fdc44893be763a3adf40e",
+                "tile_focus_gmm_spatial.png:md5,bd4dd734793fdc367d3920bb18d0efce",
+                "grid_roi_focus_scores.csv:md5,b2cfd1da35fd51bd43cc3f44837a931c",
+                "image_qc_cell_metrics.csv:md5,f1cc07f1817d515693263c0c1b9a5471",
+                "image_qc_cell_metrics.json:md5,94449828ce6b764c354bd47f2436f0d8",
+                "image_qc_metrics.csv:md5,f1cc07f1817d515693263c0c1b9a5471",
+                "image_qc_metrics.json:md5,69f2ae0bdf4603c3dd8aecf9dcb2912a",
+                "image_qc_status.json:md5,14f825da7a7d6f84385cdcf179ab1f98",
+                "intensity_assessment.json:md5,fccf19acf4eb01eb38eb47d189e1430c",
+                "roi_blur_threshold.json:md5,1f3640c94ebb2087b5a650cae7f352a4",
+                "roi_count.txt:md5,c881617af0ae19b38dd0546548cd53ad",
+                "roi_qc_metrics.json:md5,abfe93d6f0a52c1d209055e25195c01e",
+                "roi_size.txt:md5,649ee93d50739c656e94ec88a32c7ffe",
+                "snr_metrics.json:md5,69cd964173db5df8ab3a193d887a4e8d",
+                "versions.yml:md5,e1d8ab29fd14c338cd8a7b67c8c44c9e",
+                "df_spatial_quality.csv:md5,cbce95889b1f18aef76e733a036878f5",
+                "genes_per_cell_distribution.png:md5,2d5e0ad76db223ffc5bfcc2c7d17e38b",
+                "nucleus_to_cell_size_fraction_per_cell_distribution.png:md5,d4cb081943f43f9496b4b46af36b5c0d",
+                "nucleus_transcript_fraction_per_cell_distribution.png:md5,9f7438a0a9f2f13471072d1712404375",
+                "num_genes_per_cell.png:md5,c9fe04ed2c11dd1fbb3255dd258f7fea",
+                "num_transcripts_per_cell.png:md5,e788e9699e5002caca906c4e3c2f794a",
+                "num_transcripts_per_feature.png:md5,6581f18b96a0df655559fecf7ac84d44",
+                "quality_by_fov.png:md5,d4024d339058da0f6ef811884f46a165",
+                "quality_distribution_density.png:md5,f77aeae1e0fcafaa8c2eaa732d509ad9",
+                "quality_distributions_comprehensive.png:md5,c15ca8c669ad5bcb455973d65539f507",
+                "genes_per_cell_distribution.csv:md5,6c8aee45e7c0045918502fe4d4d441e0",
+                "nucleus_to_cell_size_fraction_per_cell_distribution.csv:md5,f753929ec13d1e3dfaf94576bbd7d0d5",
+                "nucleus_transcript_fraction_per_cell_distribution.csv:md5,045a36ef54369cc887be643d99f9df1b",
+                "num_genes_per_cell.csv:md5,1dc6c4f75a58c595163d192182f73d92",
+                "num_transcripts_per_cell.csv:md5,9cbf38491eab58a66fc1ba8e1cb9c903",
+                "num_transcripts_per_feature.csv:md5,dfd130c782daeef432f2277544e3641b",
+                "quality_by_fov.csv:md5,93d758f01021cd747d659eabc76ce88d",
+                "quality_distribution_density.csv:md5,cbce95889b1f18aef76e733a036878f5",
+                "quality_distributions_comprehensive.csv:md5,cbce95889b1f18aef76e733a036878f5",
+                "num_genes_per_cell.csv:md5,dda1841ad514e161fc4c6afad7816c99",
+                "num_transcripts_per_cell.csv:md5,54f5a71c0ecec544e47e3b5a00e49f75",
+                "retained_genes.csv:md5,48ad353bbf73d331e562cf7e27482882",
+                "transcript_qc_metrics.json:md5,f5f6e9be5e54e625633d9ea99c246ef3",
+                "versions.yml:md5,368ef8d21ae59eced24838c4a7b83201",
                 "0:md5,397dc21e479c58fd2ffcbe6c3e627683",
                 "1:md5,f1a6b9238c3095bad7867b22f293e5e6",
                 "zarr.json:md5,893b4d8873fc997d364288c63ef0871f",
@@ -343,20 +454,26 @@
                 "zarr.json:md5,b98263d3964a5236145ccf6c808f8919"
             ]
         ],
-        "timestamp": "2026-08-04T14:29:47.103357166",
+        "timestamp": "2026-08-08T02:31:29.391475097",
         "meta": {
             "nf-test": "0.9.5",
-            "nextflow": "26.04.6"
+            "nextflow": "25.04.0"
         }
     },
     "-profile test stub": {
         "content": [
             {
+                "ANALYSIS": {
+                    "scikit-image": "0.25.2"
+                },
                 "PROSEG2BAYSOR": {
                     "proseg": "3.1.0"
                 },
                 "PROSEG": {
                     "proseg": "3.1.0"
+                },
+                "REPORT": {
+                    "quarto": "1.6.42"
                 },
                 "SPATIALDATA_MERGE_RAW_REDEFINED": {
                     "spatialdata": "0.7.2"
@@ -374,7 +491,7 @@
                     "untar": 1.34
                 },
                 "Workflow": {
-                    "nf-core/spatialaxe": "v1.0.1"
+                    "nf-core/spatialaxe": "v1.0.1dev"
                 },
                 "XENIUMRANGER_IMPORTSEGMENTATION": {
                     "xeniumranger": "4.0.1.1"
@@ -405,6 +522,17 @@
                 "coordinate/proseg/proseg2baysor/test_run",
                 "coordinate/proseg/proseg2baysor/test_run/cell-polygons.geojson",
                 "coordinate/proseg/proseg2baysor/test_run/transcript-metadata.csv",
+                "coordinate/qc",
+                "coordinate/qc/image_qc",
+                "coordinate/qc/image_qc/figures",
+                "coordinate/qc/image_qc/image_qc.html",
+                "coordinate/qc/image_qc/image_qc_metrics.csv",
+                "coordinate/qc/image_qc/image_qc_metrics.json",
+                "coordinate/qc/transcript_qc",
+                "coordinate/qc/transcript_qc/figures",
+                "coordinate/qc/transcript_qc/transcript_qc.html",
+                "coordinate/qc/transcript_qc/transcript_qc_metrics.json",
+                "coordinate/qc/transcript_qc/versions.yml",
                 "coordinate/spatialdata",
                 "coordinate/spatialdata/merge",
                 "coordinate/spatialdata/merge/spatialdata",
@@ -461,16 +589,20 @@
                 ".stub:md5,d41d8cd98f00b204e9800998ecf8427e",
                 ".stub:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "multiqc_report.html:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "image_qc_metrics.csv:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "image_qc_metrics.json:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "transcript_qc_metrics.json:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "versions.yml:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "fake_file.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "fake_file.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "fake_file.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "fake_file.txt:md5,d41d8cd98f00b204e9800998ecf8427e"
             ]
         ],
-        "timestamp": "2026-08-04T14:30:03.467198601",
+        "timestamp": "2026-08-08T01:53:52.552142771",
         "meta": {
             "nf-test": "0.9.5",
-            "nextflow": "26.04.6"
+            "nextflow": "25.04.0"
         }
     }
 }
