@@ -33,13 +33,19 @@ coordinate/spatialdata/write/spatialdata/test_run/redefined_bundle/points/**
 coordinate/spatialdata/write/spatialdata/test_run/redefined_bundle/shapes/**
 coordinate/spatialdata/write/spatialdata/test_run/redefined_bundle/tables/**
 
-# MultiQC pre/post-Xeniumranger reports embed non-deterministic run data
+# MultiQC pre/post-Xeniumranger reports embed non-deterministic run data, and
+# the _report_data file set itself is not run-to-run stable (per-module stats
+# tables are sometimes omitted); exported plots embed creation metadata
 coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report.html
-coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/llms-full.txt
-coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc.log
-coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc.parquet
-coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_data.json
-coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_sources.txt
+coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/**
+coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_plots/**
+
+# QC reports embed render dates and matplotlib figure PDFs embed CreationDate —
+# content is not run-to-run reproducible; only existence/names are checked
+**/qc/image_qc/image_qc.html
+**/qc/image_qc/figures/*.pdf
+**/qc/transcript_qc/transcript_qc.html
+**/qc/transcript_qc/figures/*.pdf
 
 # OME-Zarr group metadata (member/channel ordering) is not written in a stable
 # order across runs, both for the images subgroup and for each bundle's root
