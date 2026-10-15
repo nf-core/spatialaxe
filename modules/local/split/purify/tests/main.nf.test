@@ -1,0 +1,212 @@
+nextflow_process {
+    name "Test Process SPLIT_PURIFY"
+    script "../main.nf"
+    process "SPLIT_PURIFY"
+    config "./nextflow.config"
+
+    tag "modules"
+    tag "modules_local"
+    tag "split"
+    tag "split/purify"
+
+    setup {
+        run("SPLIT_TEST_INPUTS") {
+            script "modules/local/split/purify/tests/setup.nf"
+            process {
+                """
+                input[0] = []
+                input[1] = file("${projectDir}/modules/local/split/purify/tests/fixtures.R")
+                """
+            }
+        }
+    }
+
+    test("purifies known mixtures while preserving pure and RNA-empty cells") {
+        when {
+            process {
+                """
+                input[0] = SPLIT_TEST_INPUTS.out.fixture.map { fixture ->
+                    tuple([id: 'synthetic'], fixture.resolve('counts.h5'), fixture.resolve('reference.tsv'), fixture.resolve('weights.tsv'))
+                }
+                """
+            }
+        }
+        then {
+            assert process.success
+            def counts = process.out.purified_counts[0]
+            assert counts[0].id == 'synthetic'
+            def matrix = new java.util.zip.GZIPInputStream(file(counts[1]).newInputStream()).getText('UTF-8')
+            def rows = matrix.readLines().findAll { !it.startsWith('%') }
+            assert rows[0].tokenize() == ['2', '3', '4']
+            def entries = rows.drop(1).collectEntries { row ->
+                def fields = row.tokenize()
+                [(fields[0] + ':' + fields[1]): fields[2].toDouble()]
+            }
+            assert Math.abs(entries['1:1'] - 7.2) < 1e-10
+            assert entries['2:1'] == 4.0
+            assert entries['1:2'] == 4.0
+            assert entries['2:2'] == 12.0
+            assert new java.util.zip.GZIPInputStream(file(counts[2]).newInputStream()).getText('UTF-8').readLines() == [
+                'gene_1\tGene-One\tGene Expression', 'gene_2\tGene-Two\tGene Expression'
+            ]
+            assert new java.util.zip.GZIPInputStream(file(counts[3]).newInputStream()).getText('UTF-8').readLines() == ['mixed', 'pure', 'empty']
+            def metadata = file(process.out.metadata[0][1]).readLines()
+            assert metadata.size() == 4
+            assert metadata[0].tokenize('\t').contains('primary_cell_type')
+            assert process.out.versions_split[0][1..2] == ['split', '0.3.0']
+        }
+    }
+
+    test("aligns shuffled references and weights by identifier") {
+        when {
+            process {
+                """
+                input[0] = SPLIT_TEST_INPUTS.out.fixture.map { fixture ->
+                    tuple([id: 'shuffled'], fixture.resolve('counts.h5'), fixture.resolve('reference_shuffled.tsv'), fixture.resolve('weights_shuffled.tsv'))
+                }
+                """
+            }
+        }
+        then {
+            assert process.success
+            def matrix = new java.util.zip.GZIPInputStream(file(process.out.purified_counts[0][1]).newInputStream()).getText('UTF-8')
+            def rows = matrix.readLines().findAll { !it.startsWith('%') }
+            assert rows[0].tokenize() == ['2', '3', '4']
+            def entries = rows.drop(1).collectEntries { row ->
+                def fields = row.tokenize()
+                [(fields[0] + ':' + fields[1]): fields[2].toDouble()]
+            }
+            assert Math.abs(entries['1:1'] - 7.2) < 1e-10
+            assert entries['2:1'] == 4.0
+            assert entries['1:2'] == 4.0
+            assert entries['2:2'] == 12.0
+            assert new java.util.zip.GZIPInputStream(file(process.out.purified_counts[0][3]).newInputStream()).getText('UTF-8').readLines() == ['mixed', 'pure', 'empty']
+        }
+    }
+
+    test("rejects missing weights instead of silently dropping cells") {
+        when {
+            process {
+                """
+                input[0] = SPLIT_TEST_INPUTS.out.fixture.map { fixture ->
+                    tuple([id: 'missing'], fixture.resolve('counts.h5'), fixture.resolve('reference.tsv'), fixture.resolve('weights_missing.tsv'))
+                }
+                """
+            }
+        }
+        then {
+            assert process.failed
+            assert process.errorReport.contains('Weights must contain exactly the cells')
+        }
+    }
+
+    test("normalizes per-cell weight scales and preserves metadata alignment") {
+        when {
+            process {
+                """
+                input[0] = SPLIT_TEST_INPUTS.out.fixture.map { fixture ->
+                    tuple([id: 'scaled'], fixture.resolve('counts.h5'), fixture.resolve('reference.tsv'), fixture.resolve('weights_scaled.tsv'))
+                }
+                """
+            }
+        }
+        then {
+            assert process.success
+            def rows = file(process.out.metadata[0][1]).readLines().collect { it.tokenize('\t') }
+            def header = rows[0]
+            def cells = rows.drop(1).collectEntries { row -> [(row[header.indexOf('cell_id')]): row] }
+            assert rows.drop(1).collect { it[header.indexOf('cell_id')] } == ['mixed', 'pure', 'empty']
+            assert cells.mixed[header.indexOf('primary_cell_type')] == 'synthetic_A'
+            assert cells.pure[header.indexOf('primary_cell_type')] == 'synthetic_B'
+            assert cells.mixed[header.indexOf('w1_primary')].toDouble() == 0.75
+            assert cells.pure[header.indexOf('w1_primary')].toDouble() == 1.0
+        }
+    }
+
+    test("accepts gene symbols and chunk size one without dropping dimensions") {
+        when {
+            process {
+                """
+                input[0] = SPLIT_TEST_INPUTS.out.fixture.map { fixture ->
+                    tuple([id: 'symbols'], fixture.resolve('counts.h5'), fixture.resolve('reference_symbols.tsv'), fixture.resolve('weights.tsv'))
+                }
+                """
+            }
+        }
+        then {
+            assert process.success
+            def matrix = new java.util.zip.GZIPInputStream(file(process.out.purified_counts[0][1]).newInputStream()).getText('UTF-8')
+            def rows = matrix.readLines().findAll { !it.startsWith('%') }
+            assert rows[0].tokenize() == ['2', '3', '4']
+            assert Math.abs(rows.drop(1).collect { it.tokenize()[2].toDouble() }.sum() - 27.2) < 1e-10
+        }
+    }
+
+    test("rejects negative weights") {
+        when {
+            process {
+                """
+                input[0] = SPLIT_TEST_INPUTS.out.fixture.map { fixture ->
+                    tuple([id: 'negative'], fixture.resolve('counts.h5'), fixture.resolve('reference.tsv'), fixture.resolve('weights_negative.tsv'))
+                }
+                """
+            }
+        }
+        then {
+            assert process.failed
+            assert process.errorReport.contains('finite, nonnegative numeric values')
+        }
+    }
+
+    test("rejects ambiguous primary cell types") {
+        when {
+            process {
+                """
+                input[0] = SPLIT_TEST_INPUTS.out.fixture.map { fixture ->
+                    tuple([id: 'tied'], fixture.resolve('counts.h5'), fixture.resolve('reference.tsv'), fixture.resolve('weights_tied.tsv'))
+                }
+                """
+            }
+        }
+        then {
+            assert process.failed
+            assert process.errorReport.contains('unique largest weight')
+        }
+    }
+
+    test("stub produces declared outputs") {
+        options "-stub"
+        when {
+            process {
+                """
+                input[0] = SPLIT_TEST_INPUTS.out.fixture.map { fixture ->
+                    tuple([id: 'stub'], fixture.resolve('counts.h5'), fixture.resolve('reference.tsv'), fixture.resolve('weights.tsv'))
+                }
+                """
+            }
+        }
+        then {
+            assert process.success
+            assert process.out.purified_counts[0].drop(1).every { file(it).exists() }
+            assert file(process.out.metadata[0][1]).exists()
+            assert process.out.versions_split[0][1..2] == ['split', '0.3.0']
+        }
+    }
+
+    test("rejects an entirely empty RNA count matrix with an actionable error") {
+        tag "split/empty"
+        when {
+            process {
+                """
+                input[0] = SPLIT_TEST_INPUTS.out.fixture.map { fixture ->
+                    tuple([id: 'all_empty'], fixture.resolve('counts_empty.h5'), fixture.resolve('reference.tsv'), fixture.resolve('weights.tsv'))
+                }
+                """
+            }
+        }
+        then {
+            assert process.failed
+            assert process.errorReport.contains('SPLIT 0.3.0 cannot purify an entirely zero RNA count matrix')
+        }
+    }
+}
