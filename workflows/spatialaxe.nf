@@ -48,6 +48,12 @@ include { SPATIALDATA_WRITE_META_MERGE                     } from '../subworkflo
 include { OPT_FLIP_TRACK_STAT                              } from '../subworkflows/local/opt_flip_track_stat/main'
 include { SPOQC                                            } from '../subworkflows/local/spoqc/main'
 
+// pipeline-wide QC modules (Issue #208)
+include { EMIT_BUNDLE_QC                                   } from '../modules/local/emit_bundle_qc/main'
+include { EMIT_BUNDLE_QC as EMIT_BUNDLE_QC_POST            } from '../modules/local/emit_bundle_qc/main'
+include { EMIT_SEGMENTATION_QC                             } from '../modules/local/emit_segmentation_qc/main'
+include { COLLECT_PIPELINE_QC                              } from '../modules/local/collect_pipeline_qc/main'
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -706,6 +712,68 @@ workflow SPATIALAXE {
 
     /*
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        SPATIALAXE - PIPELINE QC REPORT (Issue #208)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    */
+    // Decision 7B: Each module emits its own QC JSON; collect and render here.
+    // Emit bundle-level QC from raw bundles
+    EMIT_BUNDLE_QC(ch_bundle_path)
+    ch_qc_jsons = EMIT_BUNDLE_QC.out.qc_json.map { _meta, json -> json }
+
+    // Emit bundle-level QC from redefined (post-segmentation) bundles
+    if (mode == 'image' || mode == 'coordinate') {
+        EMIT_BUNDLE_QC_POST(ch_redefined_bundle)
+        ch_qc_jsons = ch_qc_jsons.mix(
+            EMIT_BUNDLE_QC_POST.out.qc_json.map { _meta, json -> json }
+        )
+    }
+
+    // Emit segmentation QC from Baysor results (when available)
+    // The segmentation CSV is the first element of the BAYSOR_RUN.out.segmentation tuple.
+    // We access it through the subworkflows that expose it.
+    if (mode == 'image' && !method) {
+        // Default image mode uses CELLPOSE_BAYSOR_IMPORT_SEGMENTATION
+        // Prior confidence JSON is already emitted by that subworkflow
+        ch_qc_jsons = ch_qc_jsons.mix(
+            CELLPOSE_BAYSOR_IMPORT_SEGMENTATION.out.confidence_json
+                .map { _meta, json -> json }
+                .ifEmpty(channel.empty())
+        )
+    }
+    if (mode == 'coordinate' && method == 'baysor') {
+        ch_qc_jsons = ch_qc_jsons.mix(
+            BAYSOR_RUN_TRANSCRIPTS_PARQUET.out.confidence_json
+                .map { _meta, json -> json }
+                .ifEmpty(channel.empty())
+        )
+    }
+
+    // Emit segmentation QC from Baysor segmentation.csv (when available)
+    ch_seg_csv = channel.empty()
+    if (mode == 'image' && !method) {
+        ch_seg_csv = ch_seg_csv.mix(CELLPOSE_BAYSOR_IMPORT_SEGMENTATION.out.segmentation_csv)
+    }
+    if (mode == 'image' && method == 'baysor') {
+        ch_seg_csv = ch_seg_csv.mix(BAYSOR_RUN_PRIOR_SEGMENTATION_MASK.out.segmentation_csv)
+    }
+    if (mode == 'coordinate' && method == 'baysor') {
+        ch_seg_csv = ch_seg_csv.mix(
+            BAYSOR_RUN_TRANSCRIPTS_PARQUET.out.segmentation_csv.ifEmpty(channel.empty())
+        )
+    }
+    EMIT_SEGMENTATION_QC(ch_seg_csv)
+    ch_qc_jsons = ch_qc_jsons.mix(
+        EMIT_SEGMENTATION_QC.out.qc_json.map { _meta, json -> json }
+    )
+
+    // Collect all QC JSONs and produce MultiQC custom content
+    COLLECT_PIPELINE_QC(ch_qc_jsons.collect())
+
+    // Feed QC reports into ch_qc_reports for MultiQC consumption
+    ch_qc_reports = COLLECT_PIPELINE_QC.out.mqc_custom_content.flatten()
+
+    /*
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         SPATIALAXE - COLLATE & SAVE SOFTWARE VERSIONS
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     */
@@ -771,6 +839,11 @@ workflow SPATIALAXE {
             name: 'methods_description_mqc.yaml',
             sort: true,
         )
+    )
+
+    // Issue #208: Add pipeline QC custom content to MultiQC (always, regardless of mode)
+    ch_multiqc_files = ch_multiqc_files.mix(
+        ch_qc_reports.collect().ifEmpty([])
     )
 
     if (mode == 'qc' || run_qc) {

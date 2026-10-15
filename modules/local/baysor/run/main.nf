@@ -5,7 +5,7 @@ process BAYSOR_RUN {
     container "khersameesh24/baysor:0.7.1"
 
     input:
-    tuple val(meta), path(transcripts), path(prior_segmentation), path(config), val(scale)
+    tuple val(meta), path(transcripts), path(prior_segmentation), path(config), val(scale), val(auto_confidence)
 
     output:
     tuple val(meta), path("${prefix}/segmentation.csv"), path("${prefix}/segmentation_polygons_2d.json"), emit: segmentation
@@ -24,7 +24,9 @@ process BAYSOR_RUN {
     // Column-based prior (e.g. :cell_id) takes precedence over file-based prior
     def prior_col = task.ext.prior_column ? ":${task.ext.prior_column}" : ''
     def prior_seg = prior_col ?: (prior_segmentation ? prior_segmentation : '')
-    def confidence = task.ext.prior_confidence != null ? "--prior-segmentation-confidence=${task.ext.prior_confidence}" : ''
+    // Decision 3A: ext.prior_confidence (user-set) takes precedence over auto-computed value
+    def conf_val = task.ext.prior_confidence != null ? task.ext.prior_confidence : (auto_confidence ?: null)
+    def confidence = conf_val != null ? "--prior-segmentation-confidence=${conf_val}" : ''
     def scaling_factor = scale ? "--scale=${scale}" : ''
     def config_arg = config ? "--config=${config}" : ''
     prefix = task.ext.prefix ?: "${meta.id}"
