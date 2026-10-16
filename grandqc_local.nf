@@ -8,7 +8,7 @@ workflow {
         file(params.image, checkIfExists: true),
         file(params.tissue_model, checkIfExists: true),
         file(params.qc_model, checkIfExists: true),
-        files("${projectDir}/updated_scripts/*.py"),
+        files("${projectDir}/modules/local/grandqc/scripts/*.py"),
         params.grandqc_mpp,
         params.grandqc_mpp_model ?: 1.5
     ])

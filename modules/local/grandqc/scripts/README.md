@@ -5,7 +5,7 @@ These are copies of the locally adapted GrandQC OME-TIFF workflow scripts. They 
 Run from this folder so the helper imports resolve:
 
 ```bash
-cd /workspaces/spatialaxe/updated_scripts
+cd /workspaces/spatialaxe/modules/local/grandqc/scripts
 
 SLIDES=/path/to/rgb-tiff-folder
 OUTPUT=/path/to/grandqc-output
