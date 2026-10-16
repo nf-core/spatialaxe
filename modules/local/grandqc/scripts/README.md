@@ -30,4 +30,4 @@ python main.py \
 
 Replace `MPP` with the image's actual physical pixel size. Do not use a guessed value; the web-map H&E mosaic in `data/xenium_test_images` has no calibrated MPP and is only suitable for testing TIFF reading.
 
-Python dependencies are listed in `/workspaces/spatialaxe/data/grandqc/requirements.txt`. These scripts and the GrandQC model checkpoints are subject to GrandQC's non-commercial license; see `/workspaces/spatialaxe/data/grandqc/LICENSE`.
+Python dependencies are listed in `/workspaces/spatialaxe/data/grandqc/requirements.txt`. These scripts and the GrandQC model checkpoints are subject to GrandQC's non-commercial license; see `/workspaces/spatialaxe/data/grandqc/LICENSE` and https://github.com/cpath-ukk/grandqc/blob/main/LICENSE.
