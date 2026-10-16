@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/meta-schema.json
+name: "resolvi"
+description: Train unsupervised resolVI on Xenium counts and save a latent representation in AnnData
+keywords:
+  - xenium
+  - spatial transcriptomics
+  - resolvi
+  - anndata
+tools:
+  - "scviva-tools":
+      description: Spatial transcriptomics analysis toolkit including the resolVI model
+      homepage: "https://github.com/YosefLab/scviva-tools"
+      documentation: "https://docs.scviva-tools.org/en/latest/api/reference/scviva.model.ResolVI.html"
+      tool_dev_url: "https://github.com/YosefLab/scviva-tools"
+      licence: ["BSD-3-Clause"]
+input:
+  - - meta:
+        type: map
+        description: Groovy Map containing sample information, including id
+    - xenium_dir:
+        type: directory
+        description: Xenium output directory containing cell_feature_matrix.h5 and cells.csv.gz
+output:
+  h5ad:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information
+      - "*.resolvi.h5ad":
+          type: file
+          description: Filtered Xenium AnnData with spatial coordinates and the X_resolVI latent representation
+          pattern: "*.resolvi.h5ad"
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions used to produce the results
+        pattern: "versions.yml"
+authors:
+  - "@SofiaDrobysheva"
+maintainers:
+  - "@SofiaDrobysheva"
