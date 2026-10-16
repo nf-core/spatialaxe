@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/meta-schema.json
+# # TODO nf-core: Add a description of the module and list keywords
+name: "resolvi"
+description: write your description here
+keywords:
+  - sort
+  - example
+  - genomics
+tools:
+  ## TODO nf-core: Add a description and other details for the software below
+  - "resolvi":
+      description: ""
+      homepage: ""
+      documentation: ""
+      tool_dev_url: ""
+      doi: ""
+      licence: null
+      identifier: null
+
+input:
+  - bam:
+      type: file
+      description: Sorted BAM/CRAM/SAM file
+      pattern: "*.{bam,cram,sam}"
+      ontologies:
+        - edam: http://edamontology.org/format_2572 # BAM
+        - edam: http://edamontology.org/format_2573 # CRAM
+        - edam: http://edamontology.org/format_3462 # SAM
+output:
+  bam:
+    - "*.bam":
+        type: file
+        description: Sorted BAM/CRAM/SAM file
+        pattern: "*.{bam,cram,sam}"
+        ontologies:
+          - edam: http://edamontology.org/format_2572 # BAM
+          - edam: http://edamontology.org/format_2573 # CRAM
+          - edam: http://edamontology.org/format_3462 # SAM
+  versions_resolvi:
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - resolvi:
+          type: string
+          description: The name of the tool
+      - resolvi --version:
+          type: eval
+          description: The expression to obtain the version of the tool
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - resolvi:
+          type: string
+          description: The name of the tool
+      - resolvi --version:
+          type: eval
+          description: The expression to obtain the version of the tool
+authors:
+  - "@SofiaDrobysheva"
+maintainers:
+  - "@SofiaDrobysheva"
