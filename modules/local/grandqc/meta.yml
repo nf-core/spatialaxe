@@ -1,0 +1,62 @@
+name: "grandqc"
+description: Run GrandQC tissue detection and artifact QC on a morphology image
+keywords:
+  - quality control
+  - histology
+  - grandqc
+tools:
+  - "grandqc":
+      description: "GrandQC quality control for whole-slide images."
+      homepage: "https://github.com/cpath-ukk/grandqc"
+      documentation: "https://github.com/cpath-ukk/grandqc"
+      tool_dev_url: "https://github.com/cpath-ukk/grandqc"
+      doi: "10.1038/s41467-024-54769-y"
+      licence: ["CC-BY-NC-SA-4.0"]
+
+input:
+  - - meta:
+        type: map
+        description: Groovy Map containing sample information
+    - image:
+        type: file
+        description: RGB TIFF or OME-TIFF morphology image
+    - tissue_model:
+        type: file
+        description: GrandQC tissue-detection model checkpoint
+    - qc_model:
+        type: file
+        description: GrandQC artifact-detection model checkpoint
+    - scripts:
+        type: files
+        description: Adapted GrandQC Python source files
+
+output:
+  results:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information
+      - grandqc_results:
+          type: directory
+          description: Tissue masks, QC maps, overlays, report, and GeoJSON output
+  versions_python:
+    - - "${task.process}":
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "python --version | sed 's/Python //'":
+          type: eval
+          description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - "${task.process}":
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "python --version | sed 's/Python //'":
+          type: eval
+          description: The expression to obtain the version of the tool
