@@ -1,4 +1,4 @@
-# Prototype and licensing notice
+# Prototype and grandQC licensing notice
 
 This directory contains scripts adapted from cpath-ukk/GrandQC for SpatialAxe development. This is a prototype; it is not yet integrated into SpatialAxe’s main workflow and is not an official GrandQC package.
 
