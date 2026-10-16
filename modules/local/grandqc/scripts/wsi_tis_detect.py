@@ -1,3 +1,12 @@
+# Adapted from cpath-ukk/GrandQC:
+# https://github.com/cpath-ukk/grandqc/blob/main/02_WSI_inference_OME_TIFF_QC/wsi_tis_detect.py
+# with the following changes
+# TIFF reading: Replaces upstream’s zarr/skimage pyramid-reading code with TiffSlide reader.
+# MPP handling: Upstream uses --mpp with a fixed default of 0.2425, here we use OME metadata, with an optional --mpp override.
+# Model/device options: Adds --model_path and --device
+# Input files: Processes only .tif and .tiff files, rather than every directory entry.
+# Patch edges: Upstream overlaps/crops edge patches, here we add the predictions back to the image boundary
+
 import os
 import numpy as np
 import torch
