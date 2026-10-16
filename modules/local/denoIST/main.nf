@@ -2,8 +2,6 @@ process DENOIST {
     tag "$meta.id"
     label 'process_medium'
 
-    conda "bioconda::bioconductor-denoist=1.0.0"
-
     input:
     tuple val(meta), path(mat), path(tx), path(coords, optional: true)
 
