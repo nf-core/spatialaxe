@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/meta-schema.json
+name: "troutpy"
+description: |
+  Analyse transcripts outside segmented cells (unassigned/extracellular RNA, uRNA) in a
+  SpatialData object with troutpy: segmentation-free Sainsc assignment, uRNA definition,
+  gene-centric metrics, spatial variability, uRNA source and diffusion, cell contacts and
+  decontamination of cell expression.
+keywords:
+  - spatialomics
+  - spatialdata
+  - xenium
+  - transcripts
+  - extracellular
+  - urna
+  - decontamination
+tools:
+  - "troutpy":
+      description: "Package for the analysis of transcripts outside segmented cells in python"
+      homepage: "https://github.com/sergiomarco25/troutpy"
+      documentation: "https://troutpy.readthedocs.io/"
+      tool_dev_url: "https://github.com/sergiomarco25/troutpy"
+      licence: ["BSD-3-Clause"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. `[ id:'sample1' ]`
+    - spatialdata:
+        type: directory
+        description: |
+          SpatialData Zarr store (e.g. from SPATIALDATA_WRITE) with a `transcripts`
+          points layer and a `table` AnnData of cell counts
+        pattern: "*"
+
+output:
+  spatialdata:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. `[ id:'sample1' ]`
+      - "${prefix}.zarr":
+          type: directory
+          description: SpatialData Zarr store annotated with troutpy results
+          pattern: "*.zarr"
+  report:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. `[ id:'sample1' ]`
+      - "report/troutpy":
+          type: directory
+          description: |
+            troutpy report folder with figures in `plots/` (PNG) and result
+            tables in `tables/` (CSV)
+          pattern: "report/troutpy"
+  versions_troutpy:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "troutpy":
+          type: string
+          description: The name of the tool
+      - 'python -c "import importlib.metadata as m; print(m.version(''troutpy''))"':
+          type: eval
+          description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - troutpy:
+          type: string
+          description: The name of the tool
+      - 'python -c "import importlib.metadata as m; print(m.version(''troutpy''))"':
+          type: eval
+          description: The expression to obtain the version of the tool
+authors:
+  - "@alenaboos"
+maintainers:
+  - "@alenaboos"
