@@ -1,6 +1,6 @@
 # Adapted from cpath-ukk/GrandQC:
 # https://github.com/cpath-ukk/grandqc/blob/main/02_WSI_inference_OME_TIFF_QC/main.py
-# Replaces upstream zarr/skimage slide reading with SpatialAxe’s TiffSlide reader.
+# Replaces upstream zarr/skimage slide reading with TiffSlide reader wsi_tiff_reader.py
 # Adds: --mpp and --device and --model_path options
 # Filters the input folder to .tif/.tiff files.
 # Requires the tissue-detection mask to exist, with a clear error if it doesn’t; upstream falls back to an all-zero mask.
