@@ -1,3 +1,6 @@
+# additional script, not originally included in grandQC: https://github.com/cpath-ukk/grandqc/tree/main/02_WSI_inference_OME_TIFF_QC
+# reads in RGB TIFF/OME-TIFF images in patches and gets the pixel size from OME metadata or an --mpp override
+
 import math
 import xml.etree.ElementTree as ET
 
