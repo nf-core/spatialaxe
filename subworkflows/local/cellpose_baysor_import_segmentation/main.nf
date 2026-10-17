@@ -9,6 +9,7 @@ include { EXTRACT_DAPI                     } from '../../../modules/local/utilit
 include { STARDIST as STARDIST_NUCLEI      } from '../../../modules/nf-core/stardist/main'
 include { CONVERT_MASK_UINT32              } from '../../../modules/local/utility/convert_mask_uint32/main'
 include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
+include { COMPUTE_PRIOR_CONFIDENCE         } from '../../../modules/local/compute_prior_confidence/main'
 include { RESIZE_TIF                       } from '../../../modules/local/utility/resize_tif/main'
 include { GET_TRANSCRIPTS_COORDINATES      } from '../../../modules/local/utility/get_coordinates/main'
 include { XENIUMRANGER_IMPORTSEGMENTATION  } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
@@ -104,17 +105,33 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
             }
         RESIZE_TIF(ch_resizetif_input)
 
+        // Issue #163: Auto-compute prior confidence when not user-set
+        if (params.baysor_prior_confidence == null) {
+            ch_confidence_input = ch_transcripts
+                .combine(RESIZE_TIF.out.resized_mask, by: 0)
+            COMPUTE_PRIOR_CONFIDENCE(
+                ch_confidence_input,
+                params.baysor_prior_confidence_mapping ?: 'linear',
+                params.baysor_prior_pixel_size ?: 0.2125,
+            )
+            ch_auto_confidence = COMPUTE_PRIOR_CONFIDENCE.out.confidence_json
+        } else {
+            ch_auto_confidence = ch_transcripts.map { meta, _t -> tuple(meta, []) }
+        }
+
         // run baysor with nuclei mask
         ch_baysor_input = ch_transcripts
             .combine(RESIZE_TIF.out.resized_mask, by: 0)
+            .combine(ch_auto_confidence, by: 0)
             .combine(ch_config)
-            .map { meta, transcripts, mask, config ->
+            .map { meta, transcripts, mask, confidence_json, config ->
                 tuple(
                     meta,
                     transcripts,
                     mask,
                     config,
                     30,
+                    confidence_json,
                 )
             }
         BAYSOR_RUN(ch_baysor_input)
@@ -135,24 +152,40 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
             }
         RESIZE_TIF(ch_resizetif_input)
 
+        // Issue #163: Auto-compute prior confidence when not user-set
+        if (params.baysor_prior_confidence == null) {
+            ch_confidence_input = ch_transcripts
+                .combine(RESIZE_TIF.out.resized_mask, by: 0)
+            COMPUTE_PRIOR_CONFIDENCE(
+                ch_confidence_input,
+                params.baysor_prior_confidence_mapping ?: 'linear',
+                params.baysor_prior_pixel_size ?: 0.2125,
+            )
+            ch_auto_confidence = COMPUTE_PRIOR_CONFIDENCE.out.confidence_json
+        } else {
+            ch_auto_confidence = ch_transcripts.map { meta, _t -> tuple(meta, []) }
+        }
+
         // run baysor with cell mask
         ch_baysor_input = ch_transcripts
             .combine(RESIZE_TIF.out.resized_mask, by: 0)
+            .combine(ch_auto_confidence, by: 0)
             .combine(ch_config)
-            .map { meta, transcripts, mask, config ->
+            .map { meta, transcripts, mask, confidence_json, config ->
                 tuple(
                     meta,
                     transcripts,
                     mask,
                     config,
                     30,
+                    confidence_json,
                 )
             }
         BAYSOR_RUN(ch_baysor_input)
     }
     else {
 
-        // run baysor without cell/nuclei mask
+        // run baysor without cell/nuclei mask — no prior, no confidence computation
         ch_baysor_input = ch_transcripts
             .combine(ch_config)
             .map { meta, transcripts, config ->
@@ -162,6 +195,7 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
                     [],
                     config,
                     30,
+                    [],
                 )
             }
         BAYSOR_RUN(ch_baysor_input)
@@ -188,6 +222,9 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     XENIUMRANGER_IMPORTSEGMENTATION(ch_imp_seg_inputs)
 
     emit:
-    coordinate_space = ch_coordinate_space                         // channel: [ val("microns") ]
-    redefined_bundle = XENIUMRANGER_IMPORTSEGMENTATION.out.outs // channel: [ val(meta), ["redefined-xenium-bundle"] ]
+    coordinate_space   = ch_coordinate_space                         // channel: [ val("microns") ]
+    redefined_bundle   = XENIUMRANGER_IMPORTSEGMENTATION.out.outs    // channel: [ val(meta), ["redefined-xenium-bundle"] ]
+    confidence_json    = params.baysor_prior_confidence == null && (cell_segmentation_only || nucleus_segmentation_only)
+                            ? COMPUTE_PRIOR_CONFIDENCE.out.confidence_json
+                            : channel.empty()                        // channel: [ val(meta), path(json) ] — Issue #163 QC
 }

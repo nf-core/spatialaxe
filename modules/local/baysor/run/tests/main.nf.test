@@ -21,7 +21,8 @@ nextflow_process {
                                 file("https://raw.githubusercontent.com/khersameesh24/test-datasets/baysor/transcripts.parquet", checkIfExists: true),
                                 [],
                                 file("https://raw.githubusercontent.com/khersameesh24/test-datasets/baysor/config/xenium.toml", checkIfExists: true),
-                                30
+                                30,
+                                []
                             ])
                 """
             }
@@ -51,7 +52,8 @@ nextflow_process {
                                 file("https://raw.githubusercontent.com/khersameesh24/test-datasets/baysor/transcripts.parquet", checkIfExists: true),
                                 [],
                                 file("https://raw.githubusercontent.com/khersameesh24/test-datasets/baysor/config/xenium.toml", checkIfExists: true),
-                                30
+                                30,
+                                []
                             ])
                 """
             }

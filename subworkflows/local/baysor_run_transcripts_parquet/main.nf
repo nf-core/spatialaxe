@@ -13,6 +13,7 @@ include { XENIUM_PATCH_DIVIDE              } from '../../../modules/local/xenium
 include { PARQUET_TO_CSV                   } from '../../../modules/local/parquet_to_csv/main'
 include { BAYSOR_RUN                       } from '../../../modules/local/baysor/run/main'
 include { BAYSOR_PREPROCESS_TRANSCRIPTS    } from '../../../modules/local/baysor/preprocess/main'
+include { COMPUTE_PRIOR_CONFIDENCE         } from '../../../modules/local/compute_prior_confidence/main'
 include { XENIUM_PATCH_STITCH              } from '../../../modules/local/xenium_patch/stitch/main'
 include { RECONSTRUCT_PATCHES              } from '../../../modules/local/utility/reconstruct_patches/main'
 include { XENIUMRANGER_IMPORTSEGMENTATION  } from '../../../modules/nf-core/xeniumranger/importsegmentation/main'
@@ -69,9 +70,10 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
         // Step 3: Run Baysor on each patch independently
         // Use baysor_tiling_scale (larger than baysor_scale) to compensate for EM
         // convergence producing smaller cells on tile-sized datasets.
+        // Tiled path has no image-based prior mask, so no auto-confidence computation.
         BAYSOR_RUN (
             PARQUET_TO_CSV.out.csv.map { meta, transcripts ->
-                tuple(meta, transcripts, [], baysor_config ? file(baysor_config) : [], baysor_tiling_scale)
+                tuple(meta, transcripts, [], baysor_config ? file(baysor_config) : [], baysor_tiling_scale, [])
             }
         )
 
@@ -140,10 +142,47 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
             .map { meta, transcripts, mask ->
                 tuple(meta, transcripts, mask ?: [])
             }
-        ch_baysor_input = ch_csv_with_mask
+
+        // Issue #163: Auto-compute prior confidence from transcript-in-cell fraction
+        // when a prior mask is present and user hasn't hard-set baysor_prior_confidence
+        if (params.baysor_prior_confidence == null) {
+            // Only run on samples that have a prior mask
+            ch_has_mask = ch_csv_with_mask
+                .filter { meta, transcripts, mask -> mask }
+            ch_no_mask  = ch_csv_with_mask
+                .filter { meta, transcripts, mask -> !mask }
+
+            COMPUTE_PRIOR_CONFIDENCE(
+                ch_has_mask.map { meta, transcripts, mask -> tuple(meta, transcripts, mask) },
+                params.baysor_prior_confidence_mapping ?: 'linear',
+                params.baysor_prior_pixel_size ?: 0.2125,
+            )
+
+            // Merge auto-computed confidence (QC json path) back with mask samples
+            ch_with_confidence = ch_has_mask
+                .combine(COMPUTE_PRIOR_CONFIDENCE.out.confidence_json, by: 0)
+                .map { meta, transcripts, mask, confidence_json ->
+                    tuple(meta, transcripts, mask, confidence_json)
+                }
+
+            // No-mask samples get no confidence json
+            ch_without_confidence = ch_no_mask
+                .map { meta, transcripts, mask ->
+                    tuple(meta, transcripts, mask, [])
+                }
+
+            ch_baysor_ready = ch_with_confidence.mix(ch_without_confidence)
+        } else {
+            ch_baysor_ready = ch_csv_with_mask
+                .map { meta, transcripts, mask ->
+                    tuple(meta, transcripts, mask, [])
+                }
+        }
+
+        ch_baysor_input = ch_baysor_ready
             .combine(ch_config)
-            .map { meta, transcripts, mask, config ->
-                tuple(meta, transcripts, mask, config, baysor_scale)
+            .map { meta, transcripts, mask, confidence_json, config ->
+                tuple(meta, transcripts, mask, config, baysor_scale, confidence_json)
             }
         BAYSOR_RUN(ch_baysor_input)
 
@@ -164,6 +203,9 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
     }
 
     emit:
-    redefined_bundle = XENIUMRANGER_IMPORTSEGMENTATION.out.outs
-    coordinate_space = ch_coordinate_space
+    redefined_bundle   = XENIUMRANGER_IMPORTSEGMENTATION.out.outs
+    coordinate_space   = ch_coordinate_space
+    confidence_json    = (!baysor_tiling && params.baysor_prior_confidence == null)
+                            ? COMPUTE_PRIOR_CONFIDENCE.out.confidence_json
+                            : channel.empty()                        // channel: [ val(meta), path(json) ] — Issue #163 QC
 }

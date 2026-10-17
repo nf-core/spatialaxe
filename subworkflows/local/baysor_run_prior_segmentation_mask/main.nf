@@ -41,7 +41,7 @@ workflow BAYSOR_RUN_PRIOR_SEGMENTATION_MASK {
     ch_transcripts = BAYSOR_PREPROCESS_TRANSCRIPTS.out.transcripts_file
 
 
-    // run baysor with prior segmentation mask
+    // run baysor with prior segmentation mask (external mask, no auto-confidence)
     ch_baysor_input = ch_transcripts
         .combine(ch_segmentation_mask)
         .combine(ch_config)
@@ -52,6 +52,7 @@ workflow BAYSOR_RUN_PRIOR_SEGMENTATION_MASK {
                 mask,
                 config,
                 30,
+                null,
             )
         }
     BAYSOR_RUN(ch_baysor_input)

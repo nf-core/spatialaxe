@@ -284,8 +284,17 @@
                 },
                 "baysor_prior_confidence": {
                     "type": "number",
-                    "default": 0.2,
-                    "description": "Baysor prior-segmentation-confidence (0-1)."
+                    "description": "Baysor prior-segmentation-confidence (0-1). When null (default), auto-computed from transcript-in-cell fraction. Set explicitly to skip auto-computation."
+                },
+                "baysor_prior_confidence_mapping": {
+                    "type": "string",
+                    "default": "linear",
+                    "description": "Mapping strategy for auto-computed prior confidence: 'linear', 'binned', or path to a two-column CSV (metric_value,confidence)."
+                },
+                "baysor_prior_pixel_size": {
+                    "type": "number",
+                    "default": 0.2125,
+                    "description": "Microns per pixel for converting transcript coordinates to mask pixel space during prior confidence computation."
                 },
                 "min_qv": {
                     "type": "number",
