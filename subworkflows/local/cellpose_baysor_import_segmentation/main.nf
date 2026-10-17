@@ -188,6 +188,8 @@ workflow CELLPOSE_BAYSOR_IMPORT_SEGMENTATION {
     XENIUMRANGER_IMPORTSEGMENTATION(ch_imp_seg_inputs)
 
     emit:
-    coordinate_space = ch_coordinate_space                         // channel: [ val("microns") ]
-    redefined_bundle = XENIUMRANGER_IMPORTSEGMENTATION.out.outs // channel: [ val(meta), ["redefined-xenium-bundle"] ]
+    coordinate_space   = ch_coordinate_space                         // channel: [ val("microns") ]
+    redefined_bundle   = XENIUMRANGER_IMPORTSEGMENTATION.out.outs    // channel: [ val(meta), ["redefined-xenium-bundle"] ]
+    segmentation_csv   = BAYSOR_RUN.out.segmentation
+                            .map { meta, csv, _polygons -> tuple(meta, csv) }  // channel: [ val(meta), path(segmentation.csv) ]
 }

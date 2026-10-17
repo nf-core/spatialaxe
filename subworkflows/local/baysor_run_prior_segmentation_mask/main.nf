@@ -80,6 +80,8 @@ workflow BAYSOR_RUN_PRIOR_SEGMENTATION_MASK {
     ch_redefined_bundle = XENIUMRANGER_IMPORTSEGMENTATION.out.outs
 
     emit:
-    coordinate_space = ch_coordinate_space // channel: [ "pixels" ]
-    redefined_bundle = ch_redefined_bundle // channel: [ val(meta), ["redefined-xenium-bundle"] ]
+    coordinate_space   = ch_coordinate_space // channel: [ "pixels" ]
+    redefined_bundle   = ch_redefined_bundle // channel: [ val(meta), ["redefined-xenium-bundle"] ]
+    segmentation_csv   = BAYSOR_RUN.out.segmentation
+                            .map { meta, csv, _polygons -> tuple(meta, csv) }  // channel: [ val(meta), path(segmentation.csv) ]
 }

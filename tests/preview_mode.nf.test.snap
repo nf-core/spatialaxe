@@ -2,18 +2,6 @@
     "-profile test stub": {
         "content": [
             {
-                "BAYSOR_CREATE_DATASET": {
-                    "baysor": "0.7.1"
-                },
-                "BAYSOR_PREVIEW": {
-                    "baysor": "0.7.1"
-                },
-                "EXTRACT_PREVIEW_DATA": {
-                    "python": "3.14.4"
-                },
-                "PARQUET_TO_CSV": {
-                    "pyarrow": "24.0.0"
-                },
                 "UNTAR": {
                     "untar": 1.34
                 },
@@ -69,18 +57,7 @@
                 "preview/untar/test_run/nucleus_boundaries.csv.gz",
                 "preview/untar/test_run/nucleus_boundaries.parquet",
                 "preview/untar/test_run/transcripts.parquet",
-                "preview/untar/test_run/transcripts.zarr.zip",
-                "preview/utility",
-                "preview/utility/parquet_to_csv",
-                "preview/utility/parquet_to_csv/test_run",
-                "preview/utility/parquet_to_csv/test_run/transcripts.parquet.csv",
-                "preview/utility/preview_data",
-                "preview/utility/preview_data/test_run",
-                "preview/utility/preview_data/test_run/gene_structure_mqc.tsv",
-                "preview/utility/preview_data/test_run/noise_distribution_mqc.tsv",
-                "preview/utility/preview_data/test_run/noise_level_mqc.png",
-                "preview/utility/preview_data/test_run/transcript_plots_mqc.png",
-                "preview/utility/preview_data/test_run/umap_mqc.tsv"
+                "preview/untar/test_run/transcripts.zarr.zip"
             ],
             [
                 ".stub:md5,d41d8cd98f00b204e9800998ecf8427e",
@@ -112,19 +89,13 @@
                 "nucleus_boundaries.csv.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "nucleus_boundaries.parquet:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "transcripts.parquet:md5,d41d8cd98f00b204e9800998ecf8427e",
-                "transcripts.zarr.zip:md5,d41d8cd98f00b204e9800998ecf8427e",
-                "transcripts.parquet.csv:md5,d41d8cd98f00b204e9800998ecf8427e",
-                "gene_structure_mqc.tsv:md5,d41d8cd98f00b204e9800998ecf8427e",
-                "noise_distribution_mqc.tsv:md5,d41d8cd98f00b204e9800998ecf8427e",
-                "noise_level_mqc.png:md5,d41d8cd98f00b204e9800998ecf8427e",
-                "transcript_plots_mqc.png:md5,d41d8cd98f00b204e9800998ecf8427e",
-                "umap_mqc.tsv:md5,d41d8cd98f00b204e9800998ecf8427e"
+                "transcripts.zarr.zip:md5,d41d8cd98f00b204e9800998ecf8427e"
             ]
         ],
         "timestamp": "2026-10-14T12:33:36.957304931",
         "meta": {
             "nf-test": "0.9.5",
-            "nextflow": "26.04.6"
+            "nextflow": "25.04.6"
         }
     }
 }

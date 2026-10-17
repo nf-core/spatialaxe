@@ -7,6 +7,16 @@ report_section_order:
     order: -1001
   "nf-core-spatialaxe-summary":
     order: -1002
+  spatialaxe_pipeline_summary:
+    order: -900
+  spatialaxe_stage_metrics:
+    order: -901
+  spatialaxe_segmentation:
+    order: -902
+  spatialaxe_bundle_qc:
+    order: -903
+  spatialaxe_bundle_qc_post:
+    order: -904
 
 export_plots: true
 

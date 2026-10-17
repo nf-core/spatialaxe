@@ -164,6 +164,10 @@ workflow BAYSOR_RUN_TRANSCRIPTS_PARQUET {
     }
 
     emit:
-    redefined_bundle = XENIUMRANGER_IMPORTSEGMENTATION.out.outs
-    coordinate_space = ch_coordinate_space
+    redefined_bundle   = XENIUMRANGER_IMPORTSEGMENTATION.out.outs
+    coordinate_space   = ch_coordinate_space
+    segmentation_csv   = !baysor_tiling
+                            ? BAYSOR_RUN.out.segmentation
+                                .map { meta, csv, _polygons -> tuple(meta, csv) }
+                            : channel.empty()                        // channel: [ val(meta), path(segmentation.csv) ]
 }
