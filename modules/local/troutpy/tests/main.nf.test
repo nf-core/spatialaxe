@@ -1,0 +1,82 @@
+nextflow_process {
+
+    name "Test Process TROUTPY"
+    script "../main.nf"
+    process "TROUTPY"
+    config "./nextflow.config"
+
+    tag "modules"
+    tag "modules_local"
+    tag "troutpy"
+
+    setup {
+        run("UNTAR") {
+            script "modules/nf-core/untar/main.nf"
+            process {
+                """
+                input[0] = [[], file('https://raw.githubusercontent.com/nf-core/test-datasets/spatialaxe/xenium_bundle.tar.gz', checkIfExists: true)]
+                """
+            }
+        }
+
+        run("SPATIALDATA_WRITE") {
+            script "modules/local/spatialdata/write/main.nf"
+            process {
+                """
+                input[0] = channel.of([
+                        [id: "test_run"],
+                    ]).combine(UNTAR.out.untar.map { it[1] })
+                input[1] = "spatialdata_raw"
+                input[2] = "cells"
+                input[3] = "pixels"
+                """
+            }
+        }
+    }
+
+    test("xenium - spatialdata") {
+
+        when {
+            process {
+                """
+                input[0] = SPATIALDATA_WRITE.out.spatialdata
+                """
+            }
+        }
+
+        then {
+            def report = process.out.report ? file(process.out.report[0][1]) : null
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.spatialdata[0][1]).isDirectory() },
+                { assert new File(report.toString(), 'plots/histogram_cosine_similarity.png').exists() },
+                { assert new File(report.toString(), 'plots/diffusion_results.png').exists() },
+                { assert new File(report.toString(), 'tables/xrna_metadata_var.csv').exists() },
+                { assert snapshot(process.out.versions_troutpy).match() }
+            )
+        }
+    }
+
+    test("xenium - spatialdata - stub") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = SPATIALDATA_WRITE.out.spatialdata
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.spatialdata[0][1]).isDirectory() },
+                { assert file(process.out.report[0][1]).isDirectory() },
+                { assert snapshot(process.out.versions_troutpy).match() }
+            )
+        }
+    }
+
+}
