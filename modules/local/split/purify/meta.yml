@@ -1,0 +1,84 @@
+name: split_purify
+description: >-
+  Purify RNA expression counts using SPLIT and prepared cell-type reference profiles
+  and deconvolution weights.
+keywords:
+  - spatial transcriptomics
+  - spillover
+  - purification
+tools:
+  - split:
+      description: Spatial Purification of Layered Intracellular Transcripts
+      homepage: https://github.com/bdsc-tds/SPLIT
+      documentation: https://github.com/bdsc-tds/SPLIT/tree/v0.3.0
+      doi: 10.1038/s41592-026-03089-8
+      licence: ["GPL-3.0-or-later"]
+input:
+  - - meta:
+        type: map
+        description: Sample metadata containing an id.
+    - counts:
+        type: file
+        description: >-
+          Native 10x cell_feature_matrix.h5. Only Gene Expression features are
+          processed; proteins and control features are excluded. Requires at least
+          two RNA features and two cells, including any zero-count cells.
+          Entirely zero RNA matrices are rejected because SPLIT 0.3.0 cannot handle them.
+        pattern: "*.h5"
+    - reference:
+        type: file
+        description: >-
+          Unquoted TSV with cell_type as its first column and one numeric column
+          per gene. Rows are cell types; columns are genes. Must cover every RNA
+          feature, with at least two cell types. Extra reference genes are allowed.
+          Uses feature IDs by default; task.ext.args may set --gene-key name for
+          gene symbols. Selected identifiers must be unique.
+        pattern: "*.tsv"
+    - weights:
+        type: file
+        description: >-
+          Unquoted TSV with cell_id as its first column and one numeric column per
+          cell type. Must contain exactly the input cells and reference cell types.
+          Values must be finite and nonnegative, with positive total weight per cell.
+          Rows are normalized to sum to one. Primary labels are inferred from the
+          unique largest weight; ties are rejected. Inputs are aligned by identifiers.
+        pattern: "*.tsv"
+output:
+  - purified_counts:
+      - meta:
+          type: map
+          description: Sample metadata.
+      - "${prefix}/matrix.mtx.gz":
+          type: file
+          description: Sparse gene-by-cell purified counts, preserving fractional values.
+          pattern: "*/matrix.mtx.gz"
+      - "${prefix}/features.tsv.gz":
+          type: file
+          description: Ordered feature IDs, names, and feature types, without a header.
+          pattern: "*/features.tsv.gz"
+      - "${prefix}/barcodes.tsv.gz":
+          type: file
+          description: Ordered cell IDs, without a header.
+          pattern: "*/barcodes.tsv.gz"
+  - metadata:
+      - meta:
+          type: map
+          description: Sample metadata.
+      - "${prefix}/cell_metadata.tsv":
+          type: file
+          description: SPLIT cell metadata, including primary type, weight, and purification status.
+          pattern: "*/cell_metadata.tsv"
+  - versions_split:
+      - task.process:
+          type: string
+          description: Process name.
+      - tool:
+          type: string
+          description: Tool name.
+      - version:
+          type: string
+          description: Installed SPLIT version; also emitted to the versions topic.
+authors:
+  - "@nrminor"
+maintainers:
+  - "@nrminor"
