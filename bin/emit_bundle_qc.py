@@ -27,6 +27,9 @@ def extract_bundle_metrics(bundle_path: Path) -> dict:
         # or is a wide-format single-row table
         if "Metric" in df.columns and "Value" in df.columns:
             for _, row in df.iterrows():
+                # Skip empty cells: NaN breaks MultiQC custom content plots
+                if pd.isna(row["Value"]):
+                    continue
                 key = str(row["Metric"]).strip().lower().replace(" ", "_").replace("-", "_")
                 try:
                     metrics[key] = float(row["Value"])
@@ -37,6 +40,8 @@ def extract_bundle_metrics(bundle_path: Path) -> dict:
             for col in df.columns:
                 key = col.strip().lower().replace(" ", "_").replace("-", "_")
                 val = df[col].iloc[0]
+                if pd.isna(val):
+                    continue
                 try:
                     metrics[key] = float(val)
                 except (ValueError, TypeError):

@@ -29,7 +29,7 @@ coordinate/spatialdata/meta/spatialdata/test_run/metadata/tables/**
 
 # xeniumranger's internal secondary analysis (clustering/PCA/UMAP/diffexp) and
 # resegmentation are not run-to-run reproducible; only existence is checked
-xeniumranger/test_run/**
+**/xeniumranger/import_segementation/test_run/**
 
 # spoQC generates thousands of non-deterministic plot/report files; only
 # folder existence is checked in spoqc.nf.test, not individual file content
