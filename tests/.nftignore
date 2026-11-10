@@ -58,6 +58,7 @@ multiqc/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/multi
 # when Xeniumranger's secondary analysis ran that execution, and its pdf/svg
 # plot exports (Plotly/Kaleido) embed a fresh timestamp/random IDs every run
 coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_plots/{svg,pdf,png}/*.{svg,pdf,png}
+multiqc/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_plots/{svg,pdf,png}/*.{svg,pdf,png}
 coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_general_stats.txt
 coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_xenium.txt
 coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/xenium_*.txt
@@ -104,4 +105,6 @@ coordinate/pipeline_qc/summary/mqc_output/spatialaxe_pipeline_summary_mqc.yaml
 coordinate/pipeline_qc/summary/mqc_output/spatialaxe_stage_metrics_mqc.yaml
 coordinate/multiqc/**/multiqc_spatialaxe_bundle_qc_post_table.txt
 multiqc/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_spatialaxe_bundle_qc_post_table.txt
+coordinate/multiqc/**/multiqc_spatialaxe_stage_metrics_plot.txt
+multiqc/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_spatialaxe_stage_metrics_plot.txt
 multiqc/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_general_stats.txt
