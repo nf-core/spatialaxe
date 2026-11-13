@@ -15,6 +15,7 @@ Output: MultiQC custom content YAML files — one table + one bargraph section.
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -24,6 +25,20 @@ import yaml
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def _is_finite_number(val) -> bool:
+    """True for real int/float values that are not NaN or infinite."""
+    return isinstance(val, (int, float)) and not isinstance(val, bool) and math.isfinite(val)
+
+
+def _is_missing(val) -> bool:
+    """True for NaN/inf floats and 'nan' strings, which break MultiQC plots."""
+    if isinstance(val, float):
+        return not math.isfinite(val)
+    if isinstance(val, str):
+        return val.strip().lower() in ("nan", "inf", "-inf", "")
+    return val is None
+
 
 def load_qc_jsons(paths: list[Path]) -> list[dict]:
     """Load QC JSON files from an explicit list of paths, returning a flat list."""
@@ -37,6 +52,10 @@ def load_qc_jsons(paths: list[Path]) -> list[dict]:
                 results.append(data)
         except (json.JSONDecodeError, OSError) as e:
             print(f"WARNING: skipping {p}: {e}", file=sys.stderr)
+    # Drop missing values: a single NaN crashes MultiQC's whole custom_content
+    # module, which removes every custom content section from the report
+    for rec in results:
+        rec["metrics"] = {k: v for k, v in rec.get("metrics", {}).items() if not _is_missing(v)}
     return results
 
 
@@ -56,6 +75,8 @@ def build_general_stats_table(records: list[dict]) -> dict:
     """
     # Collect all metrics across all stages per sample
     sample_metrics: dict[str, dict] = {}
+    # Combined key -> (stage, metric name); stage names may contain underscores
+    key_parts: dict[str, tuple[str, str]] = {}
     for rec in records:
         sample = rec.get("sample_id", "unknown")
         metrics = rec.get("metrics", {})
@@ -65,18 +86,12 @@ def build_general_stats_table(records: list[dict]) -> dict:
         for key, val in metrics.items():
             # Prefix metric with stage to avoid collisions
             sample_metrics[sample][f"{stage}_{key}"] = val
-
-    # Build headers and data
-    # Discover all metric keys
-    all_keys = set()
-    for m in sample_metrics.values():
-        all_keys.update(m.keys())
+            key_parts[f"{stage}_{key}"] = (stage, key)
 
     headers = {}
-    for key in sorted(all_keys):
+    for key in sorted(key_parts):
         # Determine header attributes
-        stage_prefix = key.split("_")[0] if "_" in key else ""
-        metric_name = key.split("_", 1)[1] if "_" in key else key
+        stage_prefix, metric_name = key_parts[key]
         headers[key] = {
             "title": metric_name.replace("_", " ").title(),
             "description": f"{stage_prefix}: {metric_name}",
@@ -113,11 +128,12 @@ def build_bargraph_section(grouped: dict[str, list[dict]]) -> dict:
             if sample not in data:
                 data[sample] = {}
             for key, val in metrics.items():
+                if not _is_finite_number(val):
+                    continue
                 cat_key = f"{stage}_{key}"
                 if cat_key not in categories:
                     categories[cat_key] = {"name": f"{stage}: {key.replace('_', ' ')}"}
-                if isinstance(val, (int, float)):
-                    data[sample][cat_key] = val
+                data[sample][cat_key] = val
 
     return {
         "id": "spatialaxe_stage_metrics",

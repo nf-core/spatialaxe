@@ -99,6 +99,10 @@
                 "coordinate/untar/test_run/nucleus_boundaries.parquet",
                 "coordinate/untar/test_run/transcripts.parquet",
                 "coordinate/untar/test_run/transcripts.zarr.zip",
+                "coordinate/xeniumranger",
+                "coordinate/xeniumranger/import_segementation",
+                "coordinate/xeniumranger/import_segementation/test_run",
+                "coordinate/xeniumranger/import_segementation/test_run/experiment.xenium",
                 "multiqc",
                 "multiqc/multiqc_data",
                 "multiqc/multiqc_data/.stub",
@@ -106,10 +110,7 @@
                 "multiqc/multiqc_plots/.stub",
                 "multiqc/multiqc_report.html",
                 "pipeline_info",
-                "pipeline_info/nf_core_spatialaxe_software_mqc_versions.yml",
-                "xeniumranger",
-                "xeniumranger/test_run",
-                "xeniumranger/test_run/experiment.xenium"
+                "pipeline_info/nf_core_spatialaxe_software_mqc_versions.yml"
             ],
             [
                 ".stub:md5,d41d8cd98f00b204e9800998ecf8427e",
@@ -125,7 +126,7 @@
                 "multiqc_report.html:md5,d41d8cd98f00b204e9800998ecf8427e"
             ]
         ],
-        "timestamp": "2026-10-20T14:21:47.275873635",
+        "timestamp": "2026-10-23T18:04:27.371952804",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.04.6"
