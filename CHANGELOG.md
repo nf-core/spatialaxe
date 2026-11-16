@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Added`
 
+### `Fixed`
+
+- `emit_bundle_qc.py` and `emit_pipeline_qc.py` were not taken NaNs into account which leads to problems with MultiQC
+- `modules.config` had still the old name `XENIUMRANGER_IMPORT_SEGMENTATION` which was changed to `XENIUMRANGER_IMPORTSEGMENTATION`
+- container in `modules/nf-core/multiqc/main.nf` was incorrect
+
+### `Dependencies`
+
+### `Deprecated`
+
+## 1.0.1
+
+### `Added`
+
 - Added the entire **spoQC tool and subworkflow**: `subworkflows/local/spoqc/main.nf` plus 31 new local modules under `modules/local/spoQC/` (`ambient`, `analysis_category`, `analysis_cluster`, `analysis_overview`, `annotation`, `bubble`, `cell`, `cellcycle`, `combine_masks`, `doublet`, `finalreport`, `general`, `hqcr_celltype`, `hqcr_ident`, `hqpr_bounding_box`, `hqpr_celltype`, `hqpr_clustering`, `hqpr_metrices`, `hqpr_refinement`, `hqtr_ac`, `hqtr_bounding_box`, `hqtr_celltype`, `hqtr_clustering`, `hqtr_metrices`, `hqtr_qv`, `hqtr_refinement`, `marker`, `model`, `transcript`, `void`, `whole_slide`), each with its own `main.nf`, `meta.yml`, and nf-test suite (`tests/main.nf.test` + snapshot).
 - Wired spoQC into `workflows/spatialaxe.nf`.
 - Added `bin/spatialdata_write.py` support for spoQC's SpatialData output.

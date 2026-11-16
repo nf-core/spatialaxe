@@ -816,7 +816,7 @@ workflow SPATIALAXE {
 
     ch_multiqc_files = ch_multiqc_files.mix(ch_collated_versions)
 
-    // Issue #208: Add pipeline QC custom content to MultiQC (always, regardless of mode)
+    // Add pipeline QC custom content to MultiQC (always, regardless of mode)
     ch_multiqc_files = ch_multiqc_files.mix(
         ch_pipeline_qc_reports.collect().ifEmpty([])
     )
