@@ -1,0 +1,61 @@
+nextflow_process {
+
+    name "Test Process RESOLVI"
+    script "../main.nf"
+    process "RESOLVI"
+    config "./nextflow.config"
+
+    tag "modules"
+    tag "modules_local"
+    tag "resolvi"
+
+    setup {
+        run("MAKE_XENIUM") {
+            script "modules/local/resolvi/tests/setup.nf"
+            process {
+                """
+                input[0] = [id: "synthetic"]
+                """
+            }
+        }
+    }
+
+    test("synthetic Xenium") {
+        when {
+            process {
+                """
+                input[0] = MAKE_XENIUM.out.xenium
+                """
+            }
+        }
+        then {
+            assertAll(
+                { assert process.success },
+                { assert process.out.h5ad[0][0] == [id: "synthetic"] },
+                { assert file(process.out.h5ad[0][1]).name == "corrected.resolvi.h5ad" },
+                { assert file(process.out.h5ad[0][1]).size() > 0 },
+                { assert file(process.out.versions[0]).text.contains("scviva-tools:") }
+            )
+        }
+    }
+
+    test("synthetic Xenium - stub") {
+        options "-stub"
+        when {
+            process {
+                """
+                input[0] = MAKE_XENIUM.out.xenium
+                """
+            }
+        }
+        then {
+            assertAll(
+                { assert process.success },
+                { assert process.out.h5ad[0][0] == [id: "synthetic"] },
+                { assert file(process.out.h5ad[0][1]).name == "corrected.resolvi.h5ad" },
+                { assert file(process.out.h5ad[0][1]).isFile() },
+                { assert file(process.out.versions[0]).text.contains("scviva-tools:") }
+            )
+        }
+    }
+}

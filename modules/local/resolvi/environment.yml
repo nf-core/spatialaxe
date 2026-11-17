@@ -1,0 +1,9 @@
+---
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - conda-forge::pooch=1.9.0
+  - python=3.12
+  - pip:
+      - scviva-tools==0.1.7
