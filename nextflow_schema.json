@@ -192,28 +192,6 @@
                     "type": "boolean",
                     "description": "Whether to enhance the morphology.ome.tif file."
                 },
-                "segger_accelerator": {
-                    "type": "string",
-                    "default": "cpu",
-                    "enum": ["cpu", "cuda"],
-                    "description": "Device used for training. (e.g., cuda for GPU or cpu)"
-                },
-                "segger_knn_method": {
-                    "type": "string",
-                    "default": "kd_tree",
-                    "enum": ["kd_tree", "cuda"],
-                    "description": "Method for KNN computation. (e.g., cuda for GPU-based computation)"
-                },
-                "segger_num_workers": {
-                    "type": "integer",
-                    "default": 4,
-                    "description": "Number of data-loader workers for Segger."
-                },
-                "segger_model": {
-                    "type": "string",
-                    "format": "file-path",
-                    "description": "Path to a pre-trained Segger model checkpoint."
-                },
                 "format": {
                     "type": "string",
                     "default": "xenium",
@@ -358,39 +336,41 @@
                     "default": 2,
                     "description": "Number of tiles along the y axis for cell-type separability."
                 },
-                "tile_width": {
-                    "type": "integer",
-                    "description": "Width of the tiles in pixels",
-                    "default": 120
-                },
-                "tile_height": {
-                    "type": "integer",
-                    "description": "Height of the tiles in pixels",
-                    "default": 120
-                },
-                "batch_size_train": {
-                    "type": "integer",
-                    "description": "Number of samples to process per training batch",
-                    "default": 4
-                },
-                "devices": {
-                    "type": "integer",
-                    "description": "Number of devices (GPUs) to use during training",
-                    "default": 4
-                },
                 "max_epochs": {
                     "type": "integer",
-                    "description": "Number of training epochs",
-                    "default": 200
+                    "description": "Number of segger training epochs. Uses the segger default if not set."
                 },
-                "batch_size_predict": {
+                "segger_buffer_ratio": {
+                    "type": "number",
+                    "description": "Segger receptive field (gamma): buffer around each staining outline, relative to its equivalent-circle radius. Larger favours transcript recovery, smaller favours specificity. Try 0.05 for cell masks and 0.5-2 for nucleus-only inputs."
+                },
+                "segger_segmentation_loss_weight_end": {
+                    "type": "number",
+                    "description": "Final weight of the segger segmentation loss. Segger uses 0.5 by default; use 1.0 for dense datasets such as Atera."
+                },
+                "segger_transcripts_max_k": {
                     "type": "integer",
-                    "description": "Number of samples to process per batch during prediction",
-                    "default": 1
+                    "description": "Maximum neighbours per transcript in the segger transcript graph, including the self-loop."
                 },
-                "cc_analysis": {
-                    "type": "boolean",
-                    "description": "Whether to use connected components for grouping transcripts without direct nucleus association"
+                "segger_transcripts_max_dist": {
+                    "type": "number",
+                    "description": "Maximum edge length in microns in the segger transcript graph."
+                },
+                "segger_max_nodes_per_tile": {
+                    "type": "integer",
+                    "description": "Segger tile capacity in nodes. Lower it for GPUs with less memory."
+                },
+                "segger_max_edges_per_batch": {
+                    "type": "integer",
+                    "description": "Segger batch edge budget. Lower it for GPUs with less memory; raise it (e.g. 4000000) for dense datasets such as Atera."
+                },
+                "segger_tiling_margin_training": {
+                    "type": "number",
+                    "description": "Segger tile margin in microns during training. Keep about one cell diameter."
+                },
+                "segger_tiling_margin_prediction": {
+                    "type": "number",
+                    "description": "Segger tile margin in microns during prediction. Keep about one cell diameter."
                 },
                 "buffer_samples": {
                     "type": "boolean",

@@ -148,10 +148,7 @@ For more details about the output files and reports, please refer to the
 | Cellpose                  | CPU     | 1.3h / 2.3h / 6.5h        | 161 GB / 426 GB / 1115 GB  |
 | StarDist                  | GPU     | 1m / 4m / 7m              | 5 GB / 12 GB / 18 GB       |
 | StarDist                  | CPU     | 5m / 6m / 7m              | 18 GB / 18 GB / 18 GB      |
-| Segger (create_dataset)   | GPU     | 2m / 9m / 31m             | 1.7 GB / 14 GB / 50 GB     |
-| Segger (create_dataset)   | CPU     | 13m / 21m / 46m           | 13 GB / 19 GB / 49 GB      |
-| Segger (train)            | GPU     | 10m / 43m / 2.9h          | 30 GB / 33 GB / 60 GB      |
-| Segger (predict)          | GPU     | 2m / 16m / 59m            | 10 GB / 25 GB / 87 GB      |
+| Segger (segment)¹         | GPU     | 2m                        | 69 GB                      |
 | Baysor (whole-image)      | CPU     | 2m / 30m / 17h            | 6 GB / 10 GB / 650 GB      |
 | Baysor (tiled)            | CPU     | 1m / 18m / 13h            | 0.2 GB / 34 GB / 530 GB    |
 | Proseg                    | CPU     | 1m / 18m / 6.8h           | 279 MB / 3.8 GB / 136 GB   |
@@ -160,7 +157,7 @@ For more details about the output files and reports, please refer to the
 | Ficture (preprocess)      | CPU     | 3m / 4m / 13m             | 331 MB / 357 MB / 21 GB    |
 
 - Cellpose GPU vs CPU: 35x faster on GPU (4m median vs 2.3h), 16x less memory (26 GB vs 426 GB)
-- Segger: Only tool that truly requires GPU for all 3 steps (create_dataset, train, predict)
+- Segger: requires a CUDA 13 GPU. ¹One Xenium sample (1.1M transcripts, 1× A100 80 GB); training and prediction run in one step
 - StarDist: Very fast on CPU, GPU is not necessary to run its default model
 
 ## Credits

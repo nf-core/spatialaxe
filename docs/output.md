@@ -81,12 +81,10 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
       - `xr-cell-polygons.geojson` 2D polygons for each cell in GeoJSON format. These are flattened from 3D
       - `xr-transcript-metadata.csv` transcript ids, genes, revised positions, assignment probability
   - `segger/`
-    - `create_dataset/`
-      - `${meta.id}/` directory to save the processed Segger dataset (in PyTorch Geometric format)
-    - `train/`
-      - `${meta.id}/` directory to save the trained model and checkpoints
-    - `predict/`
-      - `${meta.id}/` directory to save the segmentation results, including cell boundaries and associations
+    - `segment/`
+      - `${meta.id}/segger_segmentation.parquet` per-transcript cell assignments
+      - `${meta.id}/export/xenium_transcript_assignment.csv` transcript assignment for xeniumranger import-segmentation
+      - `${meta.id}/export/xenium_cell_boundaries.geojson` cell boundary polygons for xeniumranger import-segmentation
   - `baysor/`
     - `run/`
       - `*segmentation.csv` results of segmentation

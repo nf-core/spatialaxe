@@ -96,7 +96,6 @@ workflow SPATIALAXE {
     reference_annotations
     relabel_genes
     run_qc
-    segger_model
     segmentation_mask
     sharpen_tiff
     stardist_nuclei_model
@@ -583,8 +582,6 @@ workflow SPATIALAXE {
 
             SEGGER_CREATE_TRAIN_PREDICT(
                 ch_bundle_path,
-                ch_transcripts_file,
-                segger_model,
                 expansion_distance,
             )
             ch_redefined_bundle = SEGGER_CREATE_TRAIN_PREDICT.out.redefined_bundle

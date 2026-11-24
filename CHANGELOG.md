@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Added`
 
+- Segger params that map to `segger segment` options. Each defaults to `null`, which keeps the segger default:
+  - `--segger_buffer_ratio`: receptive field γ (`--prediction-graph-buffer-ratio`). Try 0.05 for cell masks and 0.5-2 for nucleus-only inputs.
+  - `--segger_segmentation_loss_weight_end`: final segmentation-loss weight (`--segmentation-loss-weight-end`), 1.0 for dense data such as Atera.
+  - `--segger_transcripts_max_k` and `--segger_transcripts_max_dist`: transcript graph neighbours and edge length in microns.
+  - `--segger_max_nodes_per_tile` and `--segger_max_edges_per_batch`: lower them for GPUs with less memory, or raise the edge budget (e.g. 4000000) for dense data.
+  - `--segger_tiling_margin_training` and `--segger_tiling_margin_prediction`: tile margins in microns, about one cell diameter.
+- `SEGGER_SEGMENT` stops with an error when it runs without a GPU (`-profile gpu` or `--use_gpu`).
+
+### `Changed`
+
+- Update segger to v1.0.0 (`sailmskcc/segger:1.0.0`). One `SEGGER_SEGMENT` process runs `segger segment --export xeniumranger` and replaces `SEGGER_CREATE_DATASET`, `SEGGER_TRAIN`, `SEGGER_PREDICT`, `SEGGER2XR` and their wrapper scripts.
+- `--max_epochs` now maps to `segger segment --n-epochs` and defaults to the segger default.
+
 ### `Fixed`
 
 - `emit_bundle_qc.py` and `emit_pipeline_qc.py` were not taken NaNs into account which leads to problems with MultiQC
@@ -16,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### `Dependencies`
 
 ### `Deprecated`
+
+### `Removed`
+
+- Segger params `--segger_model`, `--segger_accelerator`, `--segger_knn_method`, `--segger_num_workers`, `--tile_width`, `--tile_height`, `--batch_size_train`, `--batch_size_predict`, `--devices` and `--cc_analysis`. Segger v1 trains a model per sample and has no equivalent options.
 
 ## 1.0.1
 
