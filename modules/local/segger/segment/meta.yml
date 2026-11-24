@@ -1,0 +1,78 @@
+name: "segger_segment"
+description: Train segger on a sample and segment it, then export the result for xeniumranger import-segmentation.
+keywords:
+  - segmentation
+  - xenium
+  - transcripts
+tools:
+  - "segger":
+      description: "Segger assigns transcripts to cells with a graph neural network trained per sample."
+      homepage: "https://github.com/dpeerlab/segger"
+      documentation: "https://segger-segmentation.readthedocs.io/en/latest/"
+      tool_dev_url: "https://github.com/dpeerlab/segger"
+      doi: "10.1101/2025.03.14.643160"
+      licence: ["MIT"]
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. `[ id:'sample' ]`
+    - bundle:
+        type: directory
+        description: Xenium output bundle
+
+output:
+  segmentation:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information
+      - "${prefix}/segger_segmentation.parquet":
+          type: file
+          description: Per-transcript segger cell assignments
+          pattern: "segger_segmentation.parquet"
+  transcript_assignment:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information
+      - "${prefix}/export/xenium_transcript_assignment.csv":
+          type: file
+          description: Transcript assignment CSV for xeniumranger import-segmentation
+          pattern: "xenium_transcript_assignment.csv"
+  viz_polygons:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information
+      - "${prefix}/export/xenium_cell_boundaries.geojson":
+          type: file
+          description: Cell boundary polygons for xeniumranger import-segmentation
+          pattern: "xenium_cell_boundaries.geojson"
+  versions_segger:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - segger:
+          type: string
+          description: The tool name
+      - "python -c 'from importlib.metadata import version; print(version(\"segger\"))'":
+          type: eval
+          description: The expression to obtain the version of the tool
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - segger:
+          type: string
+          description: The tool name
+      - "python -c 'from importlib.metadata import version; print(version(\"segger\"))'":
+          type: eval
+          description: The expression to obtain the version of the tool
+
+authors:
+  - "@tobiaspk"
+  - "@khersameesh24"
+maintainers:
+  - "@tobiaspk"
+  - "@khersameesh24"

@@ -73,7 +73,6 @@ workflow NFCORE_SPATIALAXE {
         params.reference_annotations,
         params.relabel_genes,
         params.run_qc,
-        params.segger_model,
         params.segmentation_mask,
         params.sharpen_tiff,
         params.stardist_nuclei_model,
