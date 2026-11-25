@@ -1,0 +1,87 @@
+name: "reconstruct_patches"
+description: Reconstruct the patches directory structure from individually staged per-patch Baysor segmentation files for downstream stitching.
+keywords:
+  - baysor
+  - xenium
+  - patches
+  - stitching
+  - segmentation
+tools:
+  - "coreutils":
+      description: |
+        GNU core utilities (cp, mkdir) used to assemble the patches directory.
+      homepage: "https://www.gnu.org/software/coreutils/"
+      documentation: "https://www.gnu.org/software/coreutils/manual/coreutils.html"
+      tool_dev_url: "https://git.savannah.gnu.org/cgit/coreutils.git"
+      doi: "no DOI available"
+      licence: ["GPL-3.0-or-later"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'sample1' ]
+    - grid_json:
+        type: file
+        description: patch_grid.json describing the tile layout from XENIUM_PATCH_DIVIDE.
+        pattern: "*.json"
+        ontologies: []
+    - patch_ids:
+        type: list
+        description: |
+          Ordered list of patch identifiers
+          (e.g. patch_0000, patch_0001, ...).
+    - csv_files:
+        type: list
+        description: Per-patch Baysor segmentation.csv files, one per patch_id.
+        pattern: "*.csv"
+        ontologies: []
+    - geojson_files:
+        type: list
+        description: Per-patch Baysor segmentation_polygons.json files, one per patch_id.
+        pattern: "*.json"
+        ontologies: []
+
+output:
+  patches_dir:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'sample1' ]
+      - "patches":
+          type: directory
+          description: |
+            Reconstructed patches directory containing patch_grid.json plus one
+            subdirectory per patch with segmentation.csv and
+            segmentation_polygons.json.
+          pattern: "patches"
+  versions_coreutils:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - coreutils:
+          type: string
+          description: The tool name
+      - "cp --version | head -n1 | awk '{print $NF}'":
+          type: eval
+          description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - coreutils:
+          type: string
+          description: The tool name
+      - "cp --version | head -n1 | awk '{print $NF}'":
+          type: eval
+          description: The expression to obtain the version of the tool
+
+authors:
+  - "@an-altosian"
+maintainers:
+  - "@an-altosian"

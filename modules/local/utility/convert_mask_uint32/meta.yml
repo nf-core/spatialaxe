@@ -1,0 +1,128 @@
+name: "convert_mask_uint32"
+description: Convert a segmentation mask TIFF to uint32 dtype for downstream tools that require uint32 (e.g. XeniumRanger import-segmentation).
+keywords:
+  - xenium
+  - segmentation
+  - mask
+  - tiff
+  - uint32
+tools:
+  - "python":
+      description: |
+        Python programming language interpreter, used here to load and rewrite
+        the segmentation mask with the required dtype.
+      homepage: "https://www.python.org/"
+      documentation: "https://docs.python.org/3/"
+      tool_dev_url: "https://github.com/python/cpython"
+      doi: "no DOI available"
+      licence: ["PSF-2.0"]
+      identifier: ""
+  - "tifffile":
+      description: |
+        Read and write TIFF files, including BigTIFF and OME-TIFF, in Python.
+      homepage: "https://github.com/cgohlke/tifffile"
+      documentation: "https://github.com/cgohlke/tifffile"
+      tool_dev_url: "https://github.com/cgohlke/tifffile"
+      doi: "no DOI available"
+      licence: ["BSD-3-Clause"]
+      identifier: ""
+  - "numpy":
+      description: |
+        The fundamental package for scientific computing with Python,
+        used to cast the mask array to uint32.
+      homepage: "https://numpy.org/"
+      documentation: "https://numpy.org/doc/stable/"
+      tool_dev_url: "https://github.com/numpy/numpy"
+      doi: "10.1038/s41586-020-2649-2"
+      licence: ["BSD-3-Clause"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'test' ]
+    - mask:
+        type: file
+        description: Segmentation mask TIFF (any integer dtype).
+        pattern: "*.{tif,tiff}"
+        ontologies: []
+
+output:
+  mask:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test' ]
+      - "*_uint32_mask.tif":
+          type: file
+          description: Segmentation mask TIFF cast to uint32.
+          pattern: "*_uint32_mask.tif"
+          ontologies: []
+  versions_python:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "python3 --version | sed 's/Python //'":
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_tifffile:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - tifffile:
+          type: string
+          description: The tool name
+      - "python3 -c 'import tifffile; print(tifffile.__version__)'":
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_numpy:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - numpy:
+          type: string
+          description: The tool name
+      - "python3 -c 'import numpy; print(numpy.__version__)'":
+          type: eval
+          description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "python3 --version | sed 's/Python //'":
+          type: eval
+          description: The expression to obtain the version of the tool
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - tifffile:
+          type: string
+          description: The tool name
+      - "python3 -c 'import tifffile; print(tifffile.__version__)'":
+          type: eval
+          description: The expression to obtain the version of the tool
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - numpy:
+          type: string
+          description: The tool name
+      - "python3 -c 'import numpy; print(numpy.__version__)'":
+          type: eval
+          description: The expression to obtain the version of the tool
+
+authors:
+  - "@an-altosian"
+maintainers:
+  - "@an-altosian"

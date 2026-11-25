@@ -13,21 +13,27 @@
                 "errorMessage": "Sample name must be provided and cannot contain spaces",
                 "meta": ["id"]
             },
-            "fastq_1": {
+            "bundle": {
                 "type": "string",
-                "format": "file-path",
-                "exists": true,
-                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.f(ast)?q\\.gz$",
-                "errorMessage": "FastQ file for reads 1 must be provided, cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+                "pattern": "^\\S+$",
+                "errorMessage": "Please provide a bundle as input data"
             },
-            "fastq_2": {
+            "image": {
                 "type": "string",
-                "format": "file-path",
-                "exists": true,
-                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.f(ast)?q\\.gz$",
-                "errorMessage": "FastQ file for reads 2 cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+                "pattern": "^\\S+$",
+                "errorMessage": "You can provide an image. If you do not then please leave the field empty."
+            },
+            "annotation": {
+                "type": "string",
+                "pattern": "^\\S+$",
+                "errorMessage": "You can provide an annotation. If you do not then please leave the field empty."
+            },
+            "stainings": {
+                "type": "string",
+                "pattern": "^\\S+$",
+                "errorMessage": "The indices of the image channels of the individual stainings you want to analyse."
             }
         },
-        "required": ["sample", "fastq_1"]
+        "required": ["sample", "bundle"]
     }
 }

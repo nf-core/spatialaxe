@@ -1,0 +1,61 @@
+name: "collect_pipeline_qc"
+description: |
+  Collect per-sample, per-stage QC JSON records emitted by pipeline modules,
+  merge them into a single JSON file and render cross-sample MultiQC custom
+  content (summary table and per-metric bar graphs).
+keywords:
+  - qc
+  - multiqc
+  - summary
+  - spatial
+  - xenium
+tools:
+  - "pandas":
+      description: |
+        Python library providing fast, flexible data structures for data analysis.
+      homepage: "https://pandas.pydata.org/"
+      documentation: "https://pandas.pydata.org/docs/"
+      tool_dev_url: "https://github.com/pandas-dev/pandas"
+      doi: "10.5281/zenodo.3509134"
+      licence: ["BSD-3-Clause"]
+      identifier: ""
+  - "pyyaml":
+      description: YAML parser and emitter for Python.
+      homepage: "https://pyyaml.org/"
+      documentation: "https://pyyaml.org/wiki/PyYAMLDocumentation"
+      tool_dev_url: "https://github.com/yaml/pyyaml"
+      doi: "no DOI available"
+      licence: ["MIT"]
+      identifier: ""
+
+input:
+  - qc_jsons:
+      type: file
+      description: |
+        Per-sample QC JSON files emitted by upstream pipeline stages
+        (e.g. EMIT_BUNDLE_QC, EMIT_SEGMENTATION_QC). Each file holds a
+        single QC record or a list of records.
+      pattern: "*.json"
+      ontologies:
+        - edam: http://edamontology.org/format_3464 # JSON
+
+output:
+  mqc_custom_content:
+    - "mqc_output/*_mqc.yaml":
+        type: file
+        description: MultiQC custom content YAML files (pipeline summary table and per-metric bar graphs).
+        pattern: "mqc_output/*_mqc.yaml"
+        ontologies:
+          - edam: http://edamontology.org/format_3750 # YAML
+  merged_qc:
+    - "all_qc_records.json":
+        type: file
+        description: All loaded QC records merged into a single JSON array.
+        pattern: "all_qc_records.json"
+        ontologies:
+          - edam: http://edamontology.org/format_3464 # JSON
+
+authors:
+  - "@f641l"
+maintainers:
+  - "@f641l"
