@@ -102,6 +102,8 @@
                     "description": "Gene synonyms that may have been counted as off-targets but simply differ in name.",
                     "format": "file-path"
                 },
+                "denoist_tx_x": { "type": "string", "default": "x", "description": "DenoIST transcript x-coordinate column." },
+                "denoist_tx_y": { "type": "string", "default": "y", "description": "DenoIST transcript y-coordinate column." },
                 "email": {
                     "type": "string",
                     "description": "Email address for completion summary.",

@@ -1,0 +1,68 @@
+name: "denoist"
+description: Denoise image-based spatial transcriptomics data with DenoIST.
+keywords:
+  - spatial transcriptomics
+  - xenium
+  - denoising
+  - contamination
+tools:
+  - "DenoIST":
+      description: Denoising image-based spatial transcriptomics data using local background estimation.
+      homepage: "https://bioconductor.org/packages/DenoIST"
+      documentation: "https://bioconductor.org/packages/DenoIST"
+      tool_dev_url: "https://github.com/aaronkwc/DenoIST"
+      doi: "10.18129/B9.bioc.DenoIST"
+      licence: ["GPL-3.0"]
+      identifier: "bioconductor-denoist"
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information.
+          e.g. `[ id:'sample1' ]`
+    - mat:
+        type: file
+        description: |
+          RDS file containing either a count matrix (genes x cells) or a
+          SpatialExperiment object.
+        pattern: "*.rds"
+        ontologies: []
+    - tx:
+        type: file
+        description: RDS file containing the transcript data frame.
+        pattern: "*.rds"
+        ontologies: []
+    - coords:
+        type: file
+        description: Optional RDS file containing cell centroid coordinates. Required for count matrix input and omitted for SpatialExperiment input.
+        pattern: "*.rds"
+        ontologies: []
+        optional: true
+
+output:
+  denoised_data:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information.
+      - "*_denoised.rds":
+          type: file
+          description: DenoIST result containing adjusted_counts, memberships, and params.
+          pattern: "*_denoised.rds"
+          ontologies: []
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from.
+      - denoist:
+          type: string
+          description: DenoIST version.
+
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from.
+      - denoist:
+          type: string
+          description: DenoIST version.
