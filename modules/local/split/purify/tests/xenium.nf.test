@@ -1,0 +1,61 @@
+nextflow_process {
+    name "Test SPLIT_PURIFY with the Xenium samplesheet fixture"
+    script "../main.nf"
+    process "SPLIT_PURIFY"
+    config "./nextflow.config"
+
+    tag "modules"
+    tag "modules_local"
+    tag "split"
+    tag "split/purify"
+
+    setup {
+        run("UNTAR") {
+            script "modules/nf-core/untar/main.nf"
+            process {
+                """
+                input[0] = [[id: 'mouse'], file('https://raw.githubusercontent.com/nf-core/test-datasets/spatialaxe/xenium_bundle.tar.gz', checkIfExists: true)]
+                """
+            }
+        }
+        run("SPLIT_TEST_INPUTS") {
+            script "modules/local/split/purify/tests/setup.nf"
+            process {
+                """
+                input[0] = UNTAR.out.untar.map { meta, bundle -> bundle.resolve('cell_feature_matrix.h5') }
+                input[1] = file("${projectDir}/modules/local/split/purify/tests/fixtures.R")
+                """
+            }
+        }
+    }
+
+    test("processes real mouse counts with explicitly synthetic reference profiles and weights") {
+        when {
+            process {
+                """
+                input[0] = SPLIT_TEST_INPUTS.out.fixture.map { fixture ->
+                    tuple([id: 'mouse'], fixture.resolve('counts.h5'), fixture.resolve('reference.tsv'), fixture.resolve('weights.tsv'))
+                }
+                """
+            }
+        }
+        then {
+            assert process.success
+            def counts = process.out.purified_counts[0]
+            def matrix = new java.util.zip.GZIPInputStream(file(counts[1]).newInputStream()).getText('UTF-8')
+            def rows = matrix.readLines().findAll { !it.startsWith('%') }
+            // The tiny fixture has 5006 RNA features and 23 cells, including empty cells.
+            assert rows[0].tokenize()[0..1] == ['5006', '23']
+            assert rows.drop(1).size() == rows[0].tokenize()[2].toInteger()
+            assert rows.drop(1).every { it.tokenize()[2].toDouble() >= 0 }
+            // Raw totals: Defa5=346, Igha=71, Itln1=16. Artificial profiles retain
+            // 0.9 of Defa5 and 0.5 of each other gene: 346*0.9 + 87*0.5 = 354.9.
+            assert Math.abs(rows.drop(1).collect { it.tokenize()[2].toDouble() }.sum() - 354.9) < 1e-8
+            def features = new java.util.zip.GZIPInputStream(file(counts[2]).newInputStream()).getText('UTF-8').readLines()
+            assert features.size() == 5006
+            assert features.every { it.endsWith('\tGene Expression') }
+            assert new java.util.zip.GZIPInputStream(file(counts[3]).newInputStream()).getText('UTF-8').readLines().size() == 23
+            assert file(process.out.metadata[0][1]).readLines().size() == 24
+        }
+    }
+}
