@@ -78,6 +78,7 @@ nextflow_pipeline {
                 'coordinate/untar/test_run/**',
                 'coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_plots',
                 'coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_plots/**',
+                'multiqc/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_plots/*/*',
                 'coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_general_stats.txt',
                 'coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/multiqc_xenium.txt',
                 'coordinate/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_data/xenium_*.txt',
