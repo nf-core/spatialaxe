@@ -1,0 +1,115 @@
+name: "xenium_patch_divide"
+description: Split transcripts.parquet into overlapping spatial patches for tiled segmentation processing.
+keywords:
+  - xenium
+  - patches
+  - tiling
+  - transcripts
+  - parquet
+tools:
+  - "python":
+      description: |
+        Python programming language interpreter.
+      homepage: "https://www.python.org/"
+      documentation: "https://docs.python.org/3/"
+      tool_dev_url: "https://github.com/python/cpython"
+      doi: "no DOI available"
+      licence: ["PSF-2.0"]
+      identifier: ""
+  - "pyarrow":
+      description: |
+        Python bindings for Apache Arrow, used to read and write Parquet
+        files efficiently.
+      homepage: "https://arrow.apache.org/docs/python/"
+      documentation: "https://arrow.apache.org/docs/python/"
+      tool_dev_url: "https://github.com/apache/arrow"
+      doi: "no DOI available"
+      licence: ["Apache-2.0"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'test' ]
+    - transcripts:
+        type: file
+        description: transcripts.parquet file from the Xenium bundle.
+        pattern: "*.parquet"
+        ontologies: []
+    - image:
+        type: file
+        description: Morphology image (used to read full-resolution dimensions).
+        pattern: "*.{ome.tif,ome.tiff,tif,tiff}"
+        ontologies: []
+
+output:
+  grid:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test' ]
+      - "patches/patch_grid.json":
+          type: file
+          description: JSON file describing the patch grid (offsets, sizes, overlaps).
+          pattern: "patches/patch_grid.json"
+          ontologies: []
+  patch_transcripts:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test' ]
+      - "patches/patch_*/transcripts.parquet":
+          type: file
+          description: Per-patch transcripts.parquet files (one per patch).
+          pattern: "patches/patch_*/transcripts.parquet"
+          ontologies: []
+  versions_python:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "python3 --version | sed 's/Python //'":
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_pyarrow:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - pyarrow:
+          type: string
+          description: The tool name
+      - 'python3 -c "import pyarrow; print(pyarrow.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "python3 --version | sed 's/Python //'":
+          type: eval
+          description: The expression to obtain the version of the tool
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - pyarrow:
+          type: string
+          description: The tool name
+      - 'python3 -c "import pyarrow; print(pyarrow.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+
+authors:
+  - "@an-altosian"
+maintainers:
+  - "@an-altosian"

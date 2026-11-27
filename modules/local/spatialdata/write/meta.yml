@@ -1,0 +1,40 @@
+name: spatialdata_write
+description: Convert 10x Xenium data bundle into a SpatialData bundle.
+keywords:
+  - data
+  - spatialomics
+tools:
+  - custom:
+      description: An open and universal framework for processing spatial omics data
+      homepage: https://github.com/scverse/spatialdata
+      documentation: https://spatialdata.scverse.org/en/latest/
+      licence: ["BSD 3-Clause"]
+input:
+  - meta:
+      type: map
+      description: |
+        Groovy Map containing sample information
+        e.g. [ id:'sample' ]
+  - bundle:
+      type: folder
+      description: |
+        Path to spatialomics data bundle (e.g., from Xeniumranger)
+
+output:
+  - spatialdata:
+      - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'sample' ]
+      - "${outputfolder}":
+        type: folder
+        description: Spatialdata folder
+        pattern: "${meta.id}/spatialdata/*"
+  - versions:
+      type: file
+      description: File containing software versions
+      pattern: "versions.yml"
+
+authors:
+  - "@heylf"

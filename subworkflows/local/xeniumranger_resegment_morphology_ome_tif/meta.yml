@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "xeniumranger_resegment_morphology_ome_tif"
+description: |
+  The resegment pipeline allows you to generate a new segmentation of the morphology image space by rerunning the
+  Xenium Onboard Analysis (XOA) segmentation algorithms with modified parameters.
+keywords:
+  - xenium
+  - xeniumranger resegment
+  - xeniumranger import-segmentation
+  - expansion distance
+  - cell segmentation
+  - nucleus segmentation
+components:
+  - xeniumranger/import/segmentation
+  - xeniumranger/resegment
+input:
+  - ch_bundle_path:
+      description: |
+        Directory containing the raw dataset
+        Structure: [ val(meta), path("path-to-xenium-bundle") ]
+output:
+  - redefined_bundle:
+      description: |
+        the redefined xenium bundle generated with the segmentation results from baysor
+        Structure: [ val(meta), ["redefined-xenium-bundle"] ]
+  - coordinate_space:
+      description: |
+        the coordinate space in which xeniumranger import-segmentation was run
+        Structure: [ val("pixels") ]
+authors:
+  - "@khersameesh24"
+maintainers:
+  - "@khersameesh24"

@@ -1,0 +1,64 @@
+name: "emit_bundle_qc"
+description: |
+  Extract read- and experiment-level QC metrics from a Xenium bundle
+  (metrics_summary.csv, experiment.xenium, transcripts.parquet row count)
+  and emit them as a per-sample QC JSON record for COLLECT_PIPELINE_QC.
+  The stage name defaults to 'bundle_qc' and can be overridden via task.ext.stage.
+keywords:
+  - qc
+  - xenium
+  - spatial
+  - metrics
+  - bundle
+tools:
+  - "pandas":
+      description: |
+        Python library providing fast, flexible data structures for data analysis.
+      homepage: "https://pandas.pydata.org/"
+      documentation: "https://pandas.pydata.org/docs/"
+      tool_dev_url: "https://github.com/pandas-dev/pandas"
+      doi: "10.5281/zenodo.3509134"
+      licence: ["BSD-3-Clause"]
+      identifier: ""
+  - "pyarrow":
+      description: |
+        Python library providing a Pythonic API for Apache Arrow,
+        including fast Parquet and CSV I/O.
+      homepage: "https://arrow.apache.org/docs/python/"
+      documentation: "https://arrow.apache.org/docs/python/"
+      tool_dev_url: "https://github.com/apache/arrow"
+      doi: "no DOI available"
+      licence: ["Apache-2.0"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'test' ]
+    - bundle:
+        type: directory
+        description: |
+          Xenium output bundle directory. Metrics are read from
+          metrics_summary.csv, experiment.xenium and transcripts.parquet
+          when present.
+
+output:
+  qc_json:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test' ]
+      - "${meta.id}_${task.ext.stage ?: 'bundle_qc'}_qc.json":
+          type: file
+          description: Per-sample QC JSON record with sample_id, stage and metrics.
+          pattern: "*_qc.json"
+          ontologies:
+            - edam: http://edamontology.org/format_3464 # JSON
+
+authors:
+  - "@f641l"
+maintainers:
+  - "@f641l"

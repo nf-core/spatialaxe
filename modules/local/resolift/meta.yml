@@ -1,0 +1,64 @@
+name: "resolift"
+description: Upscale large TIFFs using chunk-based image processing and sharpening.
+keywords:
+  - segmentation
+  - spatialomics
+  - image based segmentation
+tools:
+  - "resolift":
+      description: "Upscale large TIFFs using chunk-based image processing and sharpening."
+      homepage: "https://github.com/khersameesh24/ResoLift"
+      documentation: "https://github.com/khersameesh24/ResoLift"
+      tool_dev_url: "https://github.com/khersameesh24/ResoLift"
+      doi: ""
+      licence: ["GNU Public License"]
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing run information
+          e.g. `[ id:'run_id']`
+    - input:
+        type: file
+        description: |
+          Path to the input TIFF file.
+        pattern: ".tiff"
+
+output:
+  enhanced_tiff:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing run information
+            e.g. `[ id:'run_id']`
+      - "${prefix}/morphology.ome.enhanced.tiff":
+          type: file
+          description: Path to save the upscaled TIFF file.
+          pattern: ".tiff"
+  versions_resolift:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "pip show resolift | sed -n 's/^Version: //p'":
+          type: eval
+          description: The expression to obtain the version of the tool
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "pip show resolift | sed -n 's/^Version: //p'":
+          type: eval
+          description: The expression to obtain the version of the tool
+
+authors:
+  - "@kubranarci"
+maintainers:
+  - "@kubranarci"

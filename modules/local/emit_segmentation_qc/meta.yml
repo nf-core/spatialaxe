@@ -1,0 +1,55 @@
+name: "emit_segmentation_qc"
+description: |
+  Compute segmentation QC metrics (cells segmented, mean/median transcripts
+  per cell, transcript assignment rate) from a Baysor segmentation.csv and
+  emit them as a per-sample QC JSON record for COLLECT_PIPELINE_QC.
+keywords:
+  - qc
+  - segmentation
+  - baysor
+  - spatial
+  - xenium
+tools:
+  - "pandas":
+      description: |
+        Python library providing fast, flexible data structures for data analysis.
+      homepage: "https://pandas.pydata.org/"
+      documentation: "https://pandas.pydata.org/docs/"
+      tool_dev_url: "https://github.com/pandas-dev/pandas"
+      doi: "10.5281/zenodo.3509134"
+      licence: ["BSD-3-Clause"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'test' ]
+    - segmentation_csv:
+        type: file
+        description: |
+          Baysor segmentation.csv with per-transcript cell assignments
+          (column 'cell' or 'cell_id'; unassigned transcripts have cell 0).
+        pattern: "*.csv"
+        ontologies:
+          - edam: http://edamontology.org/format_3752 # CSV
+
+output:
+  qc_json:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test' ]
+      - "${meta.id}_segmentation_qc.json":
+          type: file
+          description: Per-sample segmentation QC JSON record with sample_id, stage and metrics.
+          pattern: "*_segmentation_qc.json"
+          ontologies:
+            - edam: http://edamontology.org/format_3464 # JSON
+
+authors:
+  - "@f641l"
+maintainers:
+  - "@f641l"
