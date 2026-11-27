@@ -1,0 +1,82 @@
+name: "baysor_create_dataset"
+description: Subsample a transcripts CSV to create a smaller Baysor input dataset.
+keywords:
+  - xenium
+  - baysor
+  - dataset
+  - transcripts
+  - subsample
+tools:
+  - "python":
+      description: |
+        Python programming language interpreter.
+      homepage: "https://www.python.org/"
+      documentation: "https://docs.python.org/3/"
+      tool_dev_url: "https://github.com/python/cpython"
+      doi: "no DOI available"
+      licence: ["PSF-2.0"]
+      identifier: ""
+  - "baysor":
+      description: |
+        Bayesian Segmentation of Spatial Transcriptomics Data.
+      homepage: "https://kharchenkolab.github.io/Baysor/dev/"
+      documentation: "https://kharchenkolab.github.io/Baysor/dev/"
+      tool_dev_url: "https://github.com/kharchenkolab/Baysor"
+      doi: "10.1038/s41587-021-01044-w"
+      licence: ["MIT"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'test' ]
+    - transcripts:
+        type: file
+        description: Transcripts CSV file to subsample for Baysor dataset creation.
+        pattern: "*.csv"
+        ontologies: []
+  - sample_fraction:
+      type: float
+      description: Fraction of transcripts to retain in the subsampled dataset (0-1).
+
+output:
+  sampled_transcripts:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test' ]
+      - "${prefix}/sampled_transcripts.csv":
+          type: file
+          description: Subsampled transcripts CSV used as Baysor input dataset.
+          pattern: "*/sampled_transcripts.csv"
+          ontologies: []
+  versions_baysor:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - python:
+          type: string
+          description: The tool name
+      - "baysor --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown":
+          type: eval
+          description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - baysor:
+          type: string
+          description: The tool name
+      - "baysor --version 2>&1 | grep -oP '\\d+\\.\\d+\\.\\d+' || echo unknown":
+          type: eval
+          description: The expression to obtain the version of the tool
+
+authors:
+  - "@khersameesh24"
+maintainers:
+  - "@khersameesh24"

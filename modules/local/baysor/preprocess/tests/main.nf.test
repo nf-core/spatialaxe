@@ -1,0 +1,68 @@
+nextflow_process {
+
+    name "Test Process BAYSOR PREPROCESS TRANSCRIPTS"
+    script "../main.nf"
+    process "BAYSOR_PREPROCESS_TRANSCRIPTS"
+    config "./nextflow.config"
+
+    tag "modules"
+    tag "modules_local"
+    tag "baysor"
+    tag "baysor/preprocess"
+
+    test("baysor preprocess transcripts - transcripts.parquet") {
+
+        when {
+            process {
+                """
+                input[0] = channel.of([
+                                [id: "test_run_baysor"],
+                                file("https://raw.githubusercontent.com/khersameesh24/test-datasets/baysor/transcripts.parquet", checkIfExists: true)
+                            ])
+                input[1] = 20
+                input[2] = 24000.0
+                input[3] = 0.0
+                input[4] = 24000.0
+                input[5] = 0.0
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.transcripts_file[0][1]).exists() },
+                { assert file(process.out.transcripts_file[0][1]).name == "filtered_transcripts.csv" },
+                { assert snapshot(process.out.versions_python).match("versions") }
+            )
+        }
+    }
+
+    test("baysor preprocess transcripts stub") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = channel.of([
+                                [id: "test_run_baysor"],
+                                file("https://raw.githubusercontent.com/khersameesh24/test-datasets/baysor/transcripts.parquet", checkIfExists: true)
+                            ])
+                input[1] = 20
+                input[2] = 24000.0
+                input[3] = 0.0
+                input[4] = 24000.0
+                input[5] = 0.0
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert snapshot(process.out.versions_python).match("versions_stub") }
+            )
+        }
+    }
+}
