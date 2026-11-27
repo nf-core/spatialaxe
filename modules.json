@@ -7,9 +7,8 @@
                 "nf-core": {
                     "cellpose": {
                         "branch": "master",
-                        "git_sha": "0780b963d3ab087e861a4b74e9d0e404115e5352",
-                        "installed_by": ["modules"],
-                        "patch": "modules/nf-core/cellpose/cellpose.diff"
+                        "git_sha": "18eb358065b06f2d3419e37383b002fe7db3da02",
+                        "installed_by": ["modules"]
                     },
                     "multiqc": {
                         "branch": "master",
@@ -79,7 +78,7 @@
                     },
                     "utils_nfcore_pipeline": {
                         "branch": "master",
-                        "git_sha": "05954dab2ff481bcb999f24455da29a5828af08d",
+                        "git_sha": "6ef220fd9252b42fb3c50348bbdbcb6246730686",
                         "installed_by": ["subworkflows"]
                     },
                     "utils_nfschema_plugin": {

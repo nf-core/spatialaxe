@@ -24,6 +24,7 @@ nextflow_pipeline {
                 // exportable plot data that run), so its bare existence isn't stable either
                 'qc/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_plots',
                 'qc/multiqc/*/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_plots/**',
+                'multiqc/MultiQC-*-Xeniumranger-import-segmentation-Run_multiqc_report_plots/*/*',
             ])
             // stable_path: All files in ${params.outdir}/ with stable content
             def stable_path = getAllFilesFromDir(params.outdir, ignoreFile: 'tests/.nftignore')
